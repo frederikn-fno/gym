@@ -1,0 +1,2006 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0C1210">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>8 ugers målmandsprogram</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   DESIGNSYSTEM
+   Stadion om aftenen: mørk grøn-sort som en bane under lys,
+   limegrøn som målmandshandsker og lysmaster.
+   Display: Barlow Condensed (som trøjenumre og stadionskilte)
+   Brødtekst: Barlow
+   ========================================================= */
+:root {
+  --bg: #0C1210;
+  --bg-2: #101814;
+  --card: #16201B;
+  --card-2: #1C2822;
+  --line: #24322B;
+  --line-2: #33443B;
+  --text: #F1F5EF;
+  --soft: #CDD7CE;
+  --muted: #93A398;
+  --dim: #66776C;
+  --lime: #C8F03C;
+  --lime-ink: #142000;
+  --lime-soft: rgba(200, 240, 60, .13);
+  --rest: #4DB6FF;
+  --rest-ink: #00213A;
+  --push: #FF9A3D;
+  --push-ink: #2E1300;
+  --prep: #FFD84A;
+  --danger: #FF6B5B;
+  --r-xl: 28px;
+  --r-lg: 22px;
+  --r-md: 16px;
+  --r-sm: 12px;
+  --shadow: 0 14px 34px rgba(0, 0, 0, .38);
+  --font-d: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", "Helvetica Neue", system-ui, sans-serif;
+  --font-b: "Barlow", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+  --top-h: 60px;
+  --nav-h: 66px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: calc(var(--top-h) + 72px); }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 400 16px/1.5 var(--font-b);
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 16px);
+  overflow-x: hidden;
+}
+svg { display: block; max-width: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+a { color: var(--lime); }
+:focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; border-radius: 10px; }
+[hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 18px; }
+h1, h2, h3, h4 { font-family: var(--font-d); font-weight: 800; line-height: .95; margin: 0; }
+p { margin: 0; }
+
+/* ---------- Knapper ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 52px; padding: 0 22px; border-radius: var(--r-md);
+  font-family: var(--font-d); font-weight: 800; font-size: 19px; letter-spacing: .04em; text-transform: uppercase;
+  background: var(--card-2); color: var(--text); border: 1px solid var(--line-2);
+  transition: transform .12s ease, background .2s ease;
+}
+.btn:active { transform: scale(.97); }
+.btn svg { width: 20px; height: 20px; flex: none; }
+.btn-lime { background: var(--lime); color: var(--lime-ink); border-color: var(--lime); }
+.btn-ghost { background: transparent; }
+.btn-block { width: 100%; }
+.btn-sm { min-height: 44px; font-size: 16px; padding: 0 16px; border-radius: var(--r-sm); }
+.link-btn { color: var(--lime); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; min-height: 44px; display: inline-flex; align-items: center; }
+
+/* ---------- Topbar ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(12, 18, 16, .88);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.topbar .wrap { display: flex; align-items: center; gap: 12px; height: var(--top-h); }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-family: var(--font-d); font-weight: 800; font-size: 21px; letter-spacing: .02em; }
+.brand-mark { width: 36px; height: 36px; border-radius: 11px; background: var(--lime); color: var(--lime-ink); display: grid; place-items: center; }
+.brand-mark svg { width: 22px; height: 22px; }
+.topnav { display: none; gap: 2px; margin-left: auto; }
+.topnav a { color: var(--soft); text-decoration: none; font-weight: 600; padding: 10px 14px; border-radius: 12px; }
+.topnav a:hover { background: var(--card); color: var(--text); }
+.week-chip {
+  margin-left: auto; min-height: 44px; padding: 0 14px; border-radius: 999px;
+  background: var(--lime-soft); color: var(--lime); border: 1px solid rgba(200, 240, 60, .35);
+  font-family: var(--font-d); font-weight: 800; font-size: 18px; letter-spacing: .04em;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+
+/* ---------- Bundnavigation (mobil) ---------- */
+.bottomnav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+  background: rgba(14, 21, 18, .94);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.bottomnav ul { list-style: none; margin: 0 auto; padding: 0 6px; display: grid; grid-template-columns: repeat(5, 1fr); max-width: 560px; }
+.bottomnav a {
+  height: var(--nav-h); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  color: var(--muted); text-decoration: none; font-size: 12px; font-weight: 600;
+}
+.bottomnav a svg { width: 24px; height: 24px; }
+.bottomnav a[aria-current="true"] { color: var(--lime); }
+
+/* ---------- Hero ---------- */
+.hero { position: relative; isolation: isolate; overflow: hidden; padding: 30px 0 30px; }
+.hero::before {
+  content: ""; position: absolute; inset: -30% -20% 10% -20%; z-index: -2;
+  background: radial-gradient(55% 45% at 78% 6%, rgba(220, 255, 140, .20), transparent 70%),
+              radial-gradient(40% 40% at 0% 30%, rgba(200, 240, 60, .06), transparent 70%);
+}
+.hero-net {
+  position: absolute; inset: 0; z-index: -1; opacity: .5;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(241, 245, 239, .07) 0 1.5px, transparent 1.5px 26px),
+    repeating-linear-gradient(-45deg, rgba(241, 245, 239, .07) 0 1.5px, transparent 1.5px 26px);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,.6) 45%, transparent 90%);
+          mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,.6) 45%, transparent 90%);
+}
+.hero-post { position: absolute; z-index: -1; top: 0; right: 18px; width: 14px; height: 70%; background: linear-gradient(180deg, rgba(241,245,239,.18), transparent); border-radius: 0 0 8px 8px; }
+.hero h1 {
+  font-size: clamp(48px, 13vw, 132px); line-height: .84; letter-spacing: -.01em; text-transform: uppercase;
+  -webkit-hyphens: manual; hyphens: manual; max-width: 9.5ch;
+}
+.hero-sub { font-size: clamp(18px, 4.6vw, 22px); line-height: 1.35; color: var(--soft); max-width: 30ch; margin: 18px 0 24px; font-weight: 500; }
+.stats { list-style: none; padding: 0; margin: 0 0 14px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.stat { background: rgba(22, 32, 27, .82); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+.stat b { font-family: var(--font-d); font-weight: 800; font-size: 44px; line-height: 1; color: var(--lime); min-width: .7ch; }
+.stat span { font-size: 14.5px; line-height: 1.2; color: var(--soft); font-weight: 500; }
+
+/* ---------- Progression (fælles komponent) ---------- */
+.progress-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px; box-shadow: var(--shadow); }
+.pc-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+.pc-head span { color: var(--muted); font-weight: 600; font-size: 14px; }
+.pc-head strong { font-family: var(--font-d); font-size: 24px; font-weight: 800; }
+.pc-track { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.pc-end { font-family: var(--font-d); font-weight: 800; font-size: 15px; color: var(--muted); white-space: nowrap; letter-spacing: .03em; }
+.dots { list-style: none; margin: 0; padding: 0; flex: 1; display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; align-items: center; }
+.dots li { height: 6px; border-radius: 6px; background: var(--line-2); position: relative; }
+.dots li.done { height: 14px; background: var(--lime); }
+.dots li.now { height: 14px; background: transparent; box-shadow: inset 0 0 0 2.5px var(--lime); }
+.progress-big .dots li { height: 10px; }
+.progress-big .dots li.done, .progress-big .dots li.now { height: 22px; border-radius: 8px; }
+
+/* ---------- Sektioner ---------- */
+.section { padding-top: 40px; padding-bottom: 6px; }
+.sec-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin-bottom: 16px; }
+.sec-head h2 { font-size: clamp(36px, 9vw, 60px); text-transform: uppercase; letter-spacing: -.005em; }
+.sec-lead { color: var(--soft); max-width: 46ch; margin-top: 8px; }
+
+/* ---------- I dag ---------- */
+.today-card {
+  position: relative; overflow: hidden; border-radius: var(--r-xl); padding: 20px;
+  background: linear-gradient(135deg, var(--card-2), var(--card)); border: 1px solid var(--line-2);
+  display: grid; gap: 14px;
+}
+.today-card.is-fit { background: var(--lime); color: var(--lime-ink); border-color: var(--lime); }
+.today-card.is-fit .today-small { color: rgba(20, 32, 0, .72); }
+.today-card.is-fit .btn { background: var(--lime-ink); color: var(--lime); border-color: var(--lime-ink); }
+.today-small { color: var(--muted); font-weight: 600; font-size: 14.5px; }
+.today-big { font-size: clamp(38px, 10vw, 64px); text-transform: uppercase; }
+.today-text { font-size: 17px; font-weight: 500; max-width: 40ch; }
+.today-ic { position: absolute; right: -16px; top: -12px; width: 140px; height: 140px; opacity: .12; }
+
+/* ---------- Min uge ---------- */
+.days { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.day {
+  position: relative; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md);
+  min-height: 108px; padding: 12px 6px 12px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+}
+.day .dn { font-family: var(--font-d); font-weight: 800; font-size: 19px; letter-spacing: .03em; }
+.day .dl { font-size: 12.5px; font-weight: 600; color: var(--muted); line-height: 1.15; }
+.day svg { width: 28px; height: 28px; color: var(--soft); }
+.day.fit { grid-column: span 2; background: var(--lime); border-color: var(--lime); color: var(--lime-ink); box-shadow: 0 10px 30px rgba(200, 240, 60, .22); }
+.day.fit svg, .day.fit .dl { color: var(--lime-ink); }
+.day.fit .dn { font-size: 26px; }
+.day.fit .dl { font-size: 13.5px; font-weight: 700; }
+.day.match svg { color: var(--lime); }
+.day.today { box-shadow: 0 0 0 2px var(--text); }
+.day.fit.today { box-shadow: 0 0 0 2px var(--text), 0 10px 30px rgba(200, 240, 60, .22); }
+.today-pin { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+
+/* ---------- Ugenavigation ---------- */
+.weeknav {
+  position: sticky; top: calc(var(--top-h) + env(safe-area-inset-top, 0px)); z-index: 40;
+  margin: 0 -18px; padding: 10px 0 12px;
+  background: linear-gradient(180deg, var(--bg) 78%, rgba(12, 18, 16, 0));
+}
+.weeknav-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 2px 18px; scroll-snap-type: x proximity; scrollbar-width: none; }
+.weeknav-scroll::-webkit-scrollbar { display: none; }
+.wk {
+  flex: 0 0 auto; min-width: 82px; height: 54px; border-radius: 15px; scroll-snap-align: start;
+  background: var(--card); border: 1px solid var(--line-2);
+  font-family: var(--font-d); font-weight: 800; font-size: 19px; letter-spacing: .04em;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.wk .ck { width: 18px; height: 18px; border-radius: 50%; background: var(--lime); color: var(--lime-ink); display: grid; place-items: center; }
+.wk .ck svg { width: 12px; height: 12px; }
+.wk[aria-selected="true"] { background: var(--lime); color: var(--lime-ink); border-color: var(--lime); }
+.wk[aria-selected="true"] .ck { background: var(--lime-ink); color: var(--lime); }
+
+/* ---------- Ugevisning ---------- */
+.wk-hero {
+  position: relative; overflow: hidden; border-radius: var(--r-xl); padding: 22px 20px 20px;
+  background: var(--card); border: 1px solid var(--line-2); margin-bottom: 14px;
+}
+.wk-hero .bignum {
+  position: absolute; right: -8px; top: -30px; font-family: var(--font-d); font-weight: 800;
+  font-size: 190px; line-height: 1; color: transparent; -webkit-text-stroke: 2px rgba(200, 240, 60, .22);
+  pointer-events: none; user-select: none;
+}
+.wk-hero h3 { font-size: clamp(34px, 9.5vw, 58px); text-transform: uppercase; max-width: 12ch; position: relative; }
+.wk-of { position: relative; font-family: var(--font-d); font-weight: 800; font-size: 17px; letter-spacing: .05em; color: var(--lime); margin-bottom: 8px; }
+.wk-hero .desc { margin-top: 12px; font-size: 17px; color: var(--soft); max-width: 38ch; position: relative; font-weight: 500; }
+.phase-steps { display: flex; gap: 6px; margin: 16px 0 0; position: relative; }
+.phase-steps span { flex: 1; height: 5px; border-radius: 4px; background: var(--line-2); }
+.phase-steps span.on { background: var(--lime); }
+.wk-prog { margin-top: 16px; display: flex; align-items: center; gap: 12px; position: relative; }
+.bar { flex: 1; height: 12px; border-radius: 12px; background: var(--bg-2); border: 1px solid var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--lime); border-radius: 12px; transition: width .35s ease; }
+.wk-prog b { font-family: var(--font-d); font-size: 22px; font-weight: 800; white-space: nowrap; }
+
+.blocks { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
+.week-layout > * { min-width: 0; }
+.block { min-width: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px; box-shadow: var(--shadow); }
+.block-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.block-ic { flex: none; width: 46px; height: 46px; border-radius: 14px; background: var(--lime-soft); color: var(--lime); display: grid; place-items: center; }
+.block-ic svg { width: 24px; height: 24px; }
+.block-head h4 { overflow-wrap: anywhere; font-size: 27px; text-transform: uppercase; letter-spacing: .01em; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.tag { font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--card-2); border: 1px solid var(--line-2); color: var(--soft); }
+.tag.lime { background: var(--lime-soft); border-color: rgba(200, 240, 60, .35); color: var(--lime); }
+.callout { display: flex; gap: 10px; align-items: flex-start; background: var(--bg-2); border: 1px solid var(--line-2); border-left: 4px solid var(--lime); border-radius: var(--r-sm); padding: 12px 14px; margin-bottom: 12px; font-weight: 600; color: var(--soft); }
+.callout svg { width: 22px; height: 22px; color: var(--lime); flex: none; margin-top: 1px; }
+
+.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.item { display: flex; align-items: stretch; gap: 8px; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); }
+.item-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 8px; text-align: left; border-radius: var(--r-md); }
+.thumb { flex: none; width: 124px; border-radius: 12px; overflow: hidden; }
+.thumb .illu { width: 100%; height: auto; }
+.item-txt { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.item-txt .nm { font-weight: 700; font-size: 16.5px; line-height: 1.2; }
+.item-txt .ds { font-family: var(--font-d); font-weight: 800; font-size: 24px; color: var(--lime); line-height: 1.05; }
+.item-txt .nt { font-size: 13px; color: var(--muted); line-height: 1.25; }
+.check {
+  flex: none; width: 56px; display: grid; place-items: center; border-left: 1px solid var(--line);
+  border-radius: 0 var(--r-md) var(--r-md) 0; color: var(--dim);
+}
+.check span { width: 34px; height: 34px; border-radius: 50%; border: 2.5px solid var(--line-2); display: grid; place-items: center; transition: background .2s, border-color .2s; }
+.check svg { width: 18px; height: 18px; opacity: 0; }
+.check[aria-pressed="true"] span { background: var(--lime); border-color: var(--lime); color: var(--lime-ink); }
+.check[aria-pressed="true"] svg { opacity: 1; }
+.item.is-done .item-open { opacity: .55; }
+.rest-row { align-items: center; padding: 10px 14px; gap: 12px; color: var(--soft); font-weight: 600; background: transparent; border-style: dashed; }
+.rest-pill { font-family: var(--font-d); font-weight: 800; font-size: 18px; color: var(--rest-ink); background: var(--rest); border-radius: 10px; padding: 2px 10px; }
+.block-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.block-actions .btn { flex: 1 1 200px; }
+
+/* Intervalkort */
+.ivl { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px; margin-bottom: 12px; }
+.ivl-steps { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
+.ivl-step { display: flex; align-items: center; gap: 12px; border-radius: 12px; padding: 8px 12px; min-height: 48px; }
+.ivl-step b { font-family: var(--font-d); font-weight: 800; font-size: 26px; min-width: 76px; line-height: 1; white-space: nowrap; }
+.ivl-step span { font-family: var(--font-d); font-weight: 800; font-size: 19px; letter-spacing: .04em; text-transform: uppercase; }
+.ivl-step small { margin-left: auto; font-weight: 700; font-size: 13px; opacity: .8; text-align: right; }
+.ivl-step.work { background: var(--lime); color: var(--lime-ink); }
+.ivl-step.push { background: var(--push); color: var(--push-ink); }
+.ivl-step.rest { background: var(--rest); color: var(--rest-ink); }
+.ivl-step.reps { background: var(--card-2); color: var(--text); border: 1px solid var(--line-2); }
+.ivl-arrow { align-self: center; color: var(--muted); height: 16px; }
+.ivl-arrow svg { width: 16px; height: 16px; }
+.ivl-rep { align-self: center; margin-top: 2px; font-family: var(--font-d); font-weight: 800; font-size: 22px; letter-spacing: .04em; color: var(--lime); display: flex; align-items: center; gap: 8px; }
+.ivl-rep svg { width: 20px; height: 20px; }
+.ivl-line { display: flex; height: 10px; border-radius: 6px; overflow: hidden; margin-top: 12px; gap: 2px; }
+.ivl-line i { display: block; }
+.ivl-meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 13.5px; color: var(--muted); font-weight: 600; }
+
+/* Test-formular uge 8 */
+.testform { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; color: var(--soft); }
+.field input, .field select, .field textarea {
+  min-height: 50px; border-radius: var(--r-sm); border: 1px solid var(--line-2); background: var(--bg-2);
+  padding: 10px 12px; font-size: 17px; color: var(--text); width: 100%;
+}
+.field textarea { min-height: 76px; resize: vertical; }
+.saved-note { grid-column: 1 / -1; font-size: 14px; color: var(--muted); }
+
+.wk-done-btn { margin-top: 16px; }
+.wk-done-btn[aria-pressed="true"] { background: transparent; color: var(--lime); border-color: var(--lime); }
+
+/* ---------- Fredag ---------- */
+.fri-card { border-radius: var(--r-xl); padding: 20px; background: var(--card); border: 1px solid var(--line-2); }
+.not-training {
+  display: flex; gap: 12px; align-items: center; border-radius: var(--r-md); padding: 14px 16px; margin-bottom: 16px;
+  background: var(--rest); color: var(--rest-ink); font-weight: 700; font-size: 17px; line-height: 1.3;
+}
+.not-training svg { width: 30px; height: 30px; flex: none; }
+.not-training strong { font-family: var(--font-d); font-size: 22px; letter-spacing: .02em; }
+
+/* ---------- Øvelsesbibliotek ---------- */
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 14px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; min-height: 44px; padding: 0 16px; border-radius: 99px; border: 1px solid var(--line-2);
+  background: var(--card); font-weight: 700; font-size: 15px; color: var(--soft);
+}
+.chip[aria-pressed="true"] { background: var(--lime); border-color: var(--lime); color: var(--lime-ink); }
+.lib { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.timer-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.timer { min-width: 0; }
+.ex-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; display: flex; flex-direction: column; }
+.ex-illu { display: block; width: 100%; padding: 10px 10px 0; }
+.ex-body { padding: 14px 16px 18px; display: grid; gap: 10px; }
+.ex-cat { justify-self: start; font-size: 12.5px; font-weight: 700; color: var(--lime); background: var(--lime-soft); border-radius: 99px; padding: 3px 10px; }
+.ex-body h3 { font-size: 30px; text-transform: uppercase; }
+.ex-goal { color: var(--soft); font-weight: 600; }
+.ex-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; counter-reset: s; }
+.ex-steps li { display: grid; grid-template-columns: 104px 1fr; gap: 10px; font-size: 15px; line-height: 1.35; color: var(--soft); }
+.ex-steps b { font-family: var(--font-d); font-weight: 800; font-size: 15px; letter-spacing: .05em; color: var(--text); text-transform: uppercase; padding-top: 1px; }
+.ex-dose { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; }
+.ex-dose div { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 12px; }
+.ex-dose dt { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.ex-dose dd { margin: 0; font-family: var(--font-d); font-size: 24px; font-weight: 800; color: var(--lime); line-height: 1.1; }
+.ex-tips { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ex-tips li { display: flex; gap: 8px; font-size: 14.5px; color: var(--soft); }
+.ex-tips svg { width: 18px; height: 18px; color: var(--lime); flex: none; margin-top: 2px; }
+
+/* ---------- RPE ---------- */
+.rpe { display: grid; gap: 6px; }
+.rpe-row { display: grid; grid-template-columns: 52px 1fr; align-items: center; gap: 12px; }
+.rpe-n { font-family: var(--font-d); font-weight: 800; font-size: 26px; text-align: right; }
+.rpe-cell { display: grid; gap: 3px; }
+.rpe-bar { height: 42px; border-radius: 12px; background: var(--c); width: var(--w); min-width: 132px; max-width: 100%; display: flex; align-items: center; padding: 0 12px; color: #0C1210; font-family: var(--font-d); font-weight: 800; font-size: 19px; letter-spacing: .02em; }
+.rpe-cue { font-size: 13px; color: var(--muted); font-weight: 600; padding-left: 2px; }
+.rpe-explain { margin-top: 16px; font-size: 18px; font-weight: 600; color: var(--soft); max-width: 40ch; }
+
+/* ---------- Tracker ---------- */
+.tracker-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.panel { min-width: 0; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px; }
+.panel h3 { font-size: 26px; text-transform: uppercase; margin-bottom: 14px; }
+.form-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; margin-bottom: 8px; }
+.rate { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.rate-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.rate-top label { font-weight: 700; }
+.rate-top output { font-family: var(--font-d); font-weight: 800; font-size: 30px; color: var(--lime); line-height: 1; min-width: 2ch; text-align: right; }
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 36px; background: transparent; margin: 0; }
+input[type="range"]::-webkit-slider-runnable-track { height: 10px; border-radius: 10px; background: linear-gradient(90deg, var(--lime) 0 var(--p, 50%), var(--line-2) var(--p, 50%)); }
+input[type="range"]::-moz-range-track { height: 10px; border-radius: 10px; background: var(--line-2); }
+input[type="range"]::-moz-range-progress { height: 10px; border-radius: 10px; background: var(--lime); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; margin-top: -10px; border-radius: 50%; background: var(--text); border: 4px solid var(--lime); }
+input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: var(--text); border: 4px solid var(--lime); }
+.form-actions { margin-top: 14px; }
+.chart-wrap { margin-top: 4px; }
+.chart { width: 100%; height: auto; }
+.chart .ax { fill: var(--muted); font: 700 15px var(--font-b); }
+.empty { color: var(--muted); font-weight: 500; padding: 8px 0; }
+.history { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.hist { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; display: grid; gap: 8px; }
+.hist-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.hist-top b { font-family: var(--font-d); font-size: 20px; font-weight: 800; }
+.hist-vals { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.hist-vals span { text-align: center; background: var(--card); border-radius: 10px; padding: 4px 2px; font-size: 11.5px; color: var(--muted); line-height: 1.2; }
+.hist-vals b { display: block; font-family: var(--font-d); font-size: 22px; color: var(--text); }
+.hist p { font-size: 14.5px; color: var(--soft); }
+.icon-btn { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: var(--muted); }
+.icon-btn:hover { background: var(--card); color: var(--danger); }
+.icon-btn svg { width: 20px; height: 20px; }
+
+/* ---------- Progression-sektion ---------- */
+.prog-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; }
+.pt {
+  min-height: 76px; border-radius: var(--r-md); background: var(--card); border: 1px solid var(--line-2);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-family: var(--font-d); font-weight: 800; font-size: 22px;
+}
+.pt small { font-family: var(--font-b); font-size: 12px; font-weight: 600; color: var(--muted); }
+.pt[aria-pressed="true"] { background: var(--lime); color: var(--lime-ink); border-color: var(--lime); }
+.pt[aria-pressed="true"] small { color: rgba(20, 32, 0, .7); }
+
+/* ---------- Timer ---------- */
+.timer { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-xl); overflow: hidden; }
+.t-display {
+  --ph: var(--card-2); --ink: var(--text);
+  background: var(--ph); color: var(--ink); padding: 18px 18px 22px; text-align: center; transition: background .25s ease, color .25s ease;
+}
+.timer[data-phase="work"] .t-display { --ph: var(--lime); --ink: var(--lime-ink); }
+.timer[data-phase="push"] .t-display { --ph: var(--push); --ink: var(--push-ink); }
+.timer[data-phase="rest"] .t-display { --ph: var(--rest); --ink: var(--rest-ink); }
+.timer[data-phase="prep"] .t-display { --ph: var(--prep); --ink: #2B2200; }
+.timer[data-phase="reps"] .t-display { --ph: var(--lime); --ink: var(--lime-ink); }
+.timer[data-phase="done"] .t-display { --ph: var(--lime); --ink: var(--lime-ink); }
+.t-name { font-weight: 700; font-size: 14.5px; opacity: .8; min-height: 20px; }
+.t-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+.t-round { font-family: var(--font-d); font-weight: 800; font-size: 22px; letter-spacing: .05em; }
+.t-total { font-weight: 700; font-size: 14px; opacity: .8; }
+.t-phase { font-family: var(--font-d); font-weight: 800; font-size: clamp(50px, 15vw, 84px); line-height: .9; letter-spacing: .03em; margin-top: 12px; }
+.t-time { font-family: var(--font-d); font-weight: 800; font-size: clamp(92px, 28vw, 170px); line-height: .9; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.t-label { font-size: 19px; font-weight: 700; min-height: 28px; margin-top: 4px; }
+.t-prog { height: 10px; border-radius: 10px; background: rgba(0, 0, 0, .18); overflow: hidden; margin-top: 14px; }
+.timer[data-phase="idle"] .t-prog { background: var(--bg-2); }
+.t-prog i { display: block; height: 100%; width: 0; background: currentColor; border-radius: 10px; }
+.t-next { margin-top: 12px; font-weight: 700; font-size: 15px; opacity: .85; min-height: 22px; }
+.t-body { padding: 16px; display: grid; gap: 14px; }
+.t-controls { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; }
+.t-controls .btn { min-height: 64px; font-size: 22px; padding: 0 8px; min-width: 0; }
+.t-controls .btn:disabled { opacity: .35; }
+.t-next-btn { min-height: 70px; font-size: 23px; }
+.t-sub { font-weight: 700; font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.custom { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stepper { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px; text-align: center; }
+.stepper label { display: block; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.stepper .sv { font-family: var(--font-d); font-weight: 800; font-size: 30px; line-height: 1.1; }
+.stepper .sb { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px; }
+.stepper button { min-height: 44px; border-radius: 10px; background: var(--card-2); font-size: 24px; font-weight: 700; line-height: 1; }
+.toggles { display: flex; gap: 8px; flex-wrap: wrap; }
+.toggle { min-height: 44px; padding: 0 14px; border-radius: 99px; border: 1px solid var(--line-2); display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--soft); }
+.toggle i { width: 34px; height: 20px; border-radius: 20px; background: var(--line-2); position: relative; transition: background .2s; }
+.toggle i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--text); transition: transform .2s; }
+.toggle[aria-pressed="true"] i { background: var(--lime); }
+.toggle[aria-pressed="true"] i::after { transform: translateX(14px); background: var(--lime-ink); }
+.toggle:disabled { opacity: .5; }
+.toggle-note { font-size: 11px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.t-back { justify-self: start; }
+
+/* Mini-timer */
+.mini-timer {
+  position: fixed; z-index: 55; left: 12px; right: 12px; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 10px);
+  display: none; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 18px;
+  background: var(--card-2); border: 1px solid var(--line-2); box-shadow: 0 14px 34px rgba(0, 0, 0, .5);
+}
+.mini-timer.show { display: flex; }
+.mini-timer[data-phase="work"], .mini-timer[data-phase="reps"] { background: var(--lime); color: var(--lime-ink); border-color: var(--lime); }
+.mini-timer[data-phase="push"] { background: var(--push); color: var(--push-ink); border-color: var(--push); }
+.mini-timer[data-phase="rest"] { background: var(--rest); color: var(--rest-ink); border-color: var(--rest); }
+.mini-timer[data-phase="prep"] { background: var(--prep); color: #2B2200; border-color: var(--prep); }
+.mini-main { flex: 1; display: flex; align-items: baseline; gap: 12px; min-height: 48px; align-items: center; text-align: left; }
+.mini-main b { font-family: var(--font-d); font-weight: 800; font-size: 34px; font-variant-numeric: tabular-nums; }
+.mini-main span { font-family: var(--font-d); font-weight: 800; font-size: 18px; letter-spacing: .04em; }
+.mini-main small { font-weight: 700; font-size: 13px; opacity: .8; }
+.mini-timer .icon-btn { background: rgba(0, 0, 0, .82); color: #fff; width: 52px; height: 48px; }
+
+/* ---------- Dialog (øvelse) ---------- */
+dialog.sheet {
+  border: 0; padding: 0; margin: auto 0 0; width: 100%; max-width: 100%; max-height: 92vh; max-height: 92dvh;
+  background: var(--card); color: var(--text); border-radius: 28px 28px 0 0; overflow: auto;
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, .6);
+}
+dialog.sheet::backdrop { background: rgba(4, 8, 6, .72); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+dialog.sheet[open] { animation: sheetUp .28s cubic-bezier(.2, .8, .2, 1); }
+@keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.sheet-in { padding: 10px 16px calc(20px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 14px; }
+.grab { width: 44px; height: 5px; border-radius: 5px; background: var(--line-2); justify-self: center; }
+.sheet-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.sheet-top h3 { font-size: clamp(32px, 9vw, 46px); text-transform: uppercase; }
+.sheet-close { flex: none; width: 48px; height: 48px; border-radius: 14px; background: var(--card-2); display: grid; place-items: center; }
+.sheet-close svg { width: 22px; height: 22px; }
+.m-illu .illu { width: 100%; height: auto; }
+.m-dose { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.m-dose div { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; }
+.m-dose small { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.m-dose b { font-family: var(--font-d); font-weight: 800; font-size: 30px; color: var(--lime); line-height: 1.05; }
+.m-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; position: sticky; bottom: 0; padding-top: 6px; background: linear-gradient(180deg, rgba(22, 32, 27, 0), var(--card) 30%); }
+.m-actions .btn { min-height: 58px; }
+.m-actions .btn[aria-pressed="true"] { background: transparent; color: var(--lime); border-color: var(--lime); }
+
+/* ---------- Illustrationstekst ---------- */
+.illu-label { fill: var(--muted); font: 800 14px var(--font-d); letter-spacing: .1em; }
+.illu-note { fill: var(--muted); font: 800 11px var(--font-d); letter-spacing: .1em; }
+.illu-mid { fill: var(--lime); font: 800 14px var(--font-d); letter-spacing: .04em; }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed; z-index: 80; left: 50%; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 80px);
+  transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  background: var(--text); color: var(--bg); font-weight: 700; padding: 12px 18px; border-radius: 14px;
+  box-shadow: var(--shadow); transition: opacity .2s, transform .2s; max-width: calc(100% - 32px); text-align: center;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Footer ---------- */
+.foot { padding: 40px 0 30px; color: var(--muted); font-size: 14px; display: grid; gap: 10px; }
+.foot-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---------- Større skærme ---------- */
+@media (min-width: 640px) {
+  .stats { grid-template-columns: repeat(4, 1fr); }
+  .lib { grid-template-columns: repeat(2, 1fr); }
+  .thumb { width: 150px; }
+  .testform { grid-template-columns: repeat(4, 1fr); }
+  .prog-tiles { grid-template-columns: repeat(8, 1fr); }
+  .days { grid-template-columns: repeat(8, 1fr); }
+  .day.fit { grid-column: span 2; }
+}
+@media (min-width: 900px) {
+  :root { --nav-h: 0px; }
+  body { padding-bottom: 0; }
+  .bottomnav { display: none; }
+  .topnav { display: flex; }
+  .week-chip { margin-left: 8px; }
+  .hero { padding: 64px 0 48px; }
+  .hero-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 40px; align-items: end; }
+  .hero h1 { font-size: clamp(64px, 6.8vw, 104px); }
+  .hero .stats { grid-template-columns: repeat(2, 1fr); }
+  .hero-sub { margin-bottom: 0; }
+  .lib { grid-template-columns: repeat(3, 1fr); }
+  .tracker-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); align-items: start; }
+  .week-layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 18px; align-items: start; }
+  .week-layout .wk-hero { position: sticky; top: calc(var(--top-h) + 90px); margin-bottom: 0; }
+  .timer-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+  .mini-timer { left: auto; right: 20px; bottom: 20px; width: 360px; }
+  .toast { bottom: 40px; }
+  dialog.sheet { margin: auto; max-width: 720px; border-radius: 28px; }
+  .section { padding-top: 64px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+/* ---------- Timer: telefon liggende ned (landskab, lav skærmhøjde) ----------
+   Målmanden lægger ofte telefonen fladt under et interval. I almindelig
+   portræt-opsætning er timer-visningen bygget til god plads lodret; i
+   landskab på en telefon er der typisk kun 350–420px højde til rådighed,
+   så uden denne blok ville skærmen let kræve scroll midt i et interval. */
+@media (orientation: landscape) and (max-height: 520px) {
+  #timer { padding-top: 16px; }
+  .timer-layout { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; gap: 14px; }
+  .t-display { padding: 10px 14px 12px; }
+  .t-name { min-height: 0; }
+  .t-phase { font-size: clamp(26px, 7vh, 46px); margin-top: 4px; }
+  .t-time { font-size: clamp(44px, 16vh, 96px); }
+  .t-label { font-size: 15px; min-height: 0; margin-top: 2px; }
+  .t-prog { margin-top: 8px; }
+  .t-next { margin-top: 6px; font-size: 13px; min-height: 0; }
+  .t-body { padding: 10px; gap: 8px; }
+  .t-controls .btn { min-height: 46px; font-size: 18px; }
+  .t-next-btn { min-height: 50px; font-size: 18px; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <marker id="gkArrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.6" markerHeight="3.6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#C8F03C"/>
+    </marker>
+  </defs>
+</svg>
+
+<a class="sr-only" href="#program">Spring til programmet</a>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Til toppen"><span class="brand-mark" data-icon="glove"></span>Målmand 8</a>
+    <nav class="topnav" aria-label="Sektioner">
+      <a href="#program">Program</a>
+      <a href="#fredag">Fredag</a>
+      <a href="#timer">Timer</a>
+      <a href="#tracker">Tracker</a>
+      <a href="#ovelser">Øvelser</a>
+      <a href="#rpe">RPE</a>
+    </nav>
+    <button class="week-chip" id="weekChip" type="button">Uge 1</button>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- 1. HERO -->
+  <section class="hero" aria-labelledby="heroTitle">
+    <div class="hero-net" aria-hidden="true"></div>
+    <div class="hero-post" aria-hidden="true"></div>
+    <div class="wrap hero-grid">
+      <div>
+        <h1 id="heroTitle">8 ugers<br>målmands&shy;program</h1>
+        <p class="hero-sub">Byg motoren. Bevar koncentrationen. Vær klar i det 90. minut.</p>
+      </div>
+      <div>
+        <ul class="stats" aria-label="Programmet kort">
+          <li class="stat"><b>8</b><span>uger</span></li>
+          <li class="stat"><b>1</b><span>primært fitnesspas pr. uge</span></li>
+          <li class="stat"><b>3</b><span>fodbold&shy;træninger</span></li>
+          <li class="stat"><b>1</b><span>kamp pr. uge</span></li>
+        </ul>
+        <div class="progress-card" id="heroProgress"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- I DAG -->
+  <section class="wrap" aria-label="I dag">
+    <div class="today-card" id="todayCard"></div>
+  </section>
+
+  <!-- 2. MIN UGE -->
+  <section class="section wrap" id="uge" aria-labelledby="ugeTitle">
+    <div class="sec-head"><h2 id="ugeTitle">Min uge</h2></div>
+    <ol class="days" id="days"></ol>
+  </section>
+
+  <!-- 3–8. UGE-NAVIGATION OG PROGRAM -->
+  <section class="section wrap" id="program" aria-labelledby="progTitle">
+    <div class="sec-head">
+      <h2 id="progTitle">Program</h2>
+      <a class="link-btn" href="#rpe">Hvad er RPE?</a>
+    </div>
+    <nav class="weeknav" aria-label="Vælg uge">
+      <div class="weeknav-scroll" role="tablist" id="weekNav"></div>
+    </nav>
+    <div id="weekView" role="tabpanel" aria-labelledby="progTitle"></div>
+  </section>
+
+  <!-- 9. FREDAG -->
+  <section class="section wrap" id="fredag" aria-labelledby="friTitle">
+    <div class="sec-head"><h2 id="friTitle">Fredag · bliv klar til kamp</h2></div>
+    <div class="fri-card">
+      <div class="not-training"><span data-icon="bolt"></span><div><strong>Dette er IKKE træning.</strong><br>Du skal føle dig frisk bagefter.</div></div>
+      <div class="tags" style="margin-bottom:14px"><span class="tag lime">2 runder</span><span class="tag">Ca. 10 min</span><span class="tag">Lav intensitet, høj kvalitet</span></div>
+      <ul class="items" id="friItems"></ul>
+      <div class="block-actions">
+        <button class="btn btn-lime" id="friTimer" type="button"><span data-icon="play"></span>Start aktivering</button>
+        <button class="btn btn-ghost" id="friReset" type="button"><span data-icon="reset"></span>Nulstil fredag</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. ØVELSESBIBLIOTEK -->
+  <section class="section wrap" id="ovelser" aria-labelledby="libTitle">
+    <div class="sec-head"><h2 id="libTitle">Øvelses&shy;bibliotek</h2></div>
+    <div class="chips" id="libChips" role="group" aria-label="Filtrér øvelser"></div>
+    <div class="lib" id="lib"></div>
+  </section>
+
+  <!-- 11. RPE -->
+  <section class="section wrap" id="rpe" aria-labelledby="rpeTitle">
+    <div class="sec-head"><h2 id="rpeTitle">RPE · hvor hårdt?</h2></div>
+    <div class="panel">
+      <div class="rpe" id="rpeMeter" role="list"></div>
+      <p class="rpe-explain">RPE er din oplevelse af, hvor hårdt arbejdet føles.</p>
+    </div>
+  </section>
+
+  <!-- 12. KAMP-TRACKER -->
+  <section class="section wrap" id="tracker" aria-labelledby="trackTitle">
+    <div class="sec-head">
+      <div>
+        <h2 id="trackTitle">Kamp-tracker</h2>
+        <p class="sec-lead">Udfyld efter hver kamp. Det tager 30 sekunder.</p>
+      </div>
+    </div>
+    <div class="tracker-grid">
+      <form class="panel" id="matchForm" novalidate>
+        <h3>Ny kamp</h3>
+        <div class="form-row">
+          <label class="field">Dato<input type="date" id="mDate" required></label>
+          <label class="field">Programuge<select id="mWeek"></select></label>
+        </div>
+        <div id="rates"></div>
+        <label class="field" style="margin-top:12px">Kommentar<textarea id="mNote" rows="2" placeholder="Fx: Tunge ben efter 70 min. God på indlæg."></textarea></label>
+        <div class="form-actions"><button class="btn btn-lime btn-block" type="submit">Gem kamp</button></div>
+      </form>
+      <div class="panel">
+        <h3>Udvikling uge 1–8</h3>
+        <div class="chips" id="metricChips" role="group" aria-label="Vælg måling"></div>
+        <div class="chart-wrap" id="chart"></div>
+        <h3 style="margin-top:22px">Dine kampe</h3>
+        <ul class="history" id="history"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13. PROGRESSION -->
+  <section class="section wrap" id="progression" aria-labelledby="progrTitle">
+    <div class="sec-head">
+      <div>
+        <h2 id="progrTitle">Progression</h2>
+        <p class="sec-lead">Tryk på en uge for at markere den som gennemført.</p>
+      </div>
+    </div>
+    <div class="progress-card progress-big" id="progBig"></div>
+    <div class="prog-tiles" id="progTiles"></div>
+  </section>
+
+  <!-- 14. TIMER -->
+  <section class="section wrap" id="timer" aria-labelledby="timerTitle">
+    <div class="sec-head"><h2 id="timerTitle">Intervaltimer</h2></div>
+    <div class="timer-layout">
+      <div class="timer" id="timerBox" data-phase="idle">
+        <div class="t-display" aria-live="polite" aria-atomic="false">
+          <p class="t-name" id="tName"></p>
+          <div class="t-row"><span class="t-round" id="tRound">ROUND 1 / 10</span><span class="t-total" id="tTotal"></span></div>
+          <p class="t-phase" id="tPhase">KLAR</p>
+          <p class="t-time" id="tTime" role="timer">00:30</p>
+          <p class="t-label" id="tLabel"></p>
+          <div class="t-prog" aria-hidden="true"><i id="tProg"></i></div>
+          <p class="t-next" id="tNext"></p>
+        </div>
+        <div class="t-body">
+          <button class="btn btn-lime btn-block t-next-btn" id="tRepsBtn" type="button" hidden>Færdig, næste</button>
+          <div class="t-controls">
+            <button class="btn btn-lime" id="tStart" type="button">START</button>
+            <button class="btn" id="tPause" type="button">PAUSE</button>
+            <button class="btn" id="tReset" type="button">RESET</button>
+          </div>
+          <button class="btn btn-ghost btn-sm t-back" id="tBack" type="button" hidden><span data-icon="back"></span>Tilbage til øvelserne</button>
+        </div>
+      </div>
+      <div class="panel">
+        <p class="t-sub">Vælg interval</p>
+        <div class="presets" id="tPresets"></div>
+        <p class="t-sub" style="margin-top:16px">Egne intervaller</p>
+        <div class="custom" id="tCustom"></div>
+        <p class="t-sub" style="margin-top:16px">Signal ved skift</p>
+        <div class="toggles">
+          <button class="toggle" id="tgSound" type="button" aria-pressed="true"><i></i>Lyd</button>
+          <button class="toggle" id="tgVib" type="button" aria-pressed="true"><i></i>Vibration</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="wrap foot">
+    <p>Alt gemmes lokalt på din telefon. Ingen konto, ingen server.</p>
+    <p>Mærker du smerte, så stop øvelsen og tal med en fysioterapeut eller træner.</p>
+    <div class="foot-actions">
+      <button class="btn btn-ghost btn-sm" id="exportData" type="button">Eksportér data</button>
+      <button class="btn btn-ghost btn-sm" id="importData" type="button">Importér data</button>
+      <input type="file" id="importFile" accept="application/json" hidden>
+      <button class="btn btn-ghost btn-sm" id="resetAll" type="button">Nulstil alle data</button>
+    </div>
+  </footer>
+</main>
+
+<nav class="bottomnav" aria-label="Hurtig navigation">
+  <ul>
+    <li><a href="#program" data-nav="program"><span data-icon="calendar"></span>Program</a></li>
+    <li><a href="#fredag" data-nav="fredag"><span data-icon="bolt"></span>Fredag</a></li>
+    <li><a href="#timer" data-nav="timer"><span data-icon="timer"></span>Timer</a></li>
+    <li><a href="#tracker" data-nav="tracker"><span data-icon="chart"></span>Tracker</a></li>
+    <li><a href="#ovelser" data-nav="ovelser"><span data-icon="grid"></span>Øvelser</a></li>
+  </ul>
+</nav>
+
+<div class="mini-timer" id="miniTimer" data-phase="idle" role="region" aria-label="Kørende timer">
+  <button class="mini-main" id="miniGo" type="button" aria-label="Gå til timeren"><b id="miniTime">0:00</b><span id="miniPhase">WORK</span><small id="miniRound"></small></button>
+  <button class="icon-btn" id="miniToggle" type="button" aria-label="Pause"></button>
+</div>
+
+<dialog class="sheet" id="exSheet" aria-labelledby="sheetTitle"></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+/* ===== Illustrationsmotor: piktogram-figurer i SVG (START → SLUT) ===== */
+const G = 177; // gulvkontakt (y) for fødder
+const LEN = { torso: 48, neck: 19, thigh: 36, shin: 34, upper: 24, fore: 22, foot: 11 };
+const COL = { near: '#EEF3EC', far: '#7E8C83', farFront: '#C9D3C8', eq: '#26332C', eqLine: '#8FA096', lime: '#C8F03C', rest: '#4DB6FF' };
+const r1 = n => Math.round(n * 10) / 10;
+const rad = d => d * Math.PI / 180;
+
+function ik(root, target, a, b, bend) {
+  let dx = target[0] - root[0], dy = target[1] - root[1];
+  let d = Math.hypot(dx, dy) || 0.01;
+  const max = a + b - 0.4;
+  if (d > max) { const k = max / d; dx *= k; dy *= k; d = max; }
+  const ang = Math.atan2(dy, dx);
+  const c = (a * a + d * d - b * b) / (2 * a * d);
+  const th = Math.acos(Math.max(-1, Math.min(1, c)));
+  const ka = ang + bend * th;
+  return [[root[0] + a * Math.cos(ka), root[1] + a * Math.sin(ka)], [root[0] + dx, root[1] + dy]];
+}
+
+function joints(p) {
+  const hip = p.hip, t = rad(p.t || 0);
+  const sh = p.sh || [hip[0] + LEN.torso * Math.sin(t), hip[1] - LEN.torso * Math.cos(t)];
+  const dx = sh[0] - hip[0], dy = sh[1] - hip[1], dl = Math.hypot(dx, dy);
+  const head = p.head || [sh[0] + dx / dl * LEN.neck, sh[1] + dy / dl * LEN.neck];
+  const legs = (p.legs || []).map(l => {
+    const [k, f] = l.knee ? [l.knee, l.foot] : ik(hip, l.foot, LEN.thigh, LEN.shin, l.b ?? -1);
+    let toe = null;
+    if (l.toe) toe = l.toe;
+    else if (!p.front && l.toe !== false) toe = [f[0] + LEN.foot, f[1] + 1];
+    return { k, f, toe };
+  });
+  const arms = (p.arms || []).map(a => {
+    const [e, h] = a.elbow ? [a.elbow, a.hand] : ik(sh, a.hand, LEN.upper, LEN.fore, a.b ?? 1);
+    return { e, h };
+  });
+  return { hip, sh, head, legs, arms, front: !!p.front };
+}
+
+function ln(a, b, w, c, extra = '') {
+  return `<line x1="${r1(a[0])}" y1="${r1(a[1])}" x2="${r1(b[0])}" y2="${r1(b[1])}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"${extra}/>`;
+}
+
+function figure(J, hl = []) {
+  const W = { torso: 15, thigh: 11, shin: 10, upper: 9, fore: 8, foot: 7 };
+  const farC = J.front ? COL.farFront : COL.far;
+  const parts = [];
+  const limb = (i, isNear) => {
+    const c = isNear ? COL.near : farC;
+    const L = J.legs[i], A = J.arms[i];
+    return { c, L, A, i };
+  };
+  const pushLeg = ({ c, L, i }) => {
+    if (!L) return;
+    parts.push([J.hip, L.k, W.thigh, c, 'thigh', i]);
+    parts.push([L.k, L.f, W.shin, c, 'shin', i]);
+    if (L.toe) parts.push([L.f, L.toe, W.foot, c, 'foot', i]);
+  };
+  const pushArm = ({ c, A, i }) => {
+    if (!A) return;
+    parts.push([J.sh, A.e, W.upper, c, 'upper', i]);
+    parts.push([A.e, A.h, W.fore, c, 'fore', i]);
+  };
+  pushArm(limb(0, false)); pushLeg(limb(0, false));
+  parts.push([J.hip, J.sh, W.torso, COL.near, 'torso', 0]);
+  pushLeg(limb(1, true)); pushArm(limb(1, true));
+  const isHl = (tag, i) => hl.includes(tag) || hl.includes(tag + '.' + i);
+  let halo = '', body = '';
+  parts.forEach(([a, b, w, c, tag, i]) => {
+    if (isHl(tag, i)) halo += ln(a, b, w + 13, COL.lime, ' opacity=".26"');
+    body += ln(a, b, w, c);
+  });
+  const head = `<circle cx="${r1(J.head[0])}" cy="${r1(J.head[1])}" r="11.5" fill="${COL.near}"/>`;
+  // Hovedet tegnes før nærmeste arm, så armen kan krydse foran
+  const nearArmStart = body.lastIndexOf('<line', body.lastIndexOf('<line') - 1);
+  return halo + body.slice(0, nearArmStart) + head + body.slice(nearArmStart);
+}
+
+function arrow(d, dashed) {
+  return `<path d="${d}" fill="none" stroke="${COL.lime}" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#gkArrow)"${dashed ? ' stroke-dasharray="1 8" opacity=".85"' : ''}/>`;
+}
+function guide(d) { return `<path d="${d}" fill="none" stroke="${COL.lime}" stroke-width="2" stroke-dasharray="4 6" opacity=".7"/>`; }
+function arc(cx, cy, r, a0, a1) {
+  const p = a => [r1(cx + r * Math.cos(rad(a))), r1(cy + r * Math.sin(rad(a)))];
+  const [x0, y0] = p(a0), [x1, y1] = p(a1);
+  const large = Math.abs(a1 - a0) > 180 ? 1 : 0;
+  return `M${x0} ${y0} A${r} ${r} 0 ${large} ${a1 > a0 ? 1 : 0} ${x1} ${y1}`;
+}
+const rect = (x, y, w, h, rx = 4, fill = COL.eq, stroke = COL.eqLine, sw = 2) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+const circ = (cx, cy, r, fill = COL.eq, stroke = COL.eqLine, sw = 2.5) => `<circle cx="${r1(cx)}" cy="${r1(cy)}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+const bar = (a, b, w = 6, c = '#3B4A42') => ln(a, b, w, c);
+const mat = () => rect(6, G + 1, 158, 4, 2, '#24342B', 'none', 0);
+const kettlebell = h => `<path d="M${r1(h[0] - 7)} ${r1(h[1] + 9)} Q${r1(h[0])} ${r1(h[1] - 7)} ${r1(h[0] + 7)} ${r1(h[1] + 9)}" fill="none" stroke="${COL.eqLine}" stroke-width="3.5" stroke-linecap="round"/>` + circ(h[0], h[1] + 18, 10.5, '#34433B');
+const plate = h => circ(h[0], h[1], 19, '#25322B', COL.eqLine, 3) + circ(h[0], h[1], 3.5, COL.eqLine, 'none', 0);
+
+/* ---- Øvelsesdefinitioner ---- */
+const ILL = {
+  squat: {
+    hl: ['thigh'],
+    poses: [
+      { hip: [80, G - 70], legs: [{ foot: [77, G] }, { foot: [84, G] }], arms: [{ hand: [78, G - 74] }, { hand: [83, G - 74] }] },
+      { hip: [56, G - 37], t: 30, legs: [{ foot: [84, G] }, { foot: [90, G] }], arms: [{ hand: [120, G - 82] }, { hand: [124, G - 80] }] }
+    ],
+    arrows: [[arrow(`M54 ${G - 92} Q34 ${G - 76} 40 ${G - 50}`)], [arrow(`M30 ${G - 40} L30 ${G - 92}`, true)]]
+  },
+  calf: {
+    hl: ['shin'],
+    poses: [
+      { hip: [80, G - 70], legs: [{ foot: [76, G] }, { foot: [82, G] }], arms: [{ hand: [78, G - 74] }, { hand: [83, G - 74] }] },
+      { hip: [80, G - 80], legs: [{ foot: [76, G - 10], toe: [85, G] }, { foot: [82, G - 10], toe: [91, G] }], arms: [{ hand: [78, G - 84] }, { hand: [83, G - 84] }] }
+    ],
+    arrows: [[arrow(`M60 ${G - 4} L60 ${G - 34}`)], [arrow(`M60 ${G - 34} L60 ${G - 6}`, true)]]
+  },
+  latlunge: {
+    hl: ['thigh'],
+    poses: [
+      { front: 1, hip: [62, G - 69], legs: [{ foot: [55, G], b: 1 }, { foot: [69, G], b: -1 }], arms: [{ hand: [59, G - 92], b: 1 }, { hand: [65, G - 92], b: -1 }] },
+      { front: 1, hip: [96, G - 42], legs: [{ foot: [42, G], b: 1 }, { foot: [128, G], b: -1 }], arms: [{ hand: [93, G - 66], b: 1 }, { hand: [99, G - 66], b: -1 }] }
+    ],
+    arrows: [[arrow(`M86 ${G - 22} L140 ${G - 22}`)], [arrow(`M120 ${G - 142} L64 ${G - 142}`, true)]]
+  },
+  shuffle: {
+    hl: ['thigh'],
+    poses: [
+      { front: 1, hip: [52, G - 60], legs: [{ foot: [33, G], b: 1 }, { foot: [71, G], b: -1 }], arms: [{ hand: [33, G - 70], b: 1 }, { hand: [71, G - 70], b: -1 }] },
+      { front: 1, hip: [116, G - 60], legs: [{ foot: [97, G], b: 1 }, { foot: [135, G], b: -1 }], arms: [{ hand: [97, G - 70], b: 1 }, { hand: [135, G - 70], b: -1 }] }
+    ],
+    arrows: [[arrow(`M46 24 L136 24`)], [arrow(`M122 24 L34 24`, true)]]
+  },
+  bounds: {
+    hl: ['thigh', 'shin'],
+    poses: [
+      { front: 1, hip: [48, G - 66], legs: [{ foot: [42, G], b: 1 }, { foot: [64, G - 22], b: -1 }], arms: [{ hand: [24, G - 74] }, { hand: [34, G - 70] }] },
+      { front: 1, hip: [118, G - 66], legs: [{ foot: [102, G - 24], b: 1 }, { foot: [124, G], b: -1 }], arms: [{ hand: [136, G - 72], b: -1 }, { hand: [142, G - 78], b: -1 }] }
+    ],
+    arrows: [[arrow(`M70 ${G - 104} Q116 ${G - 176} 154 ${G - 100}`)], [arrow(`M98 ${G - 104} Q54 ${G - 176} 16 ${G - 100}`, true)]]
+  },
+  squatjump: {
+    hl: ['thigh', 'shin'],
+    poses: [
+      { hip: [56, G - 37], t: 30, legs: [{ foot: [84, G] }, { foot: [90, G] }], arms: [{ hand: [60, G - 42] }, { hand: [64, G - 40] }] },
+      { hip: [80, G - 88], legs: [{ foot: [78, G - 18], toe: [83, G - 8] }, { foot: [83, G - 18], toe: [88, G - 8] }], arms: [{ hand: [98, G - 170] }, { hand: [104, G - 167] }] }
+    ],
+    back: [null, () => `<ellipse cx="84" cy="${G + 5}" rx="20" ry="3.5" fill="${COL.lime}" opacity=".16"/>`],
+    arrows: [[arrow(`M124 ${G - 30} L124 ${G - 104}`)], [arrow(`M136 ${G - 104} L136 ${G - 30}`, true)]]
+  },
+  bulgarian: {
+    hl: ['thigh.1'],
+    poses: [
+      { hip: [84, G - 66], t: 5, legs: [{ foot: [40, G - 27], toe: [29, G - 26], b: -1 }, { foot: [112, G] }], arms: [{ hand: [86, G - 72] }, { hand: [90, G - 72] }] },
+      { hip: [79, G - 38], t: 10, legs: [{ foot: [40, G - 27], toe: [29, G - 26], b: -1 }, { foot: [112, G] }], arms: [{ hand: [90, G - 44] }, { hand: [94, G - 44] }] }
+    ],
+    back: [() => bench(), () => bench()],
+    arrows: [[arrow(`M134 ${G - 120} L134 ${G - 70}`)], [arrow(`M134 ${G - 70} L134 ${G - 120}`, true)]]
+  },
+  rdl: {
+    hl: ['thigh', 'torso'],
+    poses: [
+      { hip: [80, G - 70], legs: [{ foot: [83, G] }, { foot: [88, G] }], arms: [{ hand: [84, G - 76] }, { hand: [88, G - 76] }] },
+      { hip: [60, G - 60], t: 72, legs: [{ foot: [83, G] }, { foot: [88, G] }], arms: [{ hand: [104, G - 31] }, { hand: [108, G - 31] }] }
+    ],
+    back: [J => plate(J.arms[1].h), J => plate(J.arms[1].h)],
+    arrows: [[arrow(`M62 ${G - 96} Q42 ${G - 88} 38 ${G - 62}`)], [arrow(`M138 ${G - 100} Q140 ${G - 146} 110 ${G - 158}`, true)]]
+  },
+  farmer: {
+    hl: ['fore', 'upper', 'torso'],
+    poses: [
+      { hip: [52, G - 70], legs: [{ foot: [49, G] }, { foot: [56, G] }], arms: [{ hand: [50, G - 74] }, { hand: [55, G - 74] }] },
+      { hip: [104, G - 67], legs: [{ foot: [88, G] }, { foot: [121, G] }], arms: [{ hand: [102, G - 71] }, { hand: [107, G - 71] }] }
+    ],
+    back: [J => kettlebell(J.arms[0].h), J => kettlebell(J.arms[0].h)],
+    front: [J => kettlebell(J.arms[1].h), J => kettlebell(J.arms[1].h)],
+    arrows: [[arrow(`M40 22 L128 22`)], [arrow(`M70 22 L150 22`, true)]]
+  },
+  latpull: {
+    hl: ['upper', 'torso'],
+    poses: [
+      { front: 1, hip: [85, G - 44], legs: [{ knee: [70, G - 42], foot: [68, G] }, { knee: [100, G - 42], foot: [102, G] }], arms: [{ hand: [62, G - 131] }, { hand: [108, G - 131] }] },
+      { front: 1, hip: [85, G - 44], legs: [{ knee: [70, G - 42], foot: [68, G] }, { knee: [100, G - 42], foot: [102, G] }], arms: [{ hand: [60, G - 96], b: -1 }, { hand: [110, G - 96], b: 1 }] }
+    ],
+    back: [J => latMachine(J.arms[0].h[1]), J => latMachine(J.arms[0].h[1])],
+    front: [J => latBar(J.arms[0].h[1]), J => latBar(J.arms[0].h[1])],
+    arrows: [[arrow(`M156 ${G - 136} L156 ${G - 96}`)], [arrow(`M156 ${G - 96} L156 ${G - 136}`, true)]]
+  },
+  fastfeet: {
+    hl: ['shin'],
+    poses: [
+      { front: 1, hip: [84, G - 62], legs: [{ foot: [66, G - 12], b: 1 }, { foot: [102, G], b: -1 }], arms: [{ hand: [63, G - 70], b: 1 }, { hand: [105, G - 70], b: -1 }] },
+      { front: 1, hip: [84, G - 62], legs: [{ foot: [66, G], b: 1 }, { foot: [102, G - 12], b: -1 }], arms: [{ hand: [63, G - 70], b: 1 }, { hand: [105, G - 70], b: -1 }] }
+    ],
+    arrows: [[arrow(`M44 ${G - 2} L44 ${G - 30}`), arrow(`M124 ${G - 30} L124 ${G - 4}`, true)], [arrow(`M124 ${G - 2} L124 ${G - 30}`), arrow(`M44 ${G - 30} L44 ${G - 4}`, true)]]
+  },
+  sideplank: {
+    hl: ['torso'],
+    poses: [
+      { hip: [80, G - 4], sh: [36, G - 24], head: [19, G - 32], legs: [{ foot: [150, G - 3], toe: false }, { foot: [150, G], toe: false }], arms: [{ elbow: [36, G], hand: [14, G] }, { hand: [38, G - 70] }] },
+      { hip: [83, G - 14], sh: [36, G - 24], head: [17, G - 28], legs: [{ foot: [151, G - 3], toe: false }, { foot: [151, G], toe: false }], arms: [{ elbow: [36, G], hand: [14, G] }, { hand: [38, G - 70] }] }
+    ],
+    back: [mat, mat],
+    arrows: [[arrow(`M88 ${G - 22} L88 ${G - 54}`)], [guide(`M10 ${G - 36} L160 ${G - 4}`)]]
+  },
+  deadbug: {
+    hl: ['torso'],
+    poses: [
+      { hip: [96, G - 3], sh: [48, G - 3], head: [28, G - 8], legs: [{ knee: [98, G - 39], foot: [132, G - 39], toe: [134, G - 50] }, { knee: [94, G - 39], foot: [128, G - 39], toe: [130, G - 50] }], arms: [{ hand: [50, G - 49] }, { hand: [46, G - 49] }] },
+      { hip: [96, G - 3], sh: [48, G - 3], head: [28, G - 8], legs: [{ knee: [98, G - 39], foot: [132, G - 39], toe: [134, G - 50] }, { foot: [158, G - 18], toe: [160, G - 29], b: -1 }], arms: [{ hand: [8, G - 20] }, { hand: [46, G - 49] }] }
+    ],
+    back: [mat, mat],
+    arrows: [[arrow(`M40 ${G - 62} Q12 ${G - 56} 10 ${G - 34}`), arrow(`M140 ${G - 52} Q158 ${G - 48} 160 ${G - 28}`)], []]
+  },
+  bike: {
+    hl: ['thigh'],
+    labels: ['CYKEL', 'CROSSTRAINER'], mid: 'eller',
+    poses: [
+      { hip: [66, G - 90], t: 25, legs: [{ foot: [77, G - 42] }, { foot: [99, G - 28] }], arms: [{ hand: [108, G - 110] }, { hand: [112, G - 110] }] },
+      { hip: [76, G - 88], t: 6, legs: [{ foot: [62, G - 30], toe: [73, G - 29] }, { foot: [84, G - 22], toe: [95, G - 21] }], arms: [{ hand: [116, G - 138] }, { hand: [108, G - 136] }] }
+    ],
+    back: [() => bikeMachine(), () => crossMachine()],
+    arrows: [[arrow(arc(88, G - 34, 23, -100, 160))], [arrow(`M46 ${G - 20} A32 11 0 1 1 ${80} ${G - 9}`)]]
+  },
+  assault: {
+    hl: ['thigh', 'upper'],
+    labels: ['SKUB', 'TRÆK'],
+    poses: [
+      { hip: [68, G - 88], t: 15, legs: [{ foot: [78, G - 42] }, { foot: [102, G - 26] }], arms: [{ hand: [96, G - 122] }, { hand: [116, G - 116] }] },
+      { hip: [68, G - 88], t: 15, legs: [{ foot: [102, G - 26] }, { foot: [78, G - 42] }], arms: [{ hand: [116, G - 116] }, { hand: [96, G - 122] }] }
+    ],
+    back: [J => assaultMachine(J), J => assaultMachine(J)],
+    arrows: [[arrow(arc(124, G - 50, 41, -160, -40))], [arrow(arc(124, G - 50, 41, -160, -40))]]
+  },
+  pallof: { custom: pallofPanel, labels: ['START', 'SLUT'] }
+};
+
+function bench() {
+  return rect(12, G - 22, 46, 9, 4, '#34433B', COL.eqLine, 2) + bar([20, G - 13], [20, G + 4], 5) + bar([50, G - 13], [50, G + 4], 5);
+}
+function latMachine(barY) {
+  return bar([30, 24], [30, G + 4], 6) + bar([140, 24], [140, G + 4], 6) + bar([30, 24], [140, 24], 7) +
+    circ(85, 32, 7, '#34433B') + ln([85, 39], [85, barY - 2], 2.2, COL.eqLine) +
+    bar([85, G - 30], [85, G + 4], 7) + rect(56, G - 39, 58, 9, 4.5, '#34433B');
+}
+function latBar(y) {
+  return `<path d="M30 ${y + 9} L42 ${y - 2} L128 ${y - 2} L140 ${y + 9}" fill="none" stroke="#A9B8AE" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+function bikeMachine() {
+  return rect(26, G - 1, 34, 6, 3, '#34433B', 'none', 0) + rect(104, G - 1, 44, 6, 3, '#34433B', 'none', 0) +
+    bar([46, G + 1], [64, G - 74], 7) + bar([68, G - 38], [124, G - 28], 6) + bar([118, G - 40], [112, G - 108], 6) +
+    `<path d="M98 ${G - 113} L114 ${G - 109} L120 ${G - 100}" fill="none" stroke="#3B4A42" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>` +
+    circ(124, G - 28, 21, '#1B2520') + circ(124, G - 28, 4, COL.eqLine, 'none', 0) +
+    rect(50, G - 85, 30, 7, 3.5, '#34433B') + circ(88, G - 34, 5, COL.eqLine, 'none', 0) +
+    ln([77, G - 42], [99, G - 28], 3.5, COL.eqLine);
+}
+function crossMachine() {
+  return rect(18, G - 2, 136, 6, 3, '#34433B', 'none', 0) + rect(118, G - 60, 32, 58, 14, '#1B2520') +
+    bar([134, G - 60], [130, G - 128], 6) + rect(118, G - 142, 26, 13, 4, '#34433B') +
+    ln([126, G - 82], [118, G - 140], 5, '#2F3D35') + ln([126, G - 80], [108, G - 136], 5, '#4A5B51') +
+    ln([52, G - 26], [76, G - 26], 5, COL.eqLine) + ln([76, G - 26], [120, G - 40], 4, '#3B4A42') +
+    ln([74, G - 18], [98, G - 18], 5, COL.eqLine) + ln([98, G - 18], [120, G - 30], 4, '#3B4A42');
+}
+function assaultMachine(J) {
+  let vents = '';
+  for (let i = 0; i < 12; i++) { const a = rad(i * 30); vents += ln([124 + 11 * Math.cos(a), G - 50 + 11 * Math.sin(a)], [124 + 26 * Math.cos(a), G - 50 + 26 * Math.sin(a)], 3, '#3B4A42'); }
+  const P = [104, G - 58];
+  return rect(22, G - 1, 132, 6, 3, '#34433B', 'none', 0) + circ(124, G - 50, 32, '#18221D', COL.eqLine, 3) + vents + circ(124, G - 50, 6, COL.eqLine, 'none', 0) +
+    bar([60, G + 2], [64, G - 74], 7) + rect(50, G - 83, 30, 7, 3.5, '#34433B') + bar([64, G - 38], [124, G - 50], 6) +
+    circ(90, G - 34, 5, COL.eqLine, 'none', 0) + ln(J.legs[0].f, J.legs[1].f, 3.5, COL.eqLine) +
+    ln(P, J.arms[0].h, 5, '#2F3D35') + ln(P, J.arms[1].h, 5, '#4A5B51') + circ(P[0], P[1], 4, COL.eqLine, 'none', 0);
+}
+function pallofPanel(i) {
+  const hands = i === 0 ? [[93, 120], [99, 120]] : [[93, 152], [99, 152]];
+  const elbows = i === 0 ? [[78, 114], [114, 114]] : [[84, 126], [108, 126]];
+  const hy = hands[0][1] + 1;
+  let s = `<text x="85" y="20" text-anchor="middle" class="illu-note">SET OPPEFRA</text>`;
+  s += rect(8, 54, 20, 92, 5, '#1B2520') + circ(28, 96, 4, COL.eqLine, 'none', 0);
+  s += `<ellipse cx="96" cy="100" rx="34" ry="17" fill="${COL.lime}" opacity=".22"/>`;
+  s += `<ellipse cx="82" cy="120" rx="6" ry="10" fill="${COL.far}"/><ellipse cx="110" cy="120" rx="6" ry="10" fill="${COL.far}"/>`;
+  s += ln([28, 96], [96, hy], 2.2, COL.eqLine);
+  s += ln([72, 97], [120, 97], 17, COL.near);
+  s += ln([75, 99], elbows[0], 9, COL.near) + ln(elbows[0], hands[0], 8, COL.near);
+  s += ln([117, 99], elbows[1], 9, COL.near) + ln(elbows[1], hands[1], 8, COL.near);
+  s += `<rect x="89" y="${hy - 3}" width="14" height="7" rx="3" fill="#A9B8AE"/>`;
+  s += `<circle cx="96" cy="95" r="12" fill="${COL.near}" stroke="#111A15" stroke-width="2.5"/>`;
+  if (i === 0) s += arrow(`M140 118 L140 156`);
+  else s += arrow(`M136 70 Q104 52 74 66`, true) + `<path d="M98 50 l10 10 M108 50 l-10 10" stroke="#FF6B5B" stroke-width="3.5" stroke-linecap="round"/>`;
+  return s;
+}
+
+function illustration(id, cls = '') {
+  const X = ILL[id];
+  if (!X) return '';
+  const labels = X.labels || ['START', 'SLUT'];
+  const nm = (typeof EX !== 'undefined' && EX[id]) ? EX[id].name : 'Øvelse';
+  let s = `<svg viewBox="0 0 360 212" class="illu ${cls}" role="img" aria-label="${nm}: ${labels[0].toLowerCase()} og ${labels[1].toLowerCase()}" focusable="false">`;
+  for (let i = 0; i < 2; i++) {
+    s += `<g transform="translate(${i * 190},0)">`;
+    s += `<rect x="0.5" y="0.5" width="169" height="211" rx="18" fill="#111A15" stroke="#21302A"/>`;
+    if (X.custom) {
+      s += X.custom(i);
+    } else {
+      s += `<line x1="10" y1="${G + 5}" x2="160" y2="${G + 5}" stroke="#2D3D34" stroke-width="2"/>`;
+      const J = joints(X.poses[i]);
+      const back = X.back && X.back[i]; if (back) s += back(J);
+      s += figure(J, X.hl);
+      const front = X.front && X.front[i]; if (front) s += front(J);
+      (X.arrows[i] || []).forEach(a => s += a);
+    }
+    s += `<text x="85" y="202" text-anchor="middle" class="illu-label">${labels[i]}</text>`;
+    s += `</g>`;
+  }
+  if (X.mid) s += `<text x="180" y="110" text-anchor="middle" class="illu-mid">${X.mid}</text>`;
+  else s += `<path d="M175 96 L185 106 L175 116" fill="none" stroke="${COL.lime}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+  return s + `</svg>`;
+}
+
+/* ===== Ikoner ===== */
+const SV = (inner, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"${extra}>${inner}</svg>`;
+const ICON = {
+  ball: SV('<circle cx="12" cy="12" r="9"/><path d="M12 7.5l4 2.9-1.5 4.6h-5L8 10.4z"/><path d="M12 7.5V3.2M16 10.4l4-1.3M14.5 15l2.5 3.6M9.5 15L7 18.6M8 10.4L4 9.1"/>'),
+  dumbbell: SV('<path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/>'),
+  bolt: SV('<path d="M13 2.5L4.5 14H11l-1 7.5L18.5 10H12z"/>'),
+  glove: SV('<path d="M7 21v-4.3L4.6 13.2a1.9 1.9 0 0 1 3-2.4L9 12.3V5.2a1.5 1.5 0 0 1 3 0V11V3.9a1.5 1.5 0 0 1 3 0V11V5.4a1.5 1.5 0 0 1 3 0v8.1c0 4.4-2.5 7.5-6.6 7.5z"/><path d="M7.2 18.3h8"/>'),
+  moon: SV('<path d="M20 14.6A8.2 8.2 0 0 1 9.4 4 8.2 8.2 0 1 0 20 14.6z"/>'),
+  calendar: SV('<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'),
+  timer: SV('<circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 2M9.5 2.5h5"/>'),
+  chart: SV('<path d="M3.5 20.5h17M6.5 17v-5M11 17V7.5M15.5 17v-7M20 17V4.5"/>'),
+  grid: SV('<rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>'),
+  check: SV('<path d="M5 12.5l4.5 4.5L19 7.5"/>', ' stroke-width="3.2"'),
+  flame: SV('<path d="M12 3c1 3.6 5.2 5.5 5.2 10.2a5.2 5.2 0 0 1-10.4 0c0-2.6 1.4-4.2 2.6-5.3.3 1.9 1 2.9 2.1 3.3C11 8.9 11 6.1 12 3z"/>'),
+  pulse: SV('<path d="M2.5 12.5h4l2.5-6.5 4 13 2.6-6.5h5.9"/>'),
+  core: SV('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>'),
+  play: SV('<path d="M7.5 4.8v14.4L19 12z" fill="currentColor" stroke="none"/>'),
+  pause: SV('<rect x="6" y="5" width="4.2" height="14" rx="1.2" fill="currentColor" stroke="none"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.2" fill="currentColor" stroke="none"/>'),
+  reset: SV('<path d="M4.5 12a7.5 7.5 0 1 0 2.3-5.4"/><path d="M4.5 3.5V8H9"/>'),
+  close: SV('<path d="M6 6l12 12M18 6L6 18"/>', ' stroke-width="2.6"'),
+  trash: SV('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
+  down: SV('<path d="M12 5v14M6.5 13.5L12 19l5.5-5.5"/>', ' stroke-width="2.6"'),
+  repeat: SV('<path d="M17 2.5L20.5 6 17 9.5"/><path d="M3.5 11.5V10a4 4 0 0 1 4-4h13M7 21.5L3.5 18 7 14.5"/><path d="M20.5 12.5V14a4 4 0 0 1-4 4h-13"/>'),
+  talk: SV('<path d="M4 5h16v11H9.5L4 20z"/><path d="M8 9.5h8M8 12.5h5"/>'),
+  back: SV('<path d="M19 12H5M11 6l-6 6 6 6"/>'),
+  tip: SV('<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>'),
+  test: SV('<path d="M9 3h6M10 3v5.5L5 19a1.5 1.5 0 0 0 1.4 2h11.2A1.5 1.5 0 0 0 19 19l-5-10.5V3"/><path d="M7.5 15h9"/>')
+};
+
+/* ===== Øvelser ===== */
+const CATS = ['Alle', 'Kondition', 'Bevægelse', 'Eksplosiv', 'Styrke', 'Core'];
+const EX = {
+  bike: {
+    name: 'Cykel / crosstrainer', cat: 'Kondition',
+    goal: 'Opvarmning og aerob base med lav belastning på leddene.',
+    how: ['Indstil sadlen, så knæet er let bøjet, når pedalen er i bund.', 'Træd i jævnt tempo, og justér modstanden, til du rammer den rigtige RPE.', 'Hold tempoet hele vejen, og træk vejret roligt og dybt.'],
+    dose: '5–30 min', rest: 'Ingen', tips: ['Taletest ved RPE 5–6: du kan sige korte sætninger.', 'Crosstrainer: hold overkroppen rank, og brug også armene.'], secs: 360
+  },
+  assault: {
+    name: 'Assault bike', cat: 'Kondition',
+    goal: 'Korte, hårde ryk med arme og ben, ligesom en eksplosiv aktion i målet.',
+    how: ['Sæt dig med fødderne på pedalerne og hænderne på håndtagene.', 'Skub og træk i håndtagene, mens du træder hårdt. Arme og ben arbejder sammen.', 'Sænk tempoet helt ved signalet, og træk vejret dybt.'],
+    dose: '15–30 sek hårdt', rest: '40–60 sek let', tips: ['Hårdt fra første sekund, ingen langsom opstart.', 'Hold hovedet roligt og blikket frem, som når du følger bolden.'], secs: 20
+  },
+  shuffle: {
+    name: 'Lateral shuffle', cat: 'Bevægelse',
+    goal: 'Hurtig sideværts bevægelse på stregen.',
+    how: ['Målmandsstilling: bøjede knæ, vægt på forfoden og hænderne klar.', 'Skub fra med det ene ben, og flyt dig sidelæns uden at samle fødderne.', 'Stop kontrolleret, og skift retning.'],
+    dose: '20 sek', rest: '30 sek', tips: ['Hold hofterne i samme højde hele vejen.', 'Fødderne må ikke krydse eller slå sammen.'], secs: 20
+  },
+  squat: {
+    name: 'Bodyweight squat', cat: 'Styrke',
+    goal: 'Styrke og kontrol i ben og hofter.',
+    how: ['Stå med fødderne i skulderbredde og tæerne let udad.', 'Sæt dig ned og tilbage, til lårene er vandrette. Armene frem.', 'Pres op gennem hele foden, til du står helt oprejst.'],
+    dose: '10 reps', rest: '30 sek', tips: ['Knæene følger tæerne.', 'Brystet op og ryggen lige.']
+  },
+  latlunge: {
+    name: 'Lateral lunge', cat: 'Bevægelse',
+    goal: 'Styrke og bevægelighed til sideværts aktioner.',
+    how: ['Stå samlet med hænderne foran brystet.', 'Tag et langt skridt til siden, og sæt dig ned på det bøjede ben. Det andet ben er strakt.', 'Skub dig tilbage til start, og skift side.'],
+    dose: '6/side', rest: '30 sek', tips: ['Hælen bliver i gulvet.', 'Sid tilbage i hoften, ikke frem over knæet.']
+  },
+  calf: {
+    name: 'Calf raise', cat: 'Styrke',
+    goal: 'Stærke læg og ankler til afsæt og landinger.',
+    how: ['Stå oprejst med fødderne i hoftebredde.', 'Pres op på tæerne, så højt du kan.', 'Sænk langsomt ned igen på 2 sekunder.'],
+    dose: '15 reps', rest: '30 sek', tips: ['Hold et kort stop i toppen.', 'Brug en væg til balance, hvis du har brug for det.']
+  },
+  pallof: {
+    name: 'Pallof press', cat: 'Core',
+    goal: 'Stabil core: modstå rotation, når kroppen bliver trukket.',
+    how: ['Stå sidelæns til kabeltårnet med håndtaget ind mod brystet.', 'Pres håndtaget lige frem, til armene er strakte.', 'Hold 1 sekund uden at dreje, og før håndtaget tilbage.'],
+    dose: '10/side', rest: '30 sek', tips: ['Hofter og skuldre peger frem hele tiden.', 'Spænd maven, som om du skal tage et skud på kroppen.']
+  },
+  deadbug: {
+    name: 'Dead bug', cat: 'Core',
+    goal: 'Kontrol i core, mens arme og ben bevæger sig.',
+    how: ['Lig på ryggen. Armene lige op, hofter og knæ i 90 grader.', 'Stræk modsat arm og ben langsomt ud mod gulvet.', 'Før dem tilbage, og skift side.'],
+    dose: '8/side', rest: '30 sek', tips: ['Lænden presset ned i måtten hele tiden.', 'Pust langsomt ud, mens du strækker.']
+  },
+  sideplank: {
+    name: 'Side plank', cat: 'Core',
+    goal: 'Stærke skrå mavemuskler og en stabil hofte.',
+    how: ['Lig på siden med albuen lige under skulderen.', 'Løft hoften, så kroppen er en lige linje fra fødder til hoved.', 'Hold positionen, og skift side.'],
+    dose: '25 sek/side', rest: '30 sek', tips: ['Hoften må ikke synke.', 'Pres albuen ned i gulvet.'], secs: 25, perSide: true
+  },
+  bounds: {
+    name: 'Lateral bounds', cat: 'Eksplosiv',
+    goal: 'Eksplosiv lateral bevægelse, som afsættet til en redning.',
+    how: ['Stå på ét ben med let bøjet knæ.', 'Spring eksplosivt til siden over på det andet ben.', 'Land blødt og kontrolleret, og hold balancen et øjeblik.'],
+    dose: '5/side', rest: '60 sek', tips: ['Land på forfoden med bøjet knæ.', 'Brug armene i afsættet.']
+  },
+  squatjump: {
+    name: 'Squat jumps', cat: 'Eksplosiv',
+    goal: 'Eksplosiv kraft lodret op, til de høje bolde.',
+    how: ['Gå ned i en squat med armene bagud.', 'Spring eksplosivt op, og sving armene op.', 'Land blødt i squat, og nulstil før næste hop.'],
+    dose: '5 reps', rest: '60 sek', tips: ['Kvalitet før tempo.', 'Land stille. Lyt efter landingen.']
+  },
+  bulgarian: {
+    name: 'Bulgarian split squat', cat: 'Styrke',
+    goal: 'Benstyrke på ét ben ad gangen.',
+    how: ['Bageste fod på bænken, forreste fod et stort skridt frem.', 'Sænk dig lige ned, til bageste knæ næsten rører gulvet.', 'Pres op gennem forreste hæl.'],
+    dose: '8/ben', rest: '90 sek', tips: ['Overkroppen må gerne læne lidt frem.', 'Forreste knæ følger tæerne.']
+  },
+  rdl: {
+    name: 'Romanian deadlift', cat: 'Styrke',
+    goal: 'Stærk bagside af lår, baller og ryg.',
+    how: ['Stå med stangen foran lårene og let bøjede knæ.', 'Skub hofterne bagud, og lad stangen glide ned langs benene.', 'Pres hofterne frem og rejs dig, når du mærker strækket bag lårene.'],
+    dose: '8 reps', rest: '90 sek', tips: ['Ryggen er lige hele tiden.', 'Hold stangen tæt på kroppen.']
+  },
+  latpull: {
+    name: 'Lat pulldown', cat: 'Styrke',
+    goal: 'Stærk ryg og skuldre til udspark, udkast og høje bolde.',
+    how: ['Sæt dig med lårene under puderne, og tag et bredt greb om stangen.', 'Træk stangen ned til øverste del af brystet.', 'Før stangen kontrolleret op igen.'],
+    dose: '10 reps', rest: '90 sek', tips: ['Træk albuerne ned mod siderne.', 'Læn dig kun lidt tilbage.']
+  },
+  farmer: {
+    name: 'Farmer’s walk', cat: 'Core',
+    goal: 'Greb, core og holdning under belastning.',
+    how: ['Tag en tung kettlebell eller håndvægt i hver hånd.', 'Gå med korte, rolige skridt og rank ryg.', 'Sæt vægtene kontrolleret ned efter distancen.'],
+    dose: '30–40 m', rest: '60 sek', tips: ['Skuldrene ned og tilbage.', 'Lad ikke vægtene slå mod benene.']
+  },
+  fastfeet: {
+    name: 'Hurtige fødder', cat: 'Bevægelse',
+    goal: 'Hurtige, lette fødder og parathed til næste aktion.',
+    how: ['Stå i målmandsstilling på forfoden.', 'Lav hurtige, korte trip på stedet.', 'Stop i balance med vægten fremme.'],
+    dose: '10 sek', rest: '30 sek', tips: ['Fødderne lige over gulvet.', 'Overkroppen rolig, hænderne klar.'], secs: 10
+  }
+};
+
+/* ===== Timer-byggesten ===== */
+const S = (type, secs, label) => ({ type, secs, label });
+const R = label => ({ type: 'reps', secs: 0, label });
+function rounds(n, segs, skipLast = true) {
+  const out = [];
+  for (let r = 1; r <= n; r++) {
+    segs.forEach((s, i) => {
+      if (skipLast && r === n && i === segs.length - 1 && s.type === 'rest') return;
+      out.push({ ...s, round: r, rounds: n });
+    });
+  }
+  return out;
+}
+const single = (secs, label) => [{ ...S('work', secs, label), round: 1, rounds: 1 }];
+const sides = (secs, name) => [{ ...S('work', secs, name + ' · venstre side'), round: 1, rounds: 1 }, { ...S('rest', 8, 'Skift side'), round: 1, rounds: 1 }, { ...S('work', secs, name + ' · højre side'), round: 1, rounds: 1 }];
+
+/* ===== Blokke ===== */
+const WARM = (min = 6, label = '5–8 min') => ({
+  id: 'warm', icon: 'flame', title: 'Opvarmning', tags: [label, 'RPE 3–4'],
+  items: [{ ex: 'bike', dose: label, note: 'RPE 3–4 · roligt tempo', secs: min * 60 }],
+  timer: { name: 'Opvarmning', segs: single(min * 60, 'Opvarmning · RPE 3–4') }
+});
+const CONT = (min, rpe, title = 'Kondition', talk = false) => ({
+  id: 'cardio', icon: 'pulse', title, tags: [`${min} min kontinuerligt`, rpe],
+  callout: talk ? 'Du skal kunne tale i korte sætninger, men det skal føles som træning.' : null,
+  items: [{ ex: 'bike', dose: `${min} min`, note: `${rpe} · cykel, crosstrainer eller løb`, secs: min * 60 }],
+  timer: { name: `${title} · ${min} min`, segs: single(min * 60, `Kontinuerligt · ${rpe}`) }
+});
+const BLOCKS5 = (n, base, peak) => ({
+  id: 'cardio', icon: 'pulse', title: 'Kondition', tags: [`${n} × 5 min`, '1 min let mellem blokke'],
+  ivl: { steps: [{ t: '4 min', l: base, k: 'work' }, { t: '1 min', l: peak, k: 'push' }, { t: '1 min', l: 'Let cykling', k: 'rest' }], reps: n, foot: 'Den lette minut kun mellem blokkene' },
+  items: [{ ex: 'bike', dose: `${n} × 5 min`, note: `4 min ${base} + 1 min ${peak}` }],
+  timer: { name: `Kondition · ${n} × 5 min`, segs: rounds(n, [S('work', 240, `Blok · ${base}`), S('push', 60, `Skru op · ${peak}`), S('rest', 60, 'Let cykling')]) }
+});
+const INTERVALS = (n, work, rest, rpe) => ({
+  id: 'intervals', icon: 'bolt', title: 'Intervaller', tags: [`${n} ×`, `${work}/${rest} sek`, rpe],
+  ivl: { steps: [{ t: `${work}s`, l: 'Hard', k: 'work', sub: rpe }, { t: `${rest}s`, l: 'Easy', k: 'rest', sub: 'meget let' }], reps: n },
+  items: [{ ex: 'assault', name: 'Assault bike eller cykel', dose: `${n} × ${work} sek`, note: `Hårdt · ${rpe}` }],
+  timer: { name: `Intervaller · ${n} × ${work}/${rest}`, segs: rounds(n, [S('work', work, `Hårdt · ${rpe}`), S('rest', rest, 'Meget let')]) }
+});
+
+/* ===== 8 uger ===== */
+const PHASES = [
+  { weeks: [1, 2], title: 'UGE 1–2 · BYG MOTOREN', desc: 'Vi bygger den aerobe base, som gør det lettere at holde overskud og koncentration gennem hele kampen.' },
+  { weeks: [3, 4], title: 'UGE 3–4 · ØG KAPACITETEN', desc: 'Nu begynder vi at kombinere kondition med gentagne eksplosive målmandsaktioner.' },
+  { weeks: [5, 6], title: 'UGE 5–6 · KAMPMOTOR', desc: 'Nu træner vi evnen til at lave gentagne aktioner og hurtigt blive klar igen.' },
+  { weeks: [7], title: 'UGE 7 · PEAK', desc: 'Nu tester vi, om du kan arbejde hårdt og stadig være klar.' },
+  { weeks: [8], title: 'UGE 8 · TEST & DELOAD', desc: 'Vi reducerer belastningen og tester din udvikling.' }
+];
+const phaseOf = n => PHASES.findIndex(p => p.weeks.includes(n));
+
+function buildWeek(n) {
+  const blocks = [];
+  if (n <= 2) {
+    blocks.push(WARM());
+    blocks.push(CONT(n === 1 ? 25 : 30, 'RPE 5–6', 'Kondition', true));
+    blocks.push({
+      id: 'move', icon: 'glove', title: 'Målmands\u00ADbevægelse', tags: ['3 runder', 'Pause 30 sek'],
+      items: [{ ex: 'shuffle', dose: '20 sek', secs: 20 }, { ex: 'squat', dose: '10 reps' }, { ex: 'latlunge', dose: '6/side' }, { ex: 'calf', dose: '15 reps' }],
+      timer: { name: 'Målmandsbevægelse · 3 runder', segs: rounds(3, [S('work', 20, 'Lateral shuffle'), R('Bodyweight squat × 10'), R('Lateral lunge × 6/side'), R('Calf raise × 15'), S('rest', 30, 'Pause')]) }
+    });
+    blocks.push({
+      id: 'core', icon: 'core', title: 'Core', tags: ['3 runder'],
+      items: [{ ex: 'pallof', dose: '10/side' }, { ex: 'deadbug', dose: '8/side' }, { ex: 'sideplank', dose: '25 sek/side', secs: 25, perSide: true }],
+      timer: { name: 'Core · 3 runder', segs: rounds(3, [R('Pallof press × 10/side'), R('Dead bug × 8/side'), S('work', 25, 'Side plank · venstre side'), S('rest', 8, 'Skift side'), S('work', 25, 'Side plank · højre side'), S('rest', 30, 'Pause')]) }
+    });
+  } else if (n <= 4) {
+    blocks.push(WARM());
+    blocks.push(n === 3 ? BLOCKS5(4, 'RPE 5–6', 'RPE 7') : BLOCKS5(5, 'RPE 6', 'RPE 8'));
+    blocks.push({
+      id: 'actions', icon: 'glove', title: 'Gentagne målmands\u00ADaktioner', tags: ['4 runder', 'Pause 90 sek'],
+      ivl: { steps: [{ t: '20 sek', l: 'Assault bike hårdt', k: 'work' }, { t: '5/side', l: 'Lateral bounds', k: 'reps' }, { t: '5', l: 'Squat jumps', k: 'reps' }, { t: '40 sek', l: 'Rolig cykel', k: 'rest' }, { t: '90 sek', l: 'Pause', k: 'rest' }], reps: 4 },
+      items: [{ ex: 'assault', dose: '20 sek', note: 'Hårdt', secs: 20 }, { ex: 'bounds', dose: '5/side' }, { ex: 'squatjump', dose: '5 reps' }],
+      timer: { name: 'Målmandsaktioner · 4 runder', segs: rounds(4, [S('work', 20, 'Assault bike · hårdt'), R('Lateral bounds × 5/side'), R('Squat jumps × 5'), S('rest', 40, 'Rolig cykel'), S('rest', 90, 'Pause')]) }
+    });
+    blocks.push({
+      id: 'core', icon: 'core', title: 'Core', tags: ['3 sæt', 'Pause 60 sek'],
+      items: [{ ex: 'pallof', dose: '3 × 10/side' }, { ex: 'farmer', dose: '3 × 30 m' }, { ex: 'deadbug', dose: '3 × 10' }],
+      restTimer: 60
+    });
+  } else if (n <= 6) {
+    blocks.push(WARM());
+    blocks.push(CONT(20, 'RPE 6', 'Aerobt arbejde'));
+    blocks.push(INTERVALS(10, 30, 60, 'RPE 8'));
+    blocks.push({
+      id: 'circuit', icon: 'glove', title: 'Målmands-circuit', tags: ['4 runder', 'Pause 60 sek'],
+      items: [{ ex: 'shuffle', dose: '20 sek', secs: 20 }, { ex: 'assault', dose: '20 sek', secs: 20 }, { ex: 'squatjump', dose: '20 sek', secs: 20 }, { rest: '20 sek', label: 'Rolig bevægelse' }, { rest: '60 sek', label: 'Pause' }],
+      timer: { name: 'Målmands-circuit · 4 runder', segs: rounds(4, [S('work', 20, 'Lateral shuffle'), S('work', 20, 'Assault bike'), S('work', 20, 'Squat jumps'), S('rest', 20, 'Rolig bevægelse'), S('rest', 60, 'Pause')]) }
+    });
+    blocks.push({
+      id: 'strength', icon: 'dumbbell', title: 'Let styrke', tags: ['2 sæt', 'Pause 90 sek'],
+      items: [{ ex: 'bulgarian', dose: '2 × 8/ben' }, { ex: 'latpull', dose: '2 × 10' }, { ex: 'rdl', dose: '2 × 8' }, { ex: 'pallof', dose: '2 × 10/side' }],
+      restTimer: 90
+    });
+  } else if (n === 7) {
+    blocks.push(WARM());
+    const c = INTERVALS(12, 30, 45, 'RPE 8–9'); c.id = 'cardio'; c.title = 'Kondition'; c.icon = 'pulse';
+    blocks.push(c);
+    blocks.push({
+      id: 'ready', icon: 'glove', title: 'Paratheds\u00ADcircuit', tags: ['5 runder', 'Pause 60 sek'],
+      ivl: { steps: [{ t: '15 sek', l: 'Assault bike hårdt', k: 'work' }, { t: '5/side', l: 'Lateral bounds', k: 'reps' }, { t: '5', l: 'Squat jumps', k: 'reps' }, { t: '20 sek', l: 'Rolig bevægelse', k: 'rest' }, { t: '60 sek', l: 'Pause', k: 'rest' }], reps: 5 },
+      items: [{ ex: 'assault', dose: '15 sek', note: 'Hårdt', secs: 15 }, { ex: 'bounds', dose: '5/side' }, { ex: 'squatjump', dose: '5 reps' }],
+      timer: { name: 'Parathedscircuit · 5 runder', segs: rounds(5, [S('work', 15, 'Assault bike · hårdt'), R('Lateral bounds × 5/side'), R('Squat jumps × 5'), S('rest', 20, 'Rolig bevægelse'), S('rest', 60, 'Pause')]) }
+    });
+    blocks.push({
+      id: 'core', icon: 'core', title: 'Core', tags: ['Pause 60 sek'],
+      items: [{ ex: 'farmer', dose: '3 × 40 m' }, { ex: 'pallof', dose: '3 × 10/side' }, { ex: 'sideplank', dose: '2 × 40 sek/side', secs: 40, perSide: true }],
+      restTimer: 60
+    });
+  } else {
+    blocks.push(WARM(10, '10 min'));
+    blocks.push({
+      id: 'test', icon: 'test', title: 'Konditions\u00ADtest', tags: ['20 min', 'RPE 6–7'],
+      callout: 'Brug samme maskine og modstand, hver gang du tester. Så kan du sammenligne.',
+      items: [{ ex: 'bike', dose: '20 min', note: 'RPE 6–7 · jævnt tempo', secs: 1200 }],
+      testForm: true,
+      timer: { name: 'Konditionstest · 20 min', segs: single(1200, 'Test · RPE 6–7') }
+    });
+    blocks.push(INTERVALS(6, 30, 60, 'Hårdt'));
+  }
+  const ph = PHASES[phaseOf(n)];
+  return { n, phase: phaseOf(n), title: ph.title, desc: ph.desc, blocks };
+}
+const WEEKS = Array.from({ length: 8 }, (_, i) => buildWeek(i + 1));
+
+/* ===== Fredag ===== */
+const FRIDAY = {
+  items: [{ ex: 'calf', dose: '× 10' }, { ex: 'squatjump', dose: '× 5' }, { ex: 'bounds', dose: '× 5/side' }, { ex: 'fastfeet', dose: '× 10 sek', secs: 10 }, { ex: 'sideplank', dose: '× 20 sek/side', secs: 20, perSide: true }],
+  timer: { name: 'Fredag · aktivering', segs: rounds(2, [R('Calf raise × 10'), R('Squat jump × 5'), R('Lateral bounds × 5/side'), S('work', 10, 'Hurtige fødder'), S('work', 20, 'Side plank · venstre side'), S('rest', 8, 'Skift side'), S('work', 20, 'Side plank · højre side'), S('rest', 60, 'Gå roligt rundt')]) }
+};
+
+/* ===== Min uge ===== */
+const DAYS = [
+  { d: 'MAN', full: 'mandag', icon: 'ball', label: 'Fodbold', kind: 'ball' },
+  { d: 'TIR', full: 'tirsdag', icon: 'ball', label: 'Fodbold', kind: 'ball' },
+  { d: 'ONS', full: 'onsdag', icon: 'dumbbell', label: 'Fitness · vigtigste dag', kind: 'fit' },
+  { d: 'TOR', full: 'torsdag', icon: 'ball', label: 'Fodbold', kind: 'ball' },
+  { d: 'FRE', full: 'fredag', icon: 'bolt', label: 'Aktivering', kind: 'fri' },
+  { d: 'LØR', full: 'lørdag', icon: 'glove', label: 'Kamp', kind: 'match' },
+  { d: 'SØN', full: 'søndag', icon: 'moon', label: 'Fri', kind: 'off' }
+];
+
+/* ===== RPE ===== */
+const RPE = [
+  { n: '1–2', t: 'Meget let', c: '#7EE8A2', w: 34, cue: 'Gang' },
+  { n: '3–4', t: 'Let', c: '#B5F06A', w: 46, cue: 'Kan snakke frit' },
+  { n: '5–6', t: 'Moderat', c: '#E3F04A', w: 58, cue: 'Korte sætninger' },
+  { n: '7', t: 'Hårdt', c: '#FFD24A', w: 70, cue: 'Få ord ad gangen' },
+  { n: '8', t: 'Meget hårdt', c: '#FFA640', w: 80, cue: 'Svært at tale' },
+  { n: '9', t: 'Næsten maksimalt', c: '#FF7A45', w: 90, cue: 'Kun få sekunder mere' },
+  { n: '10', t: 'Maksimalt', c: '#FF4D4D', w: 100, cue: 'Alt, du har' }
+];
+
+/* ===== Kamp-tracker ===== */
+const METRICS = [
+  { k: 'conc', t: 'Koncentration', short: 'Konc.', c: '#C8F03C' },
+  { k: 'ready', t: 'Parathed', short: 'Parat', c: '#4DB6FF' },
+  { k: 'legs', t: 'Ben/friskhed', short: 'Ben', c: '#FF9A3D' },
+  { k: 'endu', t: 'Udholdenhed', short: 'Udh.', c: '#E58CFF' },
+  { k: 'late', t: 'Overskud sidst i kampen', short: 'Overskud', c: '#F1F5EF' }
+];
+
+/* ===== Tilstand (localStorage) ===== */
+const KEY = 'gk8-goalkeeper-v1';
+const DEF = () => ({
+  week: 1, done: {}, weeksDone: [], matches: [], test: null,
+  fri: { wk: '', done: {} },
+  settings: { sound: true, vib: true, custom: { work: 30, rest: 60, rounds: 10 }, metric: 'avg', lib: 'Alle' }
+});
+/* Sammenfletter gemt/importeret data med standardværdier, så et ældre eller
+   ufuldstændigt datasæt (fra localStorage ELLER en importeret fil) altid
+   giver et komplet, brugbart ST-objekt. */
+function mergeState(d) {
+  const base = DEF();
+  return { ...base, ...d, fri: { ...base.fri, ...(d.fri || {}) }, settings: { ...base.settings, ...(d.settings || {}), custom: { ...base.settings.custom, ...((d.settings || {}).custom || {}) } } };
+}
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem(KEY) || 'null');
+    return d ? mergeState(d) : DEF();
+  } catch (e) { return DEF(); }
+}
+let ST = load();
+function save() { try { localStorage.setItem(KEY, JSON.stringify(ST)); } catch (e) { } }
+
+/* Eksport/import: alt data ligger kun lokalt på telefonen (ingen server,
+   ingen konto) — disse to giver en manuel sikkerhedskopi, så et skifte af
+   telefon eller en ryddet browser ikke betyder, at 8 ugers data forsvinder. */
+function exportData() {
+  try {
+    const blob = new Blob([JSON.stringify(ST, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `malmand8-data-${localISO(new Date())}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('Data eksporteret');
+  } catch (e) { toast('Kunne ikke eksportere data'); }
+}
+function importDataFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!data || typeof data !== 'object') throw new Error('Ugyldigt format');
+      ST = mergeState(data); save();
+      renderAll(); loadPreset(TM.preset || 'p1');
+      toast('Data importeret');
+    } catch (e) { toast('Filen kunne ikke læses — er det en eksport fra denne app?'); }
+  };
+  reader.onerror = () => toast('Filen kunne ikke læses.');
+  reader.readAsText(file);
+}
+
+/* ===== Hjælpere ===== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = s => { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60), r = s % 60; return `${m}:${String(r).padStart(2, '0')}`; };
+const fmtLong = s => { s = Math.max(0, Math.round(s)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
+const prefersReduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const scrollToId = id => { const el = $(id); if (el) el.scrollIntoView({ behavior: prefersReduced() ? 'auto' : 'smooth', block: 'start' }); };
+function fillIcons(root = document) { root.querySelectorAll('[data-icon]').forEach(el => { if (!el.firstElementChild) el.innerHTML = ICON[el.dataset.icon] || ''; }); }
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2400); }
+function isoWeekKey(d = new Date()) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y = t.getUTCFullYear(); const w = Math.ceil(((t - Date.UTC(y, 0, 1)) / 864e5 + 1) / 7);
+  return `${y}-W${w}`;
+}
+const localISO = d => { const x = new Date(d); x.setMinutes(x.getMinutes() - x.getTimezoneOffset()); return x.toISOString().slice(0, 10); };
+function lastSaturday() { const d = new Date(); const back = (d.getDay() + 1) % 7; d.setDate(d.getDate() - back); return localISO(d); }
+const daDate = iso => { try { return new Date(iso + 'T12:00:00').toLocaleDateString('da-DK', { weekday: 'short', day: 'numeric', month: 'short' }); } catch (e) { return iso; } };
+const segTotal = segs => segs.reduce((a, s) => a + (s.type === 'reps' ? 30 : s.secs), 0);
+
+/* ===== Uger og afkrydsning ===== */
+const weekItems = n => WEEKS[n - 1].blocks.flatMap(b => b.items.map((it, i) => ({ b, it, i })).filter(x => x.it.ex));
+const isDone = ctx => {
+  const p = ctx.split('|');
+  if (p[0] === 'fri') return !!ST.fri.done[p[1]];
+  return !!ST.done[ctx];
+};
+function weekStats(n) {
+  const list = weekItems(n);
+  const done = list.filter(x => ST.done[`week|${n}|${x.b.id}|${x.i}`]).length;
+  return { done, total: list.length };
+}
+const nextWeek = () => { for (let n = 1; n <= 8; n++) if (!ST.weeksDone.includes(n)) return n; return 8; };
+function checkFriWeek() { const k = isoWeekKey(); if (ST.fri.wk !== k) { ST.fri = { wk: k, done: {} }; save(); } }
+
+/* ===== Progression ===== */
+function progHTML(big) {
+  const done = ST.weeksDone.length, nw = nextWeek();
+  const lis = Array.from({ length: 8 }, (_, i) => {
+    const n = i + 1; const cls = ST.weeksDone.includes(n) ? 'done' : (n === nw && done < 8 ? 'now' : '');
+    return `<li class="${cls}" title="Uge ${n}"></li>`;
+  }).join('');
+  return `<div class="pc-head"><span>${big ? 'Gennemførte uger' : 'Din progression'}</span><strong>${done} af 8 uger</strong></div>
+    <div class="pc-track" role="img" aria-label="${done} af 8 uger gennemført"><span class="pc-end">UGE 1</span><ol class="dots">${lis}</ol><span class="pc-end">UGE 8</span></div>
+    ${big ? '' : `<button class="btn btn-lime btn-block" type="button" id="pcCta">${ICON.play}${done >= 8 ? 'Se uge 8 igen' : 'Gå til uge ' + nw}</button>`}`;
+}
+function renderProgress() {
+  $('heroProgress').innerHTML = progHTML(false);
+  $('progBig').innerHTML = progHTML(true);
+  $('progTiles').innerHTML = Array.from({ length: 8 }, (_, i) => {
+    const n = i + 1, on = ST.weeksDone.includes(n); const st = weekStats(n);
+    return `<button class="pt" type="button" data-weekdone="${n}" aria-pressed="${on}" aria-label="Uge ${n} ${on ? 'gennemført' : 'ikke gennemført'}">${on ? ICON.check.replace('<svg', '<svg width="20" height="20"') : ''}<span>UGE ${n}</span><small>${st.done}/${st.total}</small></button>`;
+  }).join('');
+}
+function toggleWeekDone(n, force) {
+  const on = ST.weeksDone.includes(n);
+  const want = force ?? !on;
+  ST.weeksDone = want ? [...new Set([...ST.weeksDone, n])].sort((a, b) => a - b) : ST.weeksDone.filter(x => x !== n);
+  save();
+  if (want && !on) toast(n < 8 ? `Uge ${n} gennemført. Klar til uge ${n + 1}.` : 'Alle 8 uger gennemført. Stærkt.');
+  renderProgress(); renderWeekNav(); renderWeek(); renderToday();
+}
+
+/* ===== I dag + Min uge ===== */
+function renderToday() {
+  const idx = (new Date().getDay() + 6) % 7, day = DAYS[idx], n = ST.week, W = WEEKS[n - 1];
+  const phaseName = W.title.split('·')[1].trim().toLowerCase().replace(/^./, c => c.toUpperCase());
+  const st = weekStats(n);
+  let cls = '', big = '', text = '', btn = '', target = '';
+  switch (day.kind) {
+    case 'fit': cls = 'is-fit'; big = `Fitness · uge ${n}`; text = `${phaseName}. ${st.done} af ${st.total} øvelser klaret.`; btn = 'Åbn dagens program'; target = 'program'; break;
+    case 'fri': big = 'Aktivering'; text = 'Bliv klar til kamp. Du skal føle dig frisk bagefter.'; btn = 'Åbn fredagens aktivering'; target = 'fredag'; break;
+    case 'match': big = 'Kampdag'; text = 'Efter kampen: registrér koncentration, parathed og overskud.'; btn = 'Registrér kampen'; target = 'tracker'; break;
+    case 'off': big = 'Fri'; text = 'Restitution. Sov godt, spis godt. Næste fitnesspas er onsdag.'; btn = 'Se din progression'; target = 'progression'; break;
+    default:
+      big = 'Fodbold';
+      text = idx === 1 ? `I morgen er det fitness: uge ${n}, ${phaseName.toLowerCase()}.` : idx === 3 ? 'Kamp lørdag. I morgen: let aktivering.' : 'Fodboldtræning i dag. Næste fitnesspas er onsdag.';
+      btn = `Se uge ${n}`; target = 'program';
+  }
+  $('todayCard').className = `today-card ${cls}`;
+  $('todayCard').innerHTML = `<span class="today-ic" aria-hidden="true">${ICON[day.icon]}</span>
+    <p class="today-small">I dag er det ${day.full}</p>
+    <h2 class="today-big">${big}</h2>
+    <p class="today-text">${text}</p>
+    <div><button class="btn ${cls ? '' : 'btn-lime'}" type="button" data-go="${target}">${ICON.play}${btn}</button></div>`;
+}
+function renderDays() {
+  const idx = (new Date().getDay() + 6) % 7;
+  $('days').innerHTML = DAYS.map((d, i) => `<li class="day ${d.kind === 'fit' ? 'fit' : ''} ${d.kind === 'match' ? 'match' : ''} ${i === idx ? 'today' : ''}">
+      ${i === idx ? '<span class="today-pin">I dag</span>' : ''}
+      <span class="dn">${d.kind === 'fit' ? 'ONSDAG' : d.d}</span>${ICON[d.icon]}<span class="dl">${d.label}</span></li>`).join('');
+}
+
+/* ===== Ugenavigation og ugevisning ===== */
+function renderWeekNav() {
+  $('weekNav').innerHTML = WEEKS.map(W => {
+    const sel = W.n === ST.week, done = ST.weeksDone.includes(W.n);
+    return `<button class="wk" role="tab" type="button" id="tab-${W.n}" data-week="${W.n}" aria-selected="${sel}" aria-controls="weekView" tabindex="${sel ? 0 : -1}">UGE ${W.n}${done ? `<span class="ck" aria-label="gennemført">${ICON.check}</span>` : ''}</button>`;
+  }).join('');
+  $('weekChip').textContent = `Uge ${ST.week}`;
+  const el = $('tab-' + ST.week), sc = $('weekNav');
+  if (el) sc.scrollTo({ left: el.offsetLeft - sc.clientWidth / 2 + el.clientWidth / 2, behavior: prefersReduced() ? 'auto' : 'smooth' });
+}
+function selectWeek(n) {
+  ST.week = Math.min(8, Math.max(1, n)); save();
+  renderWeekNav(); renderWeek(); renderToday();
+}
+function ivlHTML(v, b) {
+  const steps = v.steps.map((s, i) => `${i ? `<div class="ivl-arrow" aria-hidden="true">${ICON.down}</div>` : ''}<div class="ivl-step ${s.k}"><b>${s.t}</b><span>${s.l}</span>${s.sub ? `<small>${s.sub}</small>` : ''}</div>`).join('');
+  const tot = b.timer ? Math.round(segTotal(b.timer.segs) / 60) : 0;
+  return `<div class="ivl" role="group" aria-label="Intervalforløb">
+    <div class="ivl-steps">${steps}<div class="ivl-arrow" aria-hidden="true">${ICON.down}</div><div class="ivl-rep">${ICON.repeat}Gentag ×${v.reps}</div></div>
+    <p class="ivl-meta"><span>${v.foot || 'Følg timeren, så skifter den for dig'}</span><span>${tot ? 'Ca. ' + tot + ' min' : ''}</span></p></div>`;
+}
+function itemHTML(it, ctx) {
+  if (it.rest) return `<li class="item rest-row"><span class="rest-pill">${it.rest}</span>${it.label}</li>`;
+  const e = EX[it.ex], name = it.name || e.name, done = isDone(ctx);
+  return `<li class="item ${done ? 'is-done' : ''}">
+    <button class="item-open" type="button" data-open="${ctx}" aria-label="Åbn ${esc(name)}: ${esc(it.dose)}">
+      <span class="thumb" aria-hidden="true">${illustration(it.ex)}</span>
+      <span class="item-txt"><span class="nm">${name}</span><span class="ds">${it.dose}</span>${it.note ? `<span class="nt">${it.note}</span>` : ''}</span>
+    </button>
+    <button class="check" type="button" data-check="${ctx}" aria-pressed="${done}" aria-label="Markér ${esc(name)} som færdig"><span>${ICON.check}</span></button></li>`;
+}
+function testFormHTML() {
+  const t = ST.test || {};
+  const opts = Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}" ${String(t.rpe || 7) === String(i + 1) ? 'selected' : ''}>${i + 1}</option>`).join('');
+  return `<div class="testform" role="group" aria-label="Testresultat">
+    <label class="field">Distance (km)<input id="tfDist" inputmode="decimal" placeholder="fx 9,8" value="${esc(t.dist || '')}"></label>
+    <label class="field">Watt (gns.)<input id="tfWatt" inputmode="numeric" placeholder="hvis muligt" value="${esc(t.watt || '')}"></label>
+    <label class="field">Gns. puls<input id="tfHr" inputmode="numeric" placeholder="slag/min" value="${esc(t.hr || '')}"></label>
+    <label class="field">RPE<select id="tfRpe">${opts}</select></label>
+    <button class="btn btn-lime btn-block" type="button" id="tfSave" style="grid-column:1/-1">Gem testresultat</button>
+    <p class="saved-note" id="tfNote">${t.date ? 'Senest gemt ' + daDate(t.date) + '.' : 'Skriv tallene ned lige efter de 20 minutter.'}</p></div>`;
+}
+function blockHTML(b, n) {
+  const timerBtn = b.timer ? `<button class="btn btn-lime" type="button" data-timer="${n}|${b.id}">${ICON.play}${b.timer.segs.length === 1 ? 'Start timer · ' + fmt(b.timer.segs[0].secs) : 'Start guidet timer'}</button>` : '';
+  const restBtn = b.restTimer ? `<button class="btn" type="button" data-rest="${b.restTimer}" data-src="blk-${n}-${b.id}">${ICON.timer}Pausetimer ${b.restTimer} sek</button>` : '';
+  return `<article class="block" id="blk-${n}-${b.id}">
+    <header class="block-head"><span class="block-ic" aria-hidden="true">${ICON[b.icon]}</span><div><h4>${b.title}</h4><div class="tags">${b.tags.map((t, i) => `<span class="tag ${i === 0 ? 'lime' : ''}">${t}</span>`).join('')}</div></div></header>
+    ${b.callout ? `<p class="callout">${ICON.talk}<span>${b.callout}</span></p>` : ''}
+    ${b.ivl ? ivlHTML(b.ivl, b) : ''}
+    <ul class="items">${b.items.map((it, i) => itemHTML(it, `week|${n}|${b.id}|${i}`)).join('')}</ul>
+    ${b.testForm ? testFormHTML() : ''}
+    ${timerBtn || restBtn ? `<div class="block-actions">${timerBtn}${restBtn}</div>` : ''}</article>`;
+}
+function renderWeek() {
+  const W = WEEKS[ST.week - 1], st = weekStats(W.n), pct = st.total ? Math.round(st.done / st.total * 100) : 0, wd = ST.weeksDone.includes(W.n);
+  $('weekView').setAttribute('aria-labelledby', 'tab-' + W.n);
+  $('weekView').innerHTML = `<div class="week-layout">
+    <header class="wk-hero">
+      <span class="bignum" aria-hidden="true">${W.n}</span>
+      <p class="wk-of">Uge ${W.n} af 8</p>
+      <h3>${W.title}</h3>
+      <p class="desc">${W.desc}</p>
+      <div class="phase-steps" aria-hidden="true">${PHASES.map((p, i) => `<span class="${i <= W.phase ? 'on' : ''}"></span>`).join('')}</div>
+      <div class="wk-prog"><div class="bar" role="progressbar" aria-label="Øvelser klaret i uge ${W.n}" aria-valuemin="0" aria-valuemax="${st.total}" aria-valuenow="${st.done}"><i style="width:${pct}%"></i></div><b>${st.done}/${st.total}</b></div>
+    </header>
+    <div class="blocks">${W.blocks.map(b => blockHTML(b, W.n)).join('')}
+      <button class="btn btn-block wk-done-btn ${wd ? '' : 'btn-lime'}" type="button" data-weekdone="${W.n}" aria-pressed="${wd}">${ICON.check}${wd ? `Uge ${W.n} er gennemført` : `Markér uge ${W.n} som gennemført`}</button>
+    </div></div>`;
+}
+function toggleDone(ctx) {
+  const p = ctx.split('|');
+  if (p[0] === 'fri') { ST.fri.done[p[1]] = !ST.fri.done[p[1]]; if (!ST.fri.done[p[1]]) delete ST.fri.done[p[1]]; save(); renderFriday(); return; }
+  if (ST.done[ctx]) delete ST.done[ctx]; else ST.done[ctx] = true;
+  save();
+  const n = +p[1];
+  if (n === ST.week) {
+    const st = weekStats(n);
+    const btn = document.querySelector(`[data-check="${ctx}"]`);
+    if (btn) { btn.setAttribute('aria-pressed', !!ST.done[ctx]); btn.closest('.item').classList.toggle('is-done', !!ST.done[ctx]); }
+    const bar = document.querySelector('.wk-prog'); if (bar) { bar.querySelector('i').style.width = Math.round(st.done / st.total * 100) + '%'; bar.querySelector('b').textContent = `${st.done}/${st.total}`; bar.querySelector('.bar').setAttribute('aria-valuenow', st.done); }
+    if (ST.done[ctx] && st.done === st.total && !ST.weeksDone.includes(n)) toast(`Alle øvelser i uge ${n} klaret. Markér ugen som gennemført.`);
+  }
+  renderProgress(); renderToday();
+}
+
+/* ===== Fredag ===== */
+function renderFriday() {
+  checkFriWeek();
+  $('friItems').innerHTML = FRIDAY.items.map((it, i) => itemHTML(it, `fri|${i}`)).join('');
+}
+
+/* ===== Øvelsesbibliotek ===== */
+function renderLibrary() {
+  const cat = ST.settings.lib || 'Alle';
+  $('libChips').innerHTML = CATS.map(c => `<button class="chip" type="button" data-cat="${c}" aria-pressed="${c === cat}">${c}</button>`).join('');
+  $('lib').innerHTML = Object.entries(EX).filter(([, e]) => cat === 'Alle' || e.cat === cat).map(([id, e]) => `<article class="ex-card">
+      <button class="ex-illu" type="button" data-open="lib|${id}" aria-label="Vis ${esc(e.name)} i stor visning">${illustration(id)}</button>
+      <div class="ex-body"><span class="ex-cat">${e.cat}</span><h3>${e.name}</h3><p class="ex-goal">${e.goal}</p>
+        <ol class="ex-steps">${['Start', 'Bevægelse', 'Slut'].map((l, i) => `<li><b>${l}</b><span>${e.how[i]}</span></li>`).join('')}</ol>
+        <dl class="ex-dose"><div><dt>Reps/tid</dt><dd>${e.dose}</dd></div><div><dt>Pause</dt><dd>${e.rest}</dd></div></dl>
+        <ul class="ex-tips">${e.tips.map(t => `<li>${ICON.tip}<span>${t}</span></li>`).join('')}</ul></div></article>`).join('');
+}
+
+/* ===== RPE ===== */
+function renderRPE() {
+  $('rpeMeter').innerHTML = RPE.map(r => `<div class="rpe-row" role="listitem"><span class="rpe-n">${r.n}</span><span class="rpe-cell"><span class="rpe-bar" style="--c:${r.c};--w:${r.w}%">${r.t}</span><span class="rpe-cue">${r.cue}</span></span></div>`).join('');
+}
+
+/* ===== Øvelsesdialog ===== */
+let sheetCtx = null;
+function openSheet(ctx) {
+  sheetCtx = ctx;
+  const p = ctx.split('|');
+  let exId, item = null, block = null, where = 'Øvelsesbibliotek', src = null;
+  if (p[0] === 'week') { const n = +p[1]; block = WEEKS[n - 1].blocks.find(b => b.id === p[2]); item = block.items[+p[3]]; exId = item.ex; where = `Uge ${n} · ${block.title}`; src = `blk-${n}-${block.id}`; }
+  else if (p[0] === 'fri') { item = FRIDAY.items[+p[1]]; exId = item.ex; block = { timer: FRIDAY.timer, tags: ['2 runder'] }; where = 'Fredag · aktivering'; src = 'fredag'; }
+  else exId = p[1];
+  const e = EX[exId], name = (item && item.name) || e.name;
+  const tag = re => block && block.tags ? (block.tags.find(t => re.test(t)) || '') : '';
+  const roundsTag = tag(/runder|sæt/), pauseTag = tag(/^Pause/).replace('Pause ', '');
+  const tiles = [['Reps/tid', item ? item.dose.replace(/^× /, '') : e.dose]];
+  if (roundsTag) tiles.push(['Runder', roundsTag.replace(/ ?(runder|sæt)/, '') + (/sæt/.test(roundsTag) ? ' sæt' : '')]);
+  tiles.push(['Pause', block && block.restTimer ? block.restTimer + ' sek' : (pauseTag || e.rest)]);
+  const secs = item ? item.secs : e.secs, perSide = item ? item.perSide : e.perSide;
+  let timerBtn = '';
+  if (secs) timerBtn = `<button class="btn btn-lime" type="button" data-sheet-timer="item">${ICON.play}Start ${perSide ? fmt(secs) + '/side' : fmt(secs)}</button>`;
+  else if (block && block.restTimer) timerBtn = `<button class="btn btn-lime" type="button" data-sheet-timer="rest">${ICON.timer}Pause ${block.restTimer} sek</button>`;
+  else if (block && block.timer) timerBtn = `<button class="btn btn-lime" type="button" data-sheet-timer="block">${ICON.play}Guidet timer</button>`;
+  const canDone = p[0] !== 'lib', done = canDone && isDone(ctx);
+  const doneBtn = canDone ? `<button class="btn" type="button" data-sheet-done aria-pressed="${done}">${ICON.check}${done ? 'Færdig' : 'Markér færdig'}</button>` : `<button class="btn" type="button" data-sheet-close>Luk</button>`;
+  const d = $('exSheet');
+  d.innerHTML = `<div class="sheet-in"><div class="grab" aria-hidden="true"></div>
+    <div class="sheet-top"><div><p class="today-small">${where}</p><h3 id="sheetTitle">${name}</h3></div><button class="sheet-close" type="button" data-sheet-close aria-label="Luk">${ICON.close}</button></div>
+    <div class="m-illu">${illustration(exId)}</div>
+    <div class="m-dose">${tiles.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>
+    <p class="ex-goal">${e.goal}</p>
+    <ol class="ex-steps">${['Start', 'Bevægelse', 'Slut'].map((l, i) => `<li><b>${l}</b><span>${e.how[i]}</span></li>`).join('')}</ol>
+    <ul class="ex-tips">${e.tips.map(t => `<li>${ICON.tip}<span>${t}</span></li>`).join('')}</ul>
+    <div class="m-actions">${timerBtn || ''}${doneBtn}</div></div>`;
+  if (!timerBtn) d.querySelector('.m-actions').style.gridTemplateColumns = '1fr';
+  d._ctx = { exId, item, block, name, secs, perSide, src };
+  if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
+  d.scrollTop = 0;
+}
+function closeSheet() { const d = $('exSheet'); if (d.open) { if (typeof d.close === 'function') d.close(); else d.removeAttribute('open'); } }
+
+/* ===== Timer ===== */
+const TPRE = [
+  { id: 'p1', name: '30/60 × 10', w: 30, r: 60, n: 10 },
+  { id: 'p2', name: '30/45 × 12', w: 30, r: 45, n: 12 },
+  { id: 'p3', name: '20/40 × 8', w: 20, r: 40, n: 8 },
+  { id: 'p4', name: '30/60 × 6', w: 30, r: 60, n: 6 },
+  { id: 'custom', name: 'Egen' }
+];
+const presetSegs = (w, r, n) => rounds(n, [S('work', w, 'Arbejde'), S('rest', r, 'Pause')]);
+const TM = { name: '', segs: [], i: 0, left: 0, el: 0, running: false, last: 0, iv: null, done: false, src: null, preset: null };
+const curSeg = () => TM.segs[TM.i];
+function tLoad(name, segs, opt = {}) {
+  tPause();
+  const first = segs[0] || { round: 1, rounds: 1 };
+  TM.name = name;
+  TM.segs = opt.noPrep ? segs : [{ type: 'prep', secs: 5, label: 'Gør dig klar', round: first.round || 1, rounds: first.rounds || 1 }, ...segs];
+  TM.i = 0; TM.left = TM.segs[0].secs; TM.el = 0; TM.done = false; TM.src = opt.src || null; TM.preset = opt.preset || null;
+  renderPresets(); tRender();
+  if (opt.autostart) tStart();
+}
+function tStart() {
+  if (!TM.segs.length) return;
+  if (TM.done) tReset();
+  if (TM.running) return;
+  unlockAudio();
+  TM.running = true; TM.last = performance.now();
+  if (TM.i === 0 && TM.left === TM.segs[0].secs) cue(TM.segs[0].type === 'prep' ? 'tick' : TM.segs[0].type);
+  TM.iv = setInterval(tTick, 200);
+  keepAwake(true); tRender();
+}
+function tPause() { TM.running = false; clearInterval(TM.iv); TM.iv = null; keepAwake(false); tRender(); }
+function tReset() { tPause(); TM.i = 0; TM.left = TM.segs[0] ? TM.segs[0].secs : 0; TM.el = 0; TM.done = false; tRender(); }
+function tTick() {
+  const now = performance.now(), dt = (now - TM.last) / 1000; TM.last = now;
+  const s = curSeg(); if (!s) return;
+  if (s.type === 'reps') TM.el += dt;
+  else {
+    const before = Math.ceil(TM.left); TM.left -= dt; const after = Math.ceil(TM.left);
+    if (after < before && after >= 1 && after <= 3) cue('tick');
+    if (TM.left <= 0) { tAdvance(); return; }
+  }
+  tRender();
+}
+function tAdvance() {
+  TM.i++;
+  if (TM.i >= TM.segs.length) { TM.i = TM.segs.length - 1; TM.left = 0; TM.done = true; tPause(); cue('done'); toast('Timer færdig. Godt arbejde.'); return; }
+  const s = curSeg(); TM.left = s.secs; TM.el = 0; cue(s.type);
+  if (!TM.running) tStart(); else tRender();
+}
+const PHASE_TXT = { idle: 'KLAR', prep: 'KLAR', work: 'WORK', push: 'WORK', rest: 'REST', reps: 'REPS', done: 'FÆRDIG' };
+function tPhase() {
+  if (TM.done) return 'done';
+  if (!TM.segs.length) return 'idle';
+  if (!TM.running && TM.i === 0 && TM.left === TM.segs[0].secs) return 'idle';
+  return curSeg().type;
+}
+function tRender() {
+  const box = $('timerBox'); if (!box) return;
+  const s = curSeg() || { type: 'work', secs: 0, label: '', round: 1, rounds: 1 };
+  const ph = tPhase();
+  box.dataset.phase = ph;
+  $('tName').textContent = TM.name;
+  $('tRound').textContent = `ROUND ${s.round || 1} / ${s.rounds || 1}`;
+  $('tPhase').textContent = ph === 'idle' && TM.segs[0] && TM.segs[0].type !== 'prep' ? PHASE_TXT[TM.segs[0].type] : PHASE_TXT[ph];
+  $('tTime').textContent = TM.done ? '0:00' : s.type === 'reps' ? fmt(TM.el) : fmt(Math.ceil(TM.left));
+  $('tLabel').textContent = TM.done ? 'Godt arbejde' : (s.type === 'reps' ? s.label + ' · tryk når du er færdig' : (s.type === 'push' ? 'Hårdere · ' : '') + s.label);
+  $('tProg').style.width = (TM.done ? 100 : s.type === 'reps' ? 100 : s.secs ? (1 - TM.left / s.secs) * 100 : 0) + '%';
+  const nx = TM.segs[TM.i + 1];
+  $('tNext').textContent = TM.done ? '' : nx ? (nx.type === 'reps' ? `Næste: ${nx.label}` : `Næste: ${PHASE_TXT[nx.type]} ${fmt(nx.secs)} · ${nx.label}`) : 'Sidste del';
+  let rem = s.type === 'reps' ? 0 : TM.left; let reps = s.type === 'reps' ? 1 : 0;
+  TM.segs.slice(TM.i + 1).forEach(x => { if (x.type === 'reps') reps++; else rem += x.secs; });
+  $('tTotal').textContent = TM.done ? '' : `${fmt(rem)} tilbage${reps ? ' + reps' : ''}`;
+  $('tStart').disabled = TM.running; $('tPause').disabled = !TM.running;
+  $('tRepsBtn').hidden = !(s.type === 'reps' && !TM.done && ph !== 'idle');
+  $('tBack').hidden = !TM.src;
+  renderMini(ph, s);
+}
+let timerInView = false;
+function renderMini(ph, s) {
+  const m = $('miniTimer'), active = !['idle', 'done'].includes(ph);
+  m.classList.toggle('show', active && !timerInView);
+  m.dataset.phase = ph;
+  $('miniTime').textContent = s.type === 'reps' ? fmt(TM.el) : fmt(Math.ceil(TM.left));
+  $('miniPhase').textContent = PHASE_TXT[ph] || '';
+  $('miniRound').textContent = `R ${s.round || 1}/${s.rounds || 1}`;
+  $('miniToggle').innerHTML = TM.running ? ICON.pause : ICON.play;
+  $('miniToggle').setAttribute('aria-label', TM.running ? 'Pause timer' : 'Start timer');
+}
+function renderPresets() {
+  $('tPresets').innerHTML = TPRE.map(p => `<button class="chip" type="button" data-preset="${p.id}" aria-pressed="${TM.preset === p.id}">${p.name}</button>`).join('')
+    + (TM.preset ? '' : TM.name ? `<span class="chip" aria-pressed="true" style="display:inline-flex;align-items:center">${esc(TM.name)}</span>` : '');
+  const c = ST.settings.custom;
+  const step = (k, label, v) => `<div class="stepper"><label id="lbl-${k}">${label}</label><div class="sv" aria-live="polite">${v}</div><div class="sb"><button type="button" data-step="${k}|-1" aria-label="${label} ned">−</button><button type="button" data-step="${k}|1" aria-label="${label} op">+</button></div></div>`;
+  $('tCustom').innerHTML = step('work', 'Arbejde (sek)', c.work) + step('rest', 'Pause (sek)', c.rest) + step('rounds', 'Runder', c.rounds);
+}
+function loadPreset(id, autostart = false) {
+  if (id === 'custom') { const c = ST.settings.custom; tLoad(`Egen · ${c.work}/${c.rest} × ${c.rounds}`, presetSegs(c.work, c.rest, c.rounds), { preset: 'custom', autostart }); return; }
+  const p = TPRE.find(x => x.id === id); tLoad(`Interval · ${p.name}`, presetSegs(p.w, p.r, p.n), { preset: id, autostart });
+}
+function stepCustom(k, dir) {
+  const c = ST.settings.custom, lim = { work: [5, 600, 5], rest: [0, 600, 5], rounds: [1, 40, 1] }[k];
+  c[k] = Math.min(lim[1], Math.max(lim[0], c[k] + dir * lim[2])); save();
+  if (!TM.running) loadPreset('custom'); else renderPresets();
+}
+
+/* Hold nede på en +/- knap for at gentage trinnet med stigende hastighed —
+   uden dette krævede et spring fra 30 til 600 sek over 100+ enkelte tryk. */
+let stepHoldTimer = null;
+function clearStepHold() { clearTimeout(stepHoldTimer); stepHoldTimer = null; }
+function startStepHold(k, dir) {
+  stepCustom(k, dir); // selve trykket udfører altid det første trin
+  clearStepHold();
+  let delay = 450;
+  const tick = () => { stepCustom(k, dir); delay = Math.max(60, delay - 40); stepHoldTimer = setTimeout(tick, delay); };
+  stepHoldTimer = setTimeout(tick, delay);
+}
+function startProgramTimer(name, segs, src, noPrep = false) {
+  tLoad(name, segs, { src, autostart: true, noPrep });
+  closeSheet();
+  setTimeout(() => { const el = $('timerBox'); el.scrollIntoView({ behavior: prefersReduced() ? 'auto' : 'smooth', block: 'start' }); }, 60);
+}
+
+/* Lyd, vibration, skærm */
+let AC = null;
+function unlockAudio() {
+  if (!ST.settings.sound) return;
+  try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); } catch (e) { }
+}
+function tone(f, d, when = 0, vol = .28) {
+  if (!ST.settings.sound || !AC) return;
+  try {
+    const t = AC.currentTime + when, o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'square'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol * .5, t + .01); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d + .03);
+  } catch (e) { }
+}
+const VIB_SUPPORTED = 'vibrate' in navigator;
+function vib(p) { if (ST.settings.vib && navigator.vibrate) { try { navigator.vibrate(p); } catch (e) { } } }
+/* Safari på iOS har aldrig understøttet Vibration API'et — uden dette ville
+   brugeren slå "Vibration" til og aldrig få besked om, at den reelt intet gør,
+   netop i situationer (eksplosive øvelser) hvor de ikke kigger på skærmen. */
+function initVibrationToggle() {
+  if (VIB_SUPPORTED) return;
+  const b = $('tgVib');
+  if (!b) return;
+  ST.settings.vib = false; save();
+  b.disabled = true;
+  b.setAttribute('aria-pressed', 'false');
+  b.title = 'Ikke understøttet i denne browser/på denne enhed (bl.a. alle iPhones)';
+  b.insertAdjacentHTML('beforeend', '<small class="toggle-note">Ikke på denne enhed</small>');
+}
+function cue(type) {
+  if (type === 'tick') { tone(660, .07); return; }
+  if (type === 'work' || type === 'push' || type === 'reps') { tone(990, .14); tone(990, .2, .18); vib([120, 80, 160]); }
+  else if (type === 'rest') { tone(520, .4); vib([320]); }
+  else if (type === 'done') { tone(660, .14); tone(880, .14, .17); tone(1180, .4, .34); vib([150, 80, 150, 80, 320]); }
+}
+let WL = null;
+async function keepAwake(on) {
+  try {
+    if (on && 'wakeLock' in navigator && !WL) { WL = await navigator.wakeLock.request('screen'); WL.addEventListener && WL.addEventListener('release', () => { WL = null; }); }
+    else if (!on && WL) { await WL.release(); WL = null; }
+  } catch (e) { WL = null; }
+}
+
+/* ===== Kamp-tracker ===== */
+function renderRates() {
+  $('rates').innerHTML = METRICS.map(m => `<div class="rate"><div class="rate-top"><label for="r-${m.k}">${m.t}</label><output id="o-${m.k}" for="r-${m.k}">6</output></div>
+    <input type="range" id="r-${m.k}" min="1" max="10" step="1" value="6" style="--p:55.5%"></div>`).join('');
+}
+function syncRange(el) { const v = +el.value; el.style.setProperty('--p', ((v - 1) / 9 * 100) + '%'); const o = $('o-' + el.id.slice(2)); if (o) o.textContent = v; }
+function weekAvg(w, key) {
+  const list = ST.matches.filter(m => +m.week === w); if (!list.length) return null;
+  const val = m => key === 'avg' ? METRICS.reduce((a, x) => a + +m[x.k], 0) / METRICS.length : +m[key];
+  return list.reduce((a, m) => a + val(m), 0) / list.length;
+}
+function renderChart() {
+  const key = ST.settings.metric || 'avg';
+  const opts = [{ k: 'avg', t: 'Snit af alle', c: '#C8F03C' }, ...METRICS];
+  $('metricChips').innerHTML = opts.map(o => `<button class="chip" type="button" data-metric="${o.k}" aria-pressed="${o.k === key}">${o.k === 'avg' ? o.t : o.t.replace(' sidst i kampen', '')}</button>`).join('');
+  const W = 420, H = 260, L = 34, Rr = 16, T = 30, B = 34;
+  const x = w => L + (w - 1) * (W - L - Rr) / 7, y = v => T + (10 - v) / 9 * (H - T - B);
+  const col = (opts.find(o => o.k === key) || opts[0]).c;
+  let g = '';
+  [2, 4, 6, 8, 10].forEach(v => { g += `<line x1="${L}" x2="${W - Rr}" y1="${y(v)}" y2="${y(v)}" stroke="#24322B" stroke-width="1.5"/><text class="ax" x="${L - 12}" y="${y(v) + 4}" text-anchor="end">${v}</text>`; });
+  for (let w = 1; w <= 8; w++) g += `<text class="ax" x="${x(w)}" y="${H - 12}" text-anchor="middle">U${w}</text>`;
+  const pts = []; for (let w = 1; w <= 8; w++) { const v = weekAvg(w, key); if (v != null) pts.push([w, v]); }
+  if (pts.length) {
+    const d = pts.map(([w, v], i) => `${i ? 'L' : 'M'}${x(w).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+    if (pts.length > 1) g += `<path d="${d} L${x(pts[pts.length - 1][0]).toFixed(1)} ${y(1)} L${x(pts[0][0]).toFixed(1)} ${y(1)} Z" fill="${col}" opacity=".12"/>`;
+    g += `<path d="${d}" fill="none" stroke="${col}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>`;
+    pts.forEach(([w, v]) => { g += `<circle cx="${x(w)}" cy="${y(v)}" r="7" fill="#16201B" stroke="${col}" stroke-width="3.5"/><text x="${x(w)}" y="${y(v) - 14}" text-anchor="middle" fill="#F1F5EF" style="font:800 19px var(--font-d)">${v.toFixed(1).replace('.', ',')}</text>`; });
+  }
+  $('chart').innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Graf over ${esc((opts.find(o => o.k === key) || {}).t)} pr. uge">${g}</svg>${pts.length ? '' : '<p class="empty">Ingen kampe endnu. Registrér din første kamp efter lørdag, så tegner grafen din udvikling.</p>'}`;
+}
+function renderHistory() {
+  const list = [...ST.matches].sort((a, b) => b.date.localeCompare(a.date));
+  $('history').innerHTML = list.length ? list.map(m => `<li class="hist"><div class="hist-top"><div><b>${daDate(m.date)}</b> <span class="tag">Uge ${m.week}</span></div>
+      <button class="icon-btn" type="button" data-del="${m.id}" aria-label="Slet kampen ${daDate(m.date)}">${ICON.trash}</button></div>
+      <div class="hist-vals">${METRICS.map(x => `<span><b>${m[x.k]}</b>${x.short}</span>`).join('')}</div>${m.note ? `<p>${esc(m.note)}</p>` : ''}</li>`).join('')
+    : '<li class="empty">Dine kampe vises her.</li>';
+}
+function renderTracker() {
+  $('mWeek').innerHTML = WEEKS.map(W => `<option value="${W.n}" ${W.n === ST.week ? 'selected' : ''}>Uge ${W.n}</option>`).join('');
+  if (!$('mDate').value) $('mDate').value = lastSaturday();
+  renderChart(); renderHistory();
+}
+
+/* ===== Hændelser ===== */
+document.addEventListener('click', e => {
+  const t = e.target.closest('button, a'); if (!t) return;
+  const ds = t.dataset;
+  if (ds.open) { openSheet(ds.open); return; }
+  if (ds.check) { toggleDone(ds.check); return; }
+  if (ds.week) { selectWeek(+ds.week); return; }
+  if (ds.weekdone) { toggleWeekDone(+ds.weekdone); return; }
+  if (ds.go) { if (ds.go === 'program') selectWeek(ST.week); scrollToId(ds.go); return; }
+  if (ds.timer) { const [n, id] = ds.timer.split('|'); const b = WEEKS[+n - 1].blocks.find(x => x.id === id); startProgramTimer(`Uge ${n} · ${b.timer.name}`, b.timer.segs, `blk-${n}-${id}`); return; }
+  if (ds.rest) { startProgramTimer(`Pause · ${ds.rest} sek`, [{ ...S('rest', +ds.rest, 'Pause mellem sæt'), round: 1, rounds: 1 }], ds.src, true); return; }
+  if (ds.preset) { loadPreset(ds.preset); return; }
+  if (ds.step) return; // håndteres af pointerdown nedenfor, så hold-nede kan gentage trinnet
+  if (ds.cat) { ST.settings.lib = ds.cat; save(); renderLibrary(); return; }
+  if (ds.metric) { ST.settings.metric = ds.metric; save(); renderChart(); return; }
+  if (ds.del) { if (confirm('Slet denne kamp?')) { ST.matches = ST.matches.filter(m => String(m.id) !== ds.del); save(); renderChart(); renderHistory(); } return; }
+  if ('sheetClose' in ds) { closeSheet(); return; }
+  if ('sheetDone' in ds) {
+    toggleDone(sheetCtx); const on = isDone(sheetCtx);
+    t.setAttribute('aria-pressed', on); t.innerHTML = ICON.check + (on ? 'Færdig' : 'Markér færdig');
+    if (on) setTimeout(closeSheet, 350);
+    return;
+  }
+  if (ds.sheetTimer) {
+    const c = $('exSheet')._ctx;
+    if (ds.sheetTimer === 'item') startProgramTimer(c.name, c.perSide ? sides(c.secs, c.name) : single(c.secs, c.name), c.src);
+    else if (ds.sheetTimer === 'rest') startProgramTimer(`Pause · ${c.block.restTimer} sek`, [{ ...S('rest', c.block.restTimer, 'Pause mellem sæt'), round: 1, rounds: 1 }], c.src, true);
+    else startProgramTimer(c.block.timer.name, c.block.timer.segs, c.src);
+    return;
+  }
+  switch (t.id) {
+    case 'pcCta': { const n = nextWeek(); selectWeek(n); scrollToId('program'); break; }
+    case 'weekChip': scrollToId('program'); break;
+    case 'tStart': tStart(); break;
+    case 'tPause': tPause(); break;
+    case 'tReset': tReset(); break;
+    case 'tRepsBtn': tAdvance(); break;
+    case 'tBack': if (TM.src) { const el = $(TM.src) || $('program'); el.scrollIntoView({ behavior: prefersReduced() ? 'auto' : 'smooth', block: 'start' }); } break;
+    case 'miniGo': scrollToId('timer'); break;
+    case 'miniToggle': TM.running ? tPause() : tStart(); break;
+    case 'tgSound': ST.settings.sound = !ST.settings.sound; t.setAttribute('aria-pressed', ST.settings.sound); save(); if (ST.settings.sound) { unlockAudio(); cue('tick'); } break;
+    case 'tgVib': ST.settings.vib = !ST.settings.vib; t.setAttribute('aria-pressed', ST.settings.vib); save(); vib(60); break;
+    case 'friTimer': startProgramTimer(FRIDAY.timer.name, FRIDAY.timer.segs, 'fredag'); break;
+    case 'friReset': ST.fri.done = {}; save(); renderFriday(); toast('Fredag nulstillet'); break;
+    case 'tfSave': {
+      ST.test = { date: localISO(new Date()), dist: $('tfDist').value.trim(), watt: $('tfWatt').value.trim(), hr: $('tfHr').value.trim(), rpe: $('tfRpe').value };
+      save(); $('tfNote').textContent = 'Senest gemt ' + daDate(ST.test.date) + '.'; toast('Testresultat gemt'); break;
+    }
+    case 'resetAll':
+      if (confirm('Slet alle gemte data? Afkrydsninger, uger, kampe og indstillinger forsvinder.')) {
+        try { localStorage.removeItem(KEY); } catch (err) { }
+        ST = DEF(); $('mDate').value = ''; renderAll(); loadPreset('p1'); toast('Alle data er nulstillet');
+      }
+      break;
+    case 'exportData': exportData(); break;
+    case 'importData': $('importFile').click(); break;
+  }
+});
+$('importFile').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (f) importDataFile(f);
+  e.target.value = '';
+});
+document.addEventListener('pointerdown', e => {
+  const t = e.target.closest('[data-step]'); if (!t) return;
+  const [k, d] = t.dataset.step.split('|');
+  startStepHold(k, +d);
+});
+['pointerup', 'pointerleave', 'pointercancel'].forEach(evt => document.addEventListener(evt, clearStepHold));
+$('exSheet').addEventListener('click', e => { if (e.target === e.currentTarget) closeSheet(); });
+$('weekNav').addEventListener('keydown', e => {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+  e.preventDefault();
+  const n = e.key === 'Home' ? 1 : e.key === 'End' ? 8 : ST.week + (e.key === 'ArrowRight' ? 1 : -1);
+  selectWeek(Math.min(8, Math.max(1, n))); $('tab-' + ST.week).focus();
+});
+document.addEventListener('input', e => { if (e.target.matches('#rates input[type=range]')) syncRange(e.target); });
+$('matchForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const date = $('mDate').value; if (!date) { toast('Vælg en dato for kampen'); $('mDate').focus(); return; }
+  const m = { id: Date.now(), date, week: +$('mWeek').value, note: $('mNote').value.trim() };
+  METRICS.forEach(x => m[x.k] = +$('r-' + x.k).value);
+  ST.matches.push(m); save();
+  $('mNote').value = ''; renderChart(); renderHistory(); toast('Kamp gemt');
+});
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && TM.running) keepAwake(true); });
+
+/* Synlighed: mini-timer og aktiv bundnavigation */
+if ('IntersectionObserver' in window) {
+  new IntersectionObserver(es => { timerInView = es[0].isIntersecting; tRender(); }, { threshold: .25 }).observe($('timerBox'));
+  const links = [...document.querySelectorAll('.bottomnav a')];
+  const vis = new Map();
+  const io = new IntersectionObserver(es => {
+    es.forEach(x => vis.set(x.target.id, x.intersectionRatio));
+    let best = null, br = 0; vis.forEach((r, id) => { if (r > br) { br = r; best = id; } });
+    links.forEach(a => a.setAttribute('aria-current', a.dataset.nav === best && br > 0 ? 'true' : 'false'));
+  }, { threshold: [0, .1, .25, .5] });
+  ['program', 'fredag', 'timer', 'tracker', 'ovelser'].forEach(id => io.observe($(id)));
+}
+
+/* ===== Start ===== */
+function renderAll() {
+  renderProgress(); renderToday(); renderDays(); renderWeekNav(); renderWeek();
+  renderFriday(); renderLibrary(); renderRPE(); renderRates(); renderTracker();
+  $('tgSound').setAttribute('aria-pressed', ST.settings.sound); $('tgVib').setAttribute('aria-pressed', ST.settings.vib);
+}
+fillIcons();
+renderAll();
+loadPreset('p1');
+initVibrationToggle();
+
+/* PWA: cacher appen, så den virker offline. Kræver hosting over HTTPS —
+   registreres ikke, hvis filen åbnes direkte fra disk (file://) eller
+   hostes uden sikker forbindelse. */
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+</script>
+</body>
+</html>
