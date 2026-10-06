@@ -4,7 +4,8 @@
    Google Fonts og andre eksterne requests rammer altid netværket direkte. */
 const CACHE = 'gk8-v1';
 const ASSETS = [
-  './goalkeeper-8-week-program.html',
+  './',
+  './index.html',
   './manifest.webmanifest',
   './icon.svg'
 ];
