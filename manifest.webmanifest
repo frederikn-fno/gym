@@ -2,7 +2,7 @@
   "name": "8 ugers målmandsprogram",
   "short_name": "Målmand 8",
   "description": "Fitness- og konditionsprogram for målmænd over 8 uger, med timer, øvelsesbibliotek og kamp-tracker.",
-  "start_url": "./goalkeeper-8-week-program.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#0C1210",
