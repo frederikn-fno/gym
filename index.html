@@ -56,32 +56,12 @@
 
   <!-- ============ I DAG ============ -->
   <section class="page" id="page-idag" data-page="idag" data-title="I dag" aria-labelledby="heroTitle" hidden>
-    <div class="hero">
-      <div class="hero-net" aria-hidden="true"></div>
-      <div class="hero-post" aria-hidden="true"></div>
-      <div class="wrap">
-        <p class="eyebrow">8 ugers målmandsprogram</p>
-        <h1 id="heroTitle" tabindex="-1">Vær klar i det 90. minut</h1>
-      </div>
-    </div>
     <div class="wrap page-in">
+      <h1 id="heroTitle" class="vh" tabindex="-1">I dag</h1>
       <div class="today-card" id="todayCard"></div>
-      <div id="coachCard"></div>
       <div id="weekSummary"></div>
-      <div class="progress-card" id="heroProgress"></div>
-      <div class="block-title"><h2>Min uge</h2></div>
-      <ol class="days" id="days"></ol>
-      <div class="block-title"><h2>Alle sider</h2></div>
-      <nav class="tiles" aria-label="Alle sider">
-        <a class="tile" href="#/program"><span data-icon="calendar"></span><b>Program</b><small>Uge 1–8</small></a>
-        <a class="tile" href="#/coach"><span data-icon="gauge"></span><b>Min form</b><small>Test og mål</small></a>
-        <a class="tile" href="#/hjemme"><span data-icon="house"></span><b>Hjemme</b><small>Før fodbold</small></a>
-        <a class="tile" href="#/fredag"><span data-icon="bolt"></span><b>Fredag</b><small>Aktivering</small></a>
-        <a class="tile" href="#/timer"><span data-icon="timer"></span><b>Timer</b><small>Intervaller</small></a>
-        <a class="tile" href="#/tracker"><span data-icon="chart"></span><b>Tracker</b><small>Efter kamp</small></a>
-        <a class="tile" href="#/ovelser"><span data-icon="grid"></span><b>Øvelser</b><small id="tileCount">Bibliotek</small></a>
-        <a class="tile" href="#/fremgang"><span data-icon="chart"></span><b>Fremgang</b><small>Løft og rekorder</small></a>
-      </nav>
+      <div id="coachCard"></div>
+      <nav class="tiles" id="tiles" aria-label="Alle sider"></nav>
     </div>
   </section>
 
@@ -109,6 +89,14 @@
       <div class="page-head ph-title-only"><div><h2 id="coachTitle" tabindex="-1">Min form</h2></div></div>
       <div class="seg seg4" role="tablist" id="coachTabs" aria-label="Min form"></div>
       <div id="coachBody"></div>
+    </div>
+  </section>
+
+  <!-- ============ STATUS ============ -->
+  <section class="page" id="page-status" data-page="status" data-title="Status" aria-labelledby="statTitle" hidden>
+    <div class="wrap page-in">
+      <div class="page-head ph-title-only"><div><h2 id="statTitle" tabindex="-1">Status</h2></div></div>
+      <div id="statusBody"></div>
     </div>
   </section>
 
@@ -302,7 +290,9 @@
     <div class="wrap page-in">
       <div class="page-head ph-title-only"><div><h2 id="moreTitle" tabindex="-1">Mere</h2></div></div>
       <nav class="list" aria-label="Flere sider">
-        <a class="list-row" href="#/coach"><span class="lr-ic" data-icon="gauge"></span><span class="lr-t"><b>Min form</b><small>Test, mål og tilpasset program</small></span><span class="lr-go" data-icon="chev"></span></a>
+        <a class="list-row" href="#/ovelser"><span class="lr-ic" data-icon="grid"></span><span class="lr-t"><b>Øvelser</b><small>Bibliotek med figurer og "godt til"</small></span><span class="lr-go" data-icon="chev"></span></a>
+        <a class="list-row" href="#/timer"><span class="lr-ic" data-icon="timer"></span><span class="lr-t"><b>Intervaltimer</b><small>Egne og færdige intervaller</small></span><span class="lr-go" data-icon="chev"></span></a>
+        <a class="list-row" href="#/status"><span class="lr-ic" data-icon="pulse"></span><span class="lr-t"><b>Status og profil</b><small>Går det godt eller dårligt? Det appen har lært om dig</small></span><span class="lr-go" data-icon="chev"></span></a>
         <a class="list-row" href="#/fremgang"><span class="lr-ic" data-icon="chart"></span><span class="lr-t"><b>Fremgang</b><small>Løft, rekorder og volumen</small></span><span class="lr-go" data-icon="chev"></span></a>
         <a class="list-row" href="#/hjemme"><span class="lr-ic" data-icon="house"></span><span class="lr-t"><b>Hjemme · før træning</b><small>12 min uden udstyr</small></span><span class="lr-go" data-icon="chev"></span></a>
         <a class="list-row" href="#/fredag"><span class="lr-ic" data-icon="bolt"></span><span class="lr-t"><b>Fredag · klar til kamp</b><small>Let aktivering</small></span><span class="lr-go" data-icon="chev"></span></a>
@@ -329,12 +319,11 @@
 
 <nav class="bottomnav" aria-label="Hovednavigation">
   <ul>
-    <li><a href="#/idag" data-nav="idag"><span data-icon="ball"></span>I dag</a></li>
-    <li><a href="#/program" data-nav="program"><span data-icon="calendar"></span>Program</a></li>
-    <li><a href="#/coach" data-nav="coach"><span data-icon="gauge"></span>Form</a></li>
-    <li><a href="#/timer" data-nav="timer"><span data-icon="timer"></span>Timer</a></li>
-    <li><a href="#/ovelser" data-nav="ovelser"><span data-icon="grid"></span>Øvelser</a></li>
-    <li><a href="#/mere" data-nav="mere"><span data-icon="more"></span>Mere</a></li>
+    <li><a href="#/idag" data-nav="idag"><span data-icon="ball"></span><span class="nl">I dag</span></a></li>
+    <li><a href="#/program" data-nav="program"><span data-icon="calendar"></span><span class="nl">Program</span></a></li>
+    <li class="nav-train"><button type="button" id="navTrain" aria-label="Start træning"><span class="nt-ic" data-icon="play"></span><span class="nt-l">Træn</span></button></li>
+    <li><a href="#/coach" data-nav="coach"><span data-icon="gauge"></span><span class="nl">Min form</span></a></li>
+    <li><a href="#/mere" data-nav="mere"><span data-icon="more"></span><span class="nl">Mere</span></a></li>
   </ul>
 </nav>
 
