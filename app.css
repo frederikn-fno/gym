@@ -960,3 +960,5 @@ em.down { color: var(--danger); font-style: normal; font-weight: 700; font-size:
 .timeline p { font-size: 14.5px; color: var(--soft); }
 .timeline .out { color: var(--lime); font-weight: 700; }
 .doc { margin: 0; padding: 12px; border-radius: var(--r-sm); background: var(--bg-2); border: 1px solid var(--line); font-size: 12px; line-height: 1.45; overflow: auto; max-height: 340px; white-space: pre-wrap; word-break: break-word; -webkit-user-select: text; user-select: text; color: var(--soft); }
+
+.day.home svg { color: var(--lime); }

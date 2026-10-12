@@ -2034,7 +2034,7 @@ const STD = {
 const STD_F = { squat: .65, rdl: .65, bench: .55, pullup: .5, cmj: .8, broad: .85, plank: 1, run: .85, bike: .8 };
 const LEVEL_COL = ['#FF6B5B', '#FF9A3D', '#FFD84A', '#C8F03C', '#7EE8A2'];
 
-const DEF_COACH = () => ({ sex: 'm', birth: '', height: '', bf: '', goal: '', targetKg: '', targetBf: '', active: false, weights: [], tests: [], days: [], season: '', status: null, statusLog: [], dossier: [], pain: [], prefs: {} });
+const DEF_COACH = () => ({ sex: 'm', birth: '', height: '', bf: '', goal: '', targetKg: '', targetBf: '', active: false, weights: [], tests: [], days: [], homeDays: [], season: '', status: null, statusLog: [], dossier: [], pain: [], prefs: {} });
 
 /* ===== Områder til smerte og ømhed ===== */
 const AREAS = [['knæ', 'Knæ'], ['ryg', 'Ryg'], ['skulder', 'Skulder'], ['hofte', 'Hofte'], ['baglår', 'Baglår'], ['læg', 'Læg og ankel'], ['albue', 'Albue og håndled']];
@@ -3037,7 +3037,7 @@ function cleanCoach(c) {
   const pos = (v, hi) => { v = parseFloat(String(v ?? '').replace(',', '.')); return Number.isFinite(v) && v >= 0 && v <= hi ? Math.round(v * 10) / 10 : null; };
   const out = {
     sex: c.sex === 'f' ? 'f' : 'm', birth: isISO(c.birth) ? c.birth : '', height: nm(c.height, 100, 250), bf: nm(c.bf, 3, 60),
-    goal: GOAL_KEYS.includes(c.goal) ? c.goal : '', targetKg: nm(c.targetKg, 30, 250), targetBf: nm(c.targetBf, 3, 60), active: !!c.active && GOAL_KEYS.includes(c.goal), weights: [], tests: [], days: Array.isArray(c.days) ? [...new Set(c.days.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6))].sort((a, b) => a - b) : [], season: c.season === 'in' || c.season === 'off' ? c.season : ''
+    goal: GOAL_KEYS.includes(c.goal) ? c.goal : '', targetKg: nm(c.targetKg, 30, 250), targetBf: nm(c.targetBf, 3, 60), active: !!c.active && GOAL_KEYS.includes(c.goal), weights: [], tests: [], days: Array.isArray(c.days) ? [...new Set(c.days.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6))].sort((a, b) => a - b) : [], homeDays: Array.isArray(c.homeDays) ? [...new Set(c.homeDays.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6 && !(Array.isArray(c.days) && c.days.map(Number).includes(n))))].sort((a, b) => a - b) : [], season: c.season === 'in' || c.season === 'off' ? c.season : ''
   };
   out.weights = (Array.isArray(c.weights) ? c.weights : []).filter(w => isObj(w) && isISO(w.date) && nm(w.kg, 30, 250) !== '').slice(-400)
     .map(w => ({ date: w.date, kg: nm(w.kg, 30, 250), bf: nm(w.bf, 3, 60) })).sort((a, b) => a.date.localeCompare(b.date));
@@ -3317,13 +3317,13 @@ const linkBlock = (id, title, callout, tab, label) => ({ id, icon: 'test', title
 function genPlanWeek(n, ad) {
   const g = ST.coach.goal, G = GOALS[g], blocks = [];
   if (n === 1 && !ST.coach.tests.length) blocks.push(linkBlock('intro', 'Start med testen', 'Tag testen først, så regner appen vægte ud til dig. Uden test får du sæt, gentagelser og RPE, men ingen kilo.', 'test', 'Åbn testen'));
-  G.sessions.forEach(L => {
+  gymSessions().forEach(L => {
     const T = SESS[g][L], session = { id: L, title: `Pas ${L} · ${T.t}` };
     T.blocks.forEach(spec => { const b = makeBlock(spec, L, g, n, ad); if (b) { b.session = session; blocks.push(b); } });
   });
   if (n === 8) blocks.push(linkBlock('retest', 'Gentag din test', 'Tag testen igen, så kan du se din fremgang på pilemærkerne.', 'test', 'Åbn testen'));
   const note = ad.msg ? ` ${ad.msg}` : '';
-  return { n, phase: phaseOf(n), title: `UGE ${n} · ${THEMES[n - 1]}`, desc: `${G.short}. ${G.sessions.length} pas om ugen.${note}`, blocks, plan: true };
+  return { n, phase: phaseOf(n), title: `UGE ${n} · ${THEMES[n - 1]}`, desc: `${G.short}. ${gymSessions().length} pas om ugen.${note}`, blocks, plan: true };
 }
 function weekDoneRatio(w, weeks) {
   const W = weeks[w - 1]; if (!W) return null;
@@ -3518,8 +3518,18 @@ function coachWeightHTML() {
 function coachAction(a, ds) {
   const c = ST.coach;
   if (a === 'toggleDay') {
-    const d = +ds.d, cur = planDays(); c.days = cur.includes(d) ? cur.filter(x => x !== d) : [...cur, d].sort((x, y) => x - y);
-    save(); renderCoach(); renderToday(); renderDays(); renderWeek(); renderCoachCard(); renderWeekSummary(); return;
+    const d = +ds.d, G = GOALS[c.goal];
+    if (ds.t === 'home') {
+      const cur = homeDaysSel(); c.homeDays = cur.includes(d) ? cur.filter(x => x !== d) : [...cur, d].sort((x, y) => x - y);
+      c.days = planDays().filter(x => x !== d);
+    } else {
+      const cur = planDays();
+      if (cur.includes(d)) { if (cur.length <= 1) { toast('Mindst én vægtdag'); return; } c.days = cur.filter(x => x !== d); }
+      else { if (G && cur.length >= G.sessions.length) { toast(`Højst ${G.sessions.length} vægtdage i dette mål`); return; } c.days = [...cur, d].sort((x, y) => x - y); }
+      c.homeDays = homeDaysSel().filter(x => x !== d);
+    }
+    save(); if (c.active) refreshPlan(); else { renderCoach(); renderToday(); renderDays(); renderCoachCard(); renderWeekSummary(); }
+    return;
   }
   if (a === 'setSeason') { c.season = ds.s; save(); renderCoach(); renderToday(); renderWeekSummary(); renderCoachCard(); return; }
   if (a === 'condkind') {
@@ -3593,12 +3603,20 @@ const DAY_SHORT = ['man', 'tir', 'ons', 'tor', 'fre', 'lør', 'søn'];
 const seasonNow = () => ST.coach.season || (ST.coach.goal === 'offseason' ? 'off' : 'in');
 function planDays() {
   const c = ST.coach, G = GOALS[c.goal]; if (!G) return [];
-  const d = (c.days || []).slice().sort((a, b) => a - b);
+  const d = (c.days || []).slice().sort((a, b) => a - b).slice(0, G.sessions.length);
   return d.length ? d : (G.sessions.length >= 3 ? [0, 2, 4] : [1, 4]);
 }
+const homeDaysSel = () => (ST.coach.homeDays || []).filter(d => !planDays().includes(d));
+/* Antal vægtdage styrer, hvilke pas der bruges: 1 dag giver det mest alsidige pas, 2 dage de to første */
+function gymSessions() {
+  const G = GOALS[ST.coach.goal]; if (!G) return [];
+  const n = planDays().length, all = G.sessions;
+  if (n >= all.length) return all;
+  if (n === 1) return all.length >= 3 ? [all[all.length - 1]] : [all[0]];
+  return all.slice(0, n);
+}
 function sessionDay(L) {
-  const G = GOALS[ST.coach.goal]; if (!G) return null;
-  const k = G.sessions.indexOf(L), d = planDays();
+  const k = gymSessions().indexOf(L), d = planDays();
   return k >= 0 && k < d.length ? d[k] : null;
 }
 function sessionTitle(n, L) { const W = WEEKS[n - 1], b = W && W.blocks.find(x => x.session && x.session.id === L); return b ? b.session.title : `Pas ${L}`; }
@@ -3609,14 +3627,14 @@ function sessionStats(n, L) {
 }
 function todaySession() {
   if (!ST.coach.active || !GOALS[ST.coach.goal]) return null;
-  const idx = (new Date().getDay() + 6) % 7, L = GOALS[ST.coach.goal].sessions.find(l => sessionDay(l) === idx);
+  const idx = (new Date().getDay() + 6) % 7, L = gymSessions().find(l => sessionDay(l) === idx);
   return L ? { L, title: sessionTitle(curWeek(), L), ...sessionStats(curWeek(), L) } : null;
 }
 /* Næste pas, der ikke er klaret endnu: { L, title, day } */
 function nextOpenSession() {
   if (!ST.coach.active || !GOALS[ST.coach.goal]) return null;
   const n = curWeek(), today = (new Date().getDay() + 6) % 7, G = GOALS[ST.coach.goal];
-  const open = G.sessions.map(L => ({ L, day: sessionDay(L), ...sessionStats(n, L) })).filter(s => s.total && s.done < s.total);
+  const open = gymSessions().map(L => ({ L, day: sessionDay(L), ...sessionStats(n, L) })).filter(s => s.total && s.done < s.total);
   if (!open.length) return null;
   const upcoming = open.filter(s => s.day != null && s.day >= today).sort((a, b) => a.day - b.day)[0] || open[0];
   return { L: upcoming.L, title: sessionTitle(n, upcoming.L), day: upcoming.day, n };
@@ -3725,8 +3743,11 @@ function renderFremgang() {
 function scheduleHTML() {
   const c = ST.coach, G = GOALS[c.goal]; if (!G) return '';
   const days = planDays();
-  return `<div class="panel"><h3>Dine træningsdage</h3><p class="muted">Vælg ${G.sessions.length} dage. Pas ${G.sessions.join(', ')} lægges på dagene i rækkefølge.</p>
-    <div class="chips wrap" role="group" aria-label="Træningsdage" style="margin-top:10px">${DAY_SHORT.map((d, i) => `<button class="chip" type="button" data-cact="toggleDay" data-d="${i}" aria-pressed="${days.includes(i)}">${d}</button>`).join('')}</div>
+  const home = homeDaysSel(), ng = days.length;
+  const row = (t, sel) => `<div class="chips wrap" role="group" aria-label="${t === 'home' ? 'Hjemmedage' : 'Vægtdage'}" style="margin-top:8px">${DAY_SHORT.map((d, i) => `<button class="chip" type="button" data-cact="toggleDay" data-t="${t}" data-d="${i}" aria-pressed="${sel.includes(i)}">${d}</button>`).join('')}</div>`;
+  return `<div class="panel"><h3>Dine træningsdage</h3><p class="muted">Har du mange fodboldtræninger, så vælg færre vægtdage. Du kan vælge 1 til ${G.sessions.length}, og pas lægges på dagene i rækkefølge.</p>
+    <p class="t-sub" style="margin:12px 0 0">Fitness med vægte · ${ng} ${ng === 1 ? 'dag' : 'dage'}</p>${row('gym', days)}
+    <p class="t-sub" style="margin:14px 0 0">Hjemme uden vægte · ${home.length} ${home.length === 1 ? 'dag' : 'dage'}</p>${row('home', home)}
     <p class="t-sub" style="margin:14px 0 8px">Sæson</p><div class="chips" role="group" aria-label="Sæson"><button class="chip" type="button" data-cact="setSeason" data-s="in" aria-pressed="${seasonNow() === 'in'}">I sæson (kampe)</button><button class="chip" type="button" data-cact="setSeason" data-s="off" aria-pressed="${seasonNow() === 'off'}">Off-season</button></div></div>`;
 }
 
@@ -3925,7 +3946,8 @@ function dayInfo(i) {
   const d = DAYS[i], c = ST.coach, short = DAY_SHORT[i].toUpperCase();
   const baseTag = { fit: 'Fit', ball: 'Fod', fri: 'Akt', match: 'Kamp', off: 'Fri' };
   if (!c.active || !GOALS[c.goal]) return { kind: d.kind, short, tag: baseTag[d.kind], label: d.label, icon: d.icon };
-  const L = GOALS[c.goal].sessions.find(l => sessionDay(l) === i);
+  const L = gymSessions().find(l => sessionDay(l) === i);
+  if (!L && homeDaysSel().includes(i)) return { kind: 'home', short, tag: 'Hjem', label: 'Hjemmetræning uden vægt', icon: 'house' };
   if (L) return { kind: 'fit', short, tag: L, label: sessionTitle(curWeek(), L), icon: 'dumbbell' };
   if (seasonNow() === 'in' && (d.kind === 'ball' || d.kind === 'match' || d.kind === 'fri')) return { kind: d.kind, short, tag: baseTag[d.kind], label: d.label, icon: d.icon };
   return { kind: 'off', short, tag: 'Hvile', label: 'Hvile', icon: 'moon' };
@@ -3941,11 +3963,12 @@ function renderWeekSummary() {
   const n = curWeek(), c = ST.coach, pills = [];
   const pill = (label, done, total) => `<div class="ws-pill ${total && done >= total ? 'ok' : ''}"><small>${label}</small><b>${done}<span>/${total}</span></b><i style="width:${total ? Math.min(100, done / total * 100) : 0}%"></i></div>`;
   if (c.active && GOALS[c.goal]) {
-    const G = GOALS[c.goal], doneS = G.sessions.map(L => sessionStats(n, L)).filter(s => s.total && s.done >= s.total).length;
-    pills.push(pill('Pas', doneS, G.sessions.length));
+    const gs = gymSessions(), doneS = gs.map(L => sessionStats(n, L)).filter(s => s.total && s.done >= s.total).length;
+    pills.push(pill('Pas', doneS, gs.length));
   } else { const s = weekStats(n); pills.push(pill('Fitness', s.done, s.total)); }
+  const hd = c.active ? homeDaysSel().length : 0;
+  if (hd || seasonNow() === 'in') pills.push(pill('Hjemme', weekDates().filter(d => ST.homeLog.includes(d)).length, hd || 3));
   if (seasonNow() === 'in') {
-    pills.push(pill('Hjemme', weekDates().filter(d => ST.homeLog.includes(d)).length, 3));
     pills.push(pill('Fredag', FRIDAY.items.filter((_, i) => ST.fri.done[i]).length, FRIDAY.items.length));
     const mon = new Date(); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7)); const m0 = localISO(mon);
     pills.push(pill('Kamp', ST.matches.filter(m => m.date >= m0).length ? 1 : 0, 1));
@@ -3985,7 +4008,7 @@ function weakHTML(f) {
 function planCardHTML() {
   const c = ST.coach, G = GOALS[c.goal];
   if (!G) return `<div class="panel plan-card"><h3>Dit program</h3><p class="muted" style="margin:6px 0 12px">Vælg et mål, så laver appen et program til dig.</p><button class="btn btn-block btn-lime" type="button" data-ctab="mal">Vælg mål</button></div>`;
-  return `<div class="panel plan-card"><div class="goal-chip"><span class="gc-ic">${ICON[G.icon]}</span><div><b>${G.name}</b><small>${G.sessions.length} træninger om ugen · 8 uger · ${c.active ? 'aktivt' : 'ikke lavet endnu'}</small></div></div>
+  return `<div class="panel plan-card"><div class="goal-chip"><span class="gc-ic">${ICON[G.icon]}</span><div><b>${G.name}</b><small>${gymSessions().length} vægtdage om ugen · 8 uger · ${c.active ? 'aktivt' : 'ikke lavet endnu'}</small></div></div>
     <div class="fc-actions">${c.active ? '<button class="btn btn-lime" type="button" data-go="program">Åbn programmet</button>' : '<button class="btn btn-lime" type="button" data-cact="activate">Lav mit program</button>'}<button class="btn btn-ghost" type="button" data-ctab="mal">Ændr mål</button></div>
     ${c.active ? '<button class="link-btn" type="button" data-cact="deactivate">Brug standardprogrammet</button>' : ''}
     <details class="legend"><summary>Om målet</summary><p class="muted" style="padding-bottom:10px">${G.desc}</p></details></div>`;
@@ -4027,6 +4050,7 @@ function trainTarget() {
   if (c.active && GOALS[c.goal]) {
     const ses = todaySession();
     if (ses && ses.done < ses.total) return { spec: `week|${n}|${ses.L}` };
+    if (!ses && homeDaysSel().includes((new Date().getDay() + 6) % 7) && !ST.homeLog.includes(todayISO())) return { spec: `home|${homeLevel()}` };
     const nx = nextOpenSession();
     return nx ? { spec: `week|${nx.n}|${nx.L}` } : { go: 'program' };
   }
@@ -4160,7 +4184,7 @@ function athleteTraits() {
   const up = m.lifts.slice().sort((a, b) => b.pct - a.pct)[0];
   if (up && m.lifts.length > 1) t.push(['Fremgang hurtigst i', `${EX[up.ex].name} (${up.pct >= 0 ? '+' : '−'}${Math.abs(Math.round(up.pct))} %)`]);
   if (c.active && GOALS[c.goal]) {
-    const miss = {}; for (let w = 1; w < curWeek(); w++) GOALS[c.goal].sessions.forEach(L => { const s = sessionStats(w, L); if (s.total && s.done < s.total) { const d = sessionDay(L); if (d != null) miss[d] = (miss[d] || 0) + 1; } });
+    const miss = {}; for (let w = 1; w < curWeek(); w++) gymSessions().forEach(L => { const s = sessionStats(w, L); if (s.total && s.done < s.total) { const d = sessionDay(L); if (d != null) miss[d] = (miss[d] || 0) + 1; } });
     const top = Object.entries(miss).sort((a, b) => b[1] - a[1])[0];
     if (top && top[1] >= 2) t.push(['Springer oftest over', `${DAYS[+top[0]].full} (${top[1]} gange)`]);
   }
@@ -4176,7 +4200,7 @@ function buildStatusDoc() {
   const c = ST.coach, lt = lastTest(), f = lt ? formOf(lt) : null, s = c.status || computeStatus(), W = WEEKS[curWeek() - 1];
   return {
     generated: todayISO(),
-    profile: { age: ageNow(), sex: c.sex, height_cm: c.height || null, weight_kg: curWeight(), body_fat_pct: c.bf || null, goal: GOALS[c.goal] ? GOALS[c.goal].name : null, season: seasonNow(), training_days: c.active ? planDays().map(d => DAY_SHORT[d]) : [] },
+    profile: { age: ageNow(), sex: c.sex, height_cm: c.height || null, weight_kg: curWeight(), body_fat_pct: c.bf || null, goal: GOALS[c.goal] ? GOALS[c.goal].name : null, season: seasonNow(), training_days: c.active ? planDays().map(d => DAY_SHORT[d]) : [], home_days: c.active ? homeDaysSel().map(d => DAY_SHORT[d]) : [] },
     form: f ? { overall: f.overall, level: levelOf(f.overall), categories: f.cats, last_test: lt.date } : null,
     status: { level: s.level, since: s.since || null, flags: s.flags, reaction: s.reaction, completion_last_week: s.m.c1, completion_week_before: s.m.c2, avg_rpe_14d: s.m.rpe, weight_trend_kg_per_week: s.m.wr },
     athlete_profile: Object.fromEntries(athleteTraits()),
