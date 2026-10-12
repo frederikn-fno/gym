@@ -1,4 +1,5 @@
 {
+  "id": "./",
   "name": "8 ugers målmandsprogram",
   "short_name": "Målmand 8",
   "description": "Fitness- og konditionsprogram for målmænd over 8 uger, med timer, øvelsesbibliotek og kamp-tracker.",
@@ -8,7 +9,15 @@
   "background_color": "#0C1210",
   "theme_color": "#0C1210",
   "lang": "da",
+  "categories": ["sports", "health", "fitness"],
   "icons": [
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Intervaltimer", "short_name": "Timer", "url": "./#timer", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Kamp-tracker", "short_name": "Tracker", "url": "./#tracker", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
   ]
 }
