@@ -67,6 +67,7 @@
     <div class="wrap page-in">
       <div class="today-card" id="todayCard"></div>
       <div id="coachCard"></div>
+      <div id="weekSummary"></div>
       <div class="progress-card" id="heroProgress"></div>
       <div class="block-title"><h2>Min uge</h2></div>
       <ol class="days" id="days"></ol>
@@ -79,7 +80,7 @@
         <a class="tile" href="#/timer"><span data-icon="timer"></span><b>Timer</b><small>Intervaller</small></a>
         <a class="tile" href="#/tracker"><span data-icon="chart"></span><b>Tracker</b><small>Efter kamp</small></a>
         <a class="tile" href="#/ovelser"><span data-icon="grid"></span><b>Øvelser</b><small id="tileCount">Bibliotek</small></a>
-        <a class="tile" href="#/progression"><span data-icon="flame"></span><b>Progression</b><small>Gennemførte uger</small></a>
+        <a class="tile" href="#/fremgang"><span data-icon="chart"></span><b>Fremgang</b><small>Løft og rekorder</small></a>
       </nav>
     </div>
   </section>
@@ -111,6 +112,19 @@
     </div>
   </section>
 
+  <!-- ============ FREMGANG ============ -->
+  <section class="page" id="page-fremgang" data-page="fremgang" data-title="Fremgang" aria-labelledby="fremTitle" hidden>
+    <div class="wrap page-in">
+      <div class="page-head ph-title-only"><div><h2 id="fremTitle" tabindex="-1">Fremgang</h2></div></div>
+      <div id="fremBody"></div>
+    </div>
+  </section>
+
+  <!-- ============ TRÆNING (TRÆNINGSTILSTAND) ============ -->
+  <section class="page" id="page-pas" data-page="pas" data-title="Træning" aria-label="Træning" hidden>
+    <div class="wrap page-in sess" id="sessBody"></div>
+  </section>
+
   <!-- ============ HJEMME ============ -->
   <section class="page" id="page-hjemme" data-page="hjemme" data-title="Hjemme" aria-labelledby="homeTitle" hidden>
     <div class="wrap page-in">
@@ -126,6 +140,7 @@
         <p class="t-sub" style="margin:14px 0 8px">Sværhedsgrad</p>
         <div class="chips" id="homeLevels" role="group" aria-label="Vælg niveau"></div>
       </div>
+      <button class="btn btn-block btn-lime" id="homeStart" type="button">Start rutinen</button>
       <div class="blocks" id="homeBlocks"></div>
       <button class="btn btn-block btn-lime wk-done-btn" id="homeDone" type="button" aria-pressed="false">Markér dagens rutine som klaret</button>
     </div>
@@ -142,6 +157,7 @@
       <div class="fri-card">
         <div class="not-training"><span data-icon="bolt"></span><div><strong>Dette er IKKE træning.</strong><br>Du skal føle dig frisk bagefter.</div></div>
         <div class="tags" style="margin-bottom:14px"><span class="tag lime">2 runder</span><span class="tag">Ca. 10 min</span><span class="tag">Lav intensitet, høj kvalitet</span></div>
+        <button class="btn btn-block btn-lime" id="friStart" type="button" style="margin-bottom:12px">Start aktiveringen</button>
         <ul class="items" id="friItems"></ul>
         <div class="block-actions">
           <button class="btn btn-lime" id="friTimer" type="button"><span data-icon="play"></span>Start aktivering</button>
@@ -287,6 +303,7 @@
       <div class="page-head ph-title-only"><div><h2 id="moreTitle" tabindex="-1">Mere</h2></div></div>
       <nav class="list" aria-label="Flere sider">
         <a class="list-row" href="#/coach"><span class="lr-ic" data-icon="gauge"></span><span class="lr-t"><b>Min form</b><small>Test, mål og tilpasset program</small></span><span class="lr-go" data-icon="chev"></span></a>
+        <a class="list-row" href="#/fremgang"><span class="lr-ic" data-icon="chart"></span><span class="lr-t"><b>Fremgang</b><small>Løft, rekorder og volumen</small></span><span class="lr-go" data-icon="chev"></span></a>
         <a class="list-row" href="#/hjemme"><span class="lr-ic" data-icon="house"></span><span class="lr-t"><b>Hjemme · før træning</b><small>12 min uden udstyr</small></span><span class="lr-go" data-icon="chev"></span></a>
         <a class="list-row" href="#/fredag"><span class="lr-ic" data-icon="bolt"></span><span class="lr-t"><b>Fredag · klar til kamp</b><small>Let aktivering</small></span><span class="lr-go" data-icon="chev"></span></a>
         <a class="list-row" href="#/tracker"><span class="lr-ic" data-icon="chart"></span><span class="lr-t"><b>Kamp-tracker</b><small>Registrér og følg udviklingen</small></span><span class="lr-go" data-icon="chev"></span></a>
