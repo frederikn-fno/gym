@@ -83,7 +83,10 @@
   <!-- 3–8. UGE-NAVIGATION OG PROGRAM -->
   <section class="section wrap" id="program" aria-labelledby="progTitle">
     <div class="sec-head">
-      <h2 id="progTitle">Program</h2>
+      <div>
+        <h2 id="progTitle">Program</h2>
+        <p class="sec-lead">Tryk på en øvelse for at se den, markere den klaret eller skifte den ud med en lignende.</p>
+      </div>
       <a class="link-btn" href="#rpe">Hvad er RPE?</a>
     </div>
     <nav class="weeknav" aria-label="Vælg uge">
@@ -126,9 +129,22 @@
 
   <!-- 10. ØVELSESBIBLIOTEK -->
   <section class="section wrap" id="ovelser" aria-labelledby="libTitle">
-    <div class="sec-head"><h2 id="libTitle">Øvelses&shy;bibliotek</h2></div>
-    <div class="chips" id="libChips" role="group" aria-label="Filtrér øvelser"></div>
+    <div class="sec-head">
+      <div>
+        <h2 id="libTitle">Øvelses&shy;bibliotek</h2>
+        <p class="sec-lead">Hver øvelse viser, hvad den er <b>godt til</b>. Vil du bytte en øvelse i programmet? Åbn den, og tryk "Skift øvelse".</p>
+      </div>
+    </div>
+    <details class="legend"><summary>Hvad betyder tagsene?</summary><dl id="libLegend"></dl></details>
+    <div class="chips" id="libChips" role="group" aria-label="Godt til"></div>
+    <div class="lib-tools">
+      <label class="field">Søg<input type="search" id="libSearch" placeholder="Søg efter øvelse, fx squat eller core" autocomplete="off"></label>
+      <label class="field">Udstyr<select id="libEquip"></select></label>
+      <label class="field">Type<select id="libCat"></select></label>
+    </div>
+    <p class="lib-count" id="libCount" aria-live="polite"></p>
     <div class="lib" id="lib"></div>
+    <button class="btn btn-block lib-more" id="libMore" type="button" hidden>Vis flere</button>
   </section>
 
   <!-- 11. RPE -->

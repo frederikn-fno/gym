@@ -375,8 +375,17 @@ function illustration(id, cls = '') {
   if (!_illuCache.has(k)) _illuCache.set(k, buildIllustration(id, cls));
   return _illuCache.get(k);
 }
+const CAT_ICON = { Kondition: 'pulse', Bevægelse: 'glove', Eksplosiv: 'bolt', Styrke: 'dumbbell', Core: 'core', Mobilitet: 'repeat', Fokus: 'focus' };
+/* Øvelser uden tegnet figur får et ikonkort med udstyr og "godt til" */
+function fallbackIllustration(id, cls) {
+  const e = EX[id], ic = (ICON[CAT_ICON[e.cat]] || ICON.dumbbell).replace('<svg ', '<svg x="125" y="28" width="110" height="110" style="color:#C8F03C" ');
+  return `<svg viewBox="0 0 360 212" class="illu illu-fb ${cls}" role="img" aria-label="${esc(e.name)}" focusable="false"><rect x="0.5" y="0.5" width="359" height="211" rx="18" fill="#111A15" stroke="#21302A"/>${ic}
+    <text x="180" y="156" text-anchor="middle" class="illu-label">${esc(e.equip.toUpperCase())}</text><text x="180" y="182" text-anchor="middle" class="illu-note">${esc(e.good.slice(0, 3).join(' · ').toUpperCase())}</text></svg>`;
+}
 function buildIllustration(id, cls) {
-  const X = ILL[id];
+  const key = ILL[id] ? id : (EX[id] && EX[id].illu);
+  if (!ILL[key]) return EX[id] ? fallbackIllustration(id, cls) : '';
+  const X = ILL[key];
   if (!X) return '';
   const labels = X.labels || ['START', 'SLUT'];
   const nm = (typeof EX !== 'undefined' && EX[id]) ? EX[id].name : 'Øvelse';
@@ -435,7 +444,22 @@ const ICON = {
 };
 
 /* ===== Øvelser ===== */
-const CATS = ['Alle', 'Kondition', 'Bevægelse', 'Eksplosiv', 'Styrke', 'Core', 'Fokus', 'Hjemme'];
+const CATS = ['Alle', 'Kondition', 'Bevægelse', 'Eksplosiv', 'Styrke', 'Core', 'Mobilitet', 'Fokus'];
+/* "Godt til": hvad en øvelse bruges til. Vises som tags ved alle øvelser. */
+const BENEFITS = [
+  { k: 'Styrke', d: 'Kraft i ben, ryg, bryst og skuldre. Giver stabilitet og kraft i alle aktioner.' },
+  { k: 'Eksplosivitet', d: 'Hurtig kraftudvikling: afsæt til redninger, spring og udkast.' },
+  { k: 'Udholdenhed', d: 'Kondition og evnen til at gentage aktioner hele kampen.' },
+  { k: 'Core', d: 'Stabil krop midt i bevægelsen: overfører kraft og giver færre skader.' },
+  { k: 'Hurtighed', d: 'Hurtige fødder, reaktion og første skridt.' },
+  { k: 'Mobilitet', d: 'Bevægelighed i hofter, ryg, skuldre og ankler.' },
+  { k: 'Balance', d: 'Kontrol på ét ben og i ustabile stillinger.' },
+  { k: 'Skadesforebyggelse', d: 'Styrker led og muskler, der ofte bliver overbelastet.' },
+  { k: 'Fokus', d: 'Ro, koncentration og parathed i hovedet.' }
+];
+const EQUIPS = ['Ingen udstyr', 'Elastik', 'Håndvægte', 'Kettlebell', 'Stang', 'Bænk/kasse', 'Kabel', 'Maskine', 'Medicinbold', 'Bold', 'Andet'];
+const PATTERN_TXT = { cardio: 'konditionsøvelser', squat: 'benstyrke', hinge: 'baglår og baller', push: 'skub (bryst og skuldre)', pull: 'træk (ryg)', core: 'core', carry: 'bæreøvelser', plyo: 'eksplosive spring og kast', calf: 'læg og ankler', agility: 'hurtige fødder', mobility: 'bevægelighed', focus: 'fokus' };
+const isHomeEx = e => !!e.home || e.equip === 'Elastik';
 const EX = {
   bike: {
     name: 'Cykel / crosstrainer', cat: 'Kondition',
@@ -584,9 +608,381 @@ const EX = {
 };
 
 
+
+/* ===== Udvidet øvelsesbibliotek =====
+   good    = hvad øvelsen er godt til (vises som tags overalt)
+   equip   = udstyr
+   pattern = bevægelsesmønster: øvelser med samme mønster kan byttes ud med hinanden i programmet */
+const META = {
+  bike: [['Udholdenhed'], 'Maskine', 'cardio'],
+  assault: [['Udholdenhed', 'Eksplosivitet'], 'Maskine', 'cardio'],
+  shuffle: [['Hurtighed', 'Udholdenhed'], 'Ingen udstyr', 'agility'],
+  squat: [['Styrke', 'Mobilitet'], 'Ingen udstyr', 'squat'],
+  latlunge: [['Mobilitet', 'Styrke', 'Skadesforebyggelse'], 'Ingen udstyr', 'mobility'],
+  calf: [['Styrke', 'Skadesforebyggelse'], 'Ingen udstyr', 'calf'],
+  pallof: [['Core', 'Skadesforebyggelse'], 'Kabel', 'core'],
+  deadbug: [['Core'], 'Ingen udstyr', 'core'],
+  sideplank: [['Core', 'Balance'], 'Ingen udstyr', 'core'],
+  bounds: [['Eksplosivitet', 'Balance'], 'Ingen udstyr', 'plyo'],
+  squatjump: [['Eksplosivitet', 'Styrke'], 'Ingen udstyr', 'plyo'],
+  bulgarian: [['Styrke', 'Balance'], 'Bænk/kasse', 'squat'],
+  rdl: [['Styrke', 'Skadesforebyggelse'], 'Stang', 'hinge'],
+  latpull: [['Styrke'], 'Maskine', 'pull'],
+  farmer: [['Core', 'Styrke'], 'Kettlebell', 'carry'],
+  fastfeet: [['Hurtighed', 'Udholdenhed'], 'Ingen udstyr', 'agility'],
+  glutebridge: [['Styrke', 'Skadesforebyggelse'], 'Ingen udstyr', 'hinge'],
+  pushup: [['Styrke'], 'Ingen udstyr', 'push'],
+  plank: [['Core'], 'Ingen udstyr', 'core'],
+  reverselunge: [['Styrke', 'Balance'], 'Ingen udstyr', 'squat'],
+  birddog: [['Core', 'Balance', 'Skadesforebyggelse'], 'Ingen udstyr', 'core'],
+  getup: [['Hurtighed', 'Eksplosivitet'], 'Ingen udstyr', 'agility'],
+  reaction: [['Fokus', 'Hurtighed'], 'Ingen udstyr', 'focus'],
+  breath: [['Fokus'], 'Ingen udstyr', 'focus']
+};
+Object.entries(META).forEach(([id, [good, equip, pattern]]) => Object.assign(EX[id], { good, equip, pattern }));
+
+function A(id, name, cat, good, equip, pattern, goal, how, dose, rest, tips, o = {}) {
+  EX[id] = { name, cat, good, equip, pattern, goal, how, dose, rest, tips, home: equip === 'Ingen udstyr', ...o };
+}
+
+/* --- Kondition --- */
+A('rower', 'Romaskine', 'Kondition', ['Udholdenhed', 'Styrke'], 'Maskine', 'cardio',
+  'Aerob base med hele kroppen og lav belastning på leddene.',
+  ['Sæt fødderne fast, og tag fat i håndtaget med strakte arme.', 'Skub fra med benene først, læn let tilbage, og træk håndtaget ind til brystet.', 'Stræk armene, før kroppen frem, og lad benene bøje, så du er klar til næste træk.'],
+  '5–30 min', 'Ingen', ['Rækkefølge ud: ben, krop, arme. Ind i omvendt rækkefølge.', 'Hold ryggen lang, og træk ikke med ryggen alene.']);
+A('run', 'Løb (let jogging)', 'Kondition', ['Udholdenhed'], 'Ingen udstyr', 'cardio',
+  'Aerob base, der kan laves næsten hvor som helst.',
+  ['Start med at gå et par minutter, og kom op i et roligt tempo.', 'Løb afslappet med korte skridt og let fremadlænet krop.', 'Hold et tempo, hvor du kan tale i korte sætninger.'],
+  '10–30 min', 'Ingen', ['Land under kroppen, ikke langt foran den.', 'Løbebånd: sæt hældningen på 1 % for at ligne løb ude.']);
+A('skierg', 'Ski-erg', 'Kondition', ['Udholdenhed', 'Core'], 'Maskine', 'cardio',
+  'Kondition med fokus på ryg, core og arme, og skånsomt for knæene.',
+  ['Stå med let bøjede knæ, og tag fat i håndtagene over hovedet.', 'Træk begge arme ned og frem, mens du bøjer i hofter og knæ.', 'Lad armene løfte sig igen, og stræk kroppen op til næste træk.'],
+  '5–20 min', 'Ingen', ['Brug core og lats, ikke kun armene.', 'Hold et jævnt tempo på RPE 5–6.']);
+A('jumprope', 'Hoppetov', 'Kondition', ['Udholdenhed', 'Hurtighed', 'Balance'], 'Andet', 'cardio',
+  'Rytme, lette fødder og kondition på kort tid.',
+  ['Stå oprejst med albuerne ind mod kroppen.', 'Sving tovet fra håndleddene, og hop let på forfoden.', 'Hold hoppene små og rytmiske, og land blødt.'],
+  '30–60 sek', '30 sek', ['Hop kun lige så højt, at tovet passerer.', 'Slap af i skuldrene.'], { secs: 30 });
+A('stairs', 'Trappemaskine', 'Kondition', ['Udholdenhed', 'Styrke'], 'Maskine', 'cardio',
+  'Kondition og benstyrke med lav stødbelastning.',
+  ['Stå oprejst, og hold let på rækværket.', 'Træd op i et jævnt tempo, og brug hele foden.', 'Stå rank, og undgå at hænge tungt i håndtagene.'],
+  '10–20 min', 'Ingen', ['Rank overkrop og blikket frem.', 'Sænk tempoet, hvis du begynder at hænge i armene.']);
+
+/* --- Ben: squat-mønster --- */
+A('goblet', 'Goblet squat', 'Styrke', ['Styrke', 'Core'], 'Kettlebell', 'squat',
+  'Squat med vægt foran kroppen, der lærer dig at holde overkroppen rank.',
+  ['Hold en kettlebell ind mod brystet med begge hænder.', 'Sæt dig ned mellem knæene, til lårene er vandrette, og brystet er oppe.', 'Pres op gennem hele foden, til du står rank.'],
+  '10 reps', '60 sek', ['Albuerne peger ned mellem knæene.', 'Hælene bliver i gulvet.'], { illu: 'squat', log: true });
+A('splitsquat', 'Split squat', 'Styrke', ['Styrke', 'Balance'], 'Ingen udstyr', 'squat',
+  'Benstyrke og balance, uden at skulle bruge en bænk.',
+  ['Stå i skridtstilling med et stort skridt mellem fødderne.', 'Sænk dig lige ned, til bageste knæ næsten rører gulvet.', 'Pres op gennem forreste hæl, uden at fødderne flytter sig.'],
+  '8/ben', '45 sek', ['Overkroppen er lodret og midten spændt.', 'Forreste knæ følger tæerne.']);
+A('walkinglunge', 'Gående udfald', 'Styrke', ['Styrke', 'Balance', 'Udholdenhed'], 'Ingen udstyr', 'squat',
+  'Benstyrke og kontrol i bevægelse.',
+  ['Stå oprejst med hænderne i siden eller foran brystet.', 'Tag et langt skridt frem, og sænk bageste knæ mod gulvet.', 'Pres dig op i næste skridt, og skift ben, mens du går fremad.'],
+  '8/ben', '45 sek', ['Hold overkroppen rank.', 'Tag skridtet langt nok til, at forreste knæ ikke går forbi tæerne.']);
+A('stepup', 'Step-up', 'Styrke', ['Styrke', 'Eksplosivitet', 'Balance'], 'Bænk/kasse', 'squat',
+  'Enbens-styrke, der ligner et afsæt.',
+  ['Stil dig foran en bænk eller kasse i knæhøjde.', 'Sæt det ene ben helt op, og pres dig op, til du står på bænken.', 'Sænk dig kontrolleret ned igen, og skift ben.'],
+  '8/ben', '60 sek', ['Pres med forreste ben, ikke med bagerste.', 'Vil du have det eksplosivt, kan du tage et let hop i toppen.'], { log: true });
+A('sumosquat', 'Sumo squat', 'Styrke', ['Styrke', 'Mobilitet'], 'Ingen udstyr', 'squat',
+  'Styrke og bevægelighed i lysken og hofterne.',
+  ['Stå med fødderne bredt og tæerne ud.', 'Sæt dig lige ned mellem benene, med knæene over tæerne.', 'Pres op gennem hælene, og stram ballerne i toppen.'],
+  '12 reps', '30 sek', ['Knæene bliver ude over tæerne.', 'Hold brystet løftet.']);
+A('wallsit', 'Vægsiddende', 'Styrke', ['Udholdenhed', 'Styrke'], 'Ingen udstyr', 'squat',
+  'Udholdenhed i lårene, som du kan træne alle steder.',
+  ['Læn ryggen mod en væg med fødderne et skridt frem.', 'Glid ned, til knæene er i 90 grader.', 'Hold positionen, og træk vejret roligt.'],
+  '30–45 sek', '45 sek', ['Knæene over anklerne, ikke over tæerne.', 'Pres ryggen mod væggen.'], { secs: 30 });
+A('frontsquat', 'Frontsquat', 'Styrke', ['Styrke', 'Core'], 'Stang', 'squat',
+  'Tung benøvelse, der også udfordrer core og øvre ryg.',
+  ['Hvil stangen på forsiden af skuldrene med albuerne højt.', 'Sæt dig ned, til lårene er vandrette, med oprejst overkrop.', 'Pres op gennem hælene, til du står rank.'],
+  '6 reps', '90 sek', ['Albuerne højt hele vejen.', 'Start let, og lær teknikken først.'], { log: true });
+A('legpress', 'Benpres', 'Styrke', ['Styrke'], 'Maskine', 'squat',
+  'Tung benstyrke, hvor ryggen er støttet.',
+  ['Sid med ryggen fladt mod puden og fødderne i skulderbredde.', 'Sænk vægten, til knæene er i ca. 90 grader.', 'Pres vægten op uden at låse knæene helt.'],
+  '10 reps', '90 sek', ['Lænden må ikke løfte sig fra puden.', 'Knæene følger tæerne.'], { log: true });
+A('singlesquat', 'Enbens squat til bænk', 'Styrke', ['Styrke', 'Balance'], 'Bænk/kasse', 'squat',
+  'Meget stærke ben og balance på ét ben.',
+  ['Stå på ét ben foran en bænk, og hold det andet ben frem.', 'Sæt dig langsomt ned på bænken uden at miste balancen.', 'Rejs dig op på samme ben uden at bruge hænderne.'],
+  '5/ben', '60 sek', ['Langsomt ned, kontrolleret.', 'Brug en højere bænk, hvis det er for hårdt.']);
+
+/* --- Ben: hofte-mønster --- */
+A('hipthrust', 'Hip thrust', 'Styrke', ['Styrke', 'Eksplosivitet'], 'Bænk/kasse', 'hinge',
+  'Stærke baller, der giver kraft i afsæt og sprint.',
+  ['Læn øverste ryg mod en bænk med bøjede knæ og fødderne fladt.', 'Pres hoften op, til krop og lår danner en lige linje.', 'Hold et sekund i toppen, og sænk kontrolleret.'],
+  '10 reps', '60 sek', ['Hagen ind mod brystet, og blikket frem.', 'Pres med hælene, og spænd ballerne.'], { log: true });
+A('slrdl', 'Enbens RDL', 'Styrke', ['Styrke', 'Balance', 'Skadesforebyggelse'], 'Håndvægte', 'hinge',
+  'Stærke baglår og baller, og balance på ét ben.',
+  ['Stå på ét ben med en let vægt i modsatte hånd.', 'Læn overkroppen frem, mens det frie ben løftes bagud.', 'Stram ballen, og rejs dig tilbage til start.'],
+  '6/ben', '60 sek', ['Hoften peger mod gulvet, ikke ud til siden.', 'Fokusér på et punkt foran dig for at holde balancen.'], { log: true });
+A('kbswing', 'Kettlebell swing', 'Eksplosiv', ['Eksplosivitet', 'Styrke', 'Udholdenhed'], 'Kettlebell', 'hinge',
+  'Eksplosiv hofteudstrækning, der træner kraft og kondition på samme tid.',
+  ['Stå med fødderne i skulderbredde og kettlebellen foran dig.', 'Skub hoften bagud, og sving kettlebellen mellem benene.', 'Skub hoften kraftigt frem, så kettlebellen svinger op til brysthøjde.'],
+  '12 reps', '60 sek', ['Kraften kommer fra hofterne, ikke armene.', 'Ryggen er lige hele tiden.'], { log: true });
+A('slbridge', 'Glute bridge på ét ben', 'Styrke', ['Styrke', 'Balance'], 'Ingen udstyr', 'hinge',
+  'Stærke baller og kontrol i hoften, uden udstyr.',
+  ['Lig på ryggen med det ene ben strakt i luften.', 'Pres hælen på standbenet ned, og løft hoften.', 'Hold et sekund, og sænk kontrolleret.'],
+  '8/ben', '30 sek', ['Hoften forbliver vandret.', 'Spænd ballen, ikke lænden.'], { illu: 'glutebridge' });
+A('nordic', 'Nordic hamstring curl', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Ingen udstyr', 'hinge',
+  'Stærke baglår, der beskytter mod forstrækninger i spurt og udspark.',
+  ['Knæl på en blød måtte, og få en makker eller et fast anker til at holde dine ankler.', 'Sænk overkroppen langsomt fremad med lige linje fra knæ til hoved.', 'Grib gulvet med hænderne, og skub dig tilbage til start.'],
+  '4–6 reps', '90 sek', ['Det vigtigste er den langsomme nedadgående del.', 'Start med få gentagelser. Det giver ømme baglår.'], { hard: true, home: false });
+A('hamwalk', 'Baglårs-walkout', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Andet', 'hinge',
+  'Skånsom baglårsøvelse på gulvet med glidere eller et håndklæde.',
+  ['Lig på ryggen med hælene på glidere eller håndklæder, og løft hoften.', 'Glid fødderne langsomt ud, mens hoften holdes oppe.', 'Træk hælene tilbage mod ballerne.'],
+  '8 reps', '45 sek', ['Hoften må ikke synke.', 'Tag kortere skridt, hvis det er for hårdt.']);
+A('dbrdl', 'RDL med håndvægte', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Håndvægte', 'hinge',
+  'Stærk bagside af lår, baller og ryg, hvis der ikke er en stang.',
+  ['Stå med en håndvægt i hver hånd foran lårene.', 'Skub hoften bagud, og lad vægtene glide langs benene.', 'Pres hoften frem, og rejs dig.'],
+  '10 reps', '60 sek', ['Ryggen er lige hele tiden.', 'Hold vægtene tæt på kroppen.'], { illu: 'rdl', log: true });
+
+/* --- Skub --- */
+A('kneepushup', 'Armstrækninger på knæ', 'Styrke', ['Styrke'], 'Ingen udstyr', 'push',
+  'Lettere version af armstrækninger, når du skal bygge op.',
+  ['Knæene i gulvet, hænderne lidt bredere end skuldrene.', 'Sænk brystet mod gulvet med albuerne skråt ud.', 'Pres dig op, til armene er strakte.'],
+  '10 reps', '30 sek', ['Kroppen er en lige linje fra knæ til hoved.', 'Gå videre til almindelige, når du kan lave 12.'], { illu: 'pushup' });
+A('diamondpush', 'Diamant-armstrækninger', 'Styrke', ['Styrke'], 'Ingen udstyr', 'push',
+  'Armstrækninger med fokus på triceps.',
+  ['Placér hænderne tæt sammen under brystet, så tommel og pegefinger danner en diamant.', 'Sænk brystet mod hænderne med albuerne tæt ind.', 'Pres dig op.'],
+  '8 reps', '45 sek', ['Fokus på triceps.', 'Lav dem på knæ, hvis det er for tungt.'], { illu: 'pushup' });
+A('dbpress', 'Skulderpres med håndvægte', 'Styrke', ['Styrke'], 'Håndvægte', 'push',
+  'Stærke skuldre til udkast og høje bolde.',
+  ['Sid eller stå med håndvægte i skulderhøjde.', 'Pres vægtene lige op over hovedet, til armene er strakte.', 'Sænk kontrolleret tilbage til skuldrene.'],
+  '8 reps', '75 sek', ['Spænd mave og baller, så lænden ikke svajer.', 'Albuerne er lidt foran kroppen.'], { log: true });
+A('dbbench', 'Bænkpres med håndvægte', 'Styrke', ['Styrke'], 'Håndvægte', 'push',
+  'Stærkt bryst, skuldre og arme.',
+  ['Lig på en bænk med en håndvægt i hver hånd over brystet.', 'Sænk vægtene ned langs siden af brystet, til albuerne er i 90 grader.', 'Pres vægtene op, til armene er strakte.'],
+  '8 reps', '90 sek', ['Skulderbladene er samlet og ned i bænken.', 'Albuerne ca. 45 grader ud fra kroppen.'], { log: true });
+A('pikepush', 'Pike push-up', 'Styrke', ['Styrke'], 'Ingen udstyr', 'push',
+  'Skulderstyrke uden udstyr.',
+  ['Kom op i en omvendt V-stilling med hoften højt.', 'Sænk hovedet mod gulvet mellem hænderne.', 'Pres dig op, til armene er strakte.'],
+  '6–8 reps', '45 sek', ['Jo højere hofte, jo mere skulder.', 'Hold hovedet mellem armene.']);
+A('clappush', 'Eksplosive armstrækninger', 'Eksplosiv', ['Eksplosivitet', 'Styrke'], 'Ingen udstyr', 'push',
+  'Hurtig kraft i bryst og arme, som ved et hurtigt udkast.',
+  ['Start i armstrækningsposition med spændt core.', 'Sænk kontrolleret, og pres eksplosivt op, så hænderne forlader gulvet.', 'Land blødt med let bøjede albuer.'],
+  '5 reps', '60 sek', ['Gør det kun, hvis almindelige armstrækninger er lette.', 'Kvalitet frem for antal.'], { hard: true });
+
+/* --- Træk --- */
+A('dbrow', 'Håndvægtsroning', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Håndvægte', 'pull',
+  'Stærk ryg og stabile skuldre.',
+  ['Støt den ene hånd og det ene knæ på en bænk, og hold en håndvægt i den anden hånd.', 'Træk håndvægten op mod hoften, med albuen tæt på kroppen.', 'Sænk kontrolleret, og skift side.'],
+  '8/side', '60 sek', ['Ryggen er vandret og ret.', 'Træk albuen mod loftet.'], { log: true });
+A('invrow', 'Inverteret roning', 'Styrke', ['Styrke'], 'Stang', 'pull',
+  'Stærk ryg, hvor du bruger din egen kropsvægt.',
+  ['Lig under en stang i hoftehøjde, og grib den med strakte arme.', 'Træk brystet op mod stangen, med kroppen som en lige planke.', 'Sænk dig kontrolleret ned.'],
+  '8 reps', '60 sek', ['Bøj knæene for at gøre det lettere.', 'Skulderbladene samles øverst.']);
+A('pullup', 'Pull-ups', 'Styrke', ['Styrke'], 'Stang', 'pull',
+  'Stærk ryg og stærke arme, som er vigtige til at gribe og trække.',
+  ['Hæng i en stang med et greb lidt bredere end skuldrene.', 'Træk dig op, til hagen er over stangen.', 'Sænk kontrolleret til strakte arme.'],
+  '4–6 reps', '90 sek', ['Start med at trække skulderbladene ned.', 'Brug elastik eller maskine til hjælp, hvis du ikke kan endnu.'], { log: true });
+A('bandpull', 'Pull-apart med elastik', 'Styrke', ['Skadesforebyggelse', 'Styrke'], 'Elastik', 'pull',
+  'Aktiverer skuldre og øvre ryg, som ofte bliver stive.',
+  ['Hold en elastik foran dig i skulderhøjde med strakte arme.', 'Træk elastikken fra hinanden, til den rører brystet.', 'Før langsomt tilbage.'],
+  '15 reps', '30 sek', ['Skuldrene ned, ikke op mod ørerne.', 'Tag en tykkere elastik, hvis det er for let.']);
+A('cablerow', 'Siddende kabelroning', 'Styrke', ['Styrke'], 'Kabel', 'pull',
+  'Stærk ryg og skulderblade.',
+  ['Sid med let bøjede knæ, og tag fat i håndtaget.', 'Træk håndtaget ind mod maven, og saml skulderbladene.', 'Før kontrolleret tilbage med strakte arme.'],
+  '10 reps', '75 sek', ['Overkroppen er ret og stille.', 'Albuerne tæt på kroppen.'], { log: true });
+A('facepull', 'Face pull', 'Styrke', ['Skadesforebyggelse', 'Styrke'], 'Kabel', 'pull',
+  'Sunde skuldre, når du kaster og griber meget.',
+  ['Stil kablet i ansigtshøjde med et rebhåndtag.', 'Træk rebet mod ansigtet, med albuerne højt og udad.', 'Før langsomt tilbage.'],
+  '12 reps', '45 sek', ['Brug en let vægt.', 'Træk håndtaget helt ind til ansigtet.'], { log: true });
+A('superman', 'Superman', 'Core', ['Core', 'Styrke', 'Skadesforebyggelse'], 'Ingen udstyr', 'pull',
+  'Stærk nedre ryg og baller.',
+  ['Lig på maven med armene strakt frem.', 'Løft arme og ben samtidig få centimeter fra gulvet.', 'Hold et sekund, og sænk roligt.'],
+  '10 reps', '30 sek', ['Kig ned i gulvet, så nakken er neutral.', 'Spænd ballerne.']);
+
+/* --- Core --- */
+A('hollow', 'Hollow hold', 'Core', ['Core'], 'Ingen udstyr', 'core',
+  'Stærk, stram mave og kontrol i hele kroppen.',
+  ['Lig på ryggen med armene strakt over hovedet.', 'Løft skuldre og ben få centimeter fra gulvet, og pres lænden ned.', 'Hold positionen, og træk vejret roligt.'],
+  '20 sek', '30 sek', ['Lænden skal være presset ned i gulvet.', 'Bøj knæene, hvis det er for hårdt.'], { secs: 20 });
+A('mtnclimber', 'Mountain climbers', 'Core', ['Core', 'Udholdenhed', 'Hurtighed'], 'Ingen udstyr', 'core',
+  'Stram core og høj puls på samme tid.',
+  ['Start i armstrækningsposition med strakte arme.', 'Træk knæene skiftevis hurtigt op mod brystet.', 'Hold hoften nede og kroppen stram.'],
+  '20 sek', '30 sek', ['Hænderne er direkte under skuldrene.', 'Hold et jævnt tempo.'], { secs: 20, hard: true });
+A('russiantwist', 'Russian twist', 'Core', ['Core'], 'Ingen udstyr', 'core',
+  'Stærke skrå mavemuskler og rotation.',
+  ['Sid med bøjede knæ, og læn overkroppen let tilbage.', 'Drej overkroppen fra side til side, og rør gulvet ved hver side.', 'Hold brystet oppe og ryggen ret.'],
+  '10/side', '30 sek', ['Drej fra brystkassen, ikke kun armene.', 'Løft fødderne for at gøre det sværere.']);
+A('legraise', 'Liggende benløft', 'Core', ['Core'], 'Ingen udstyr', 'core',
+  'Stærk nedre mave.',
+  ['Lig på ryggen med benene strakte og hænderne under ballerne.', 'Løft benene til lodret, uden at lænden løfter sig.', 'Sænk langsomt, uden at fødderne rører gulvet.'],
+  '8 reps', '30 sek', ['Bøj knæene let, hvis lænden løfter sig.', 'Langsomt ned er det vigtigste.']);
+A('bicycle', 'Cykelcrunch', 'Core', ['Core'], 'Ingen udstyr', 'core',
+  'Mave og skrå mavemuskler i en kontrolleret bevægelse.',
+  ['Lig på ryggen med hænderne ved tindingerne.', 'Træk modsat albue og knæ mod hinanden, mens det andet ben strækkes ud.', 'Skift side i et roligt, kontrolleret tempo.'],
+  '10/side', '30 sek', ['Træk ikke i nakken.', 'Roligt og kontrolleret, ikke hurtigt.']);
+A('abwheel', 'Mavehjul', 'Core', ['Core', 'Styrke'], 'Andet', 'core',
+  'Meget stærk core, som modstår at svaje i lænden.',
+  ['Knæl med mavehjulet foran dig, og hold ryggen let rundet.', 'Rul langsomt frem, så langt du kan kontrollere.', 'Træk dig tilbage med maven.'],
+  '6 reps', '60 sek', ['Start med korte stræk.', 'Stop, hvis lænden svajer.'], { hard: true });
+A('copenhagen', 'Copenhagen plank', 'Core', ['Core', 'Skadesforebyggelse'], 'Bænk/kasse', 'core',
+  'Stærke adduktorer og hofte, som beskytter lysken ved sidebevægelser.',
+  ['Lig på siden med øverste ben på en bænk og albuen under skulderen.', 'Løft hoften, så kroppen er en lige linje.', 'Hold positionen, og skift side.'],
+  '20 sek/side', '45 sek', ['Start med knæet på bænken, hvis det er for hårdt.', 'Hoften må ikke synke.'], { secs: 20, perSide: true, hard: true });
+A('bandpallof', 'Pallof press med elastik', 'Core', ['Core', 'Skadesforebyggelse'], 'Elastik', 'core',
+  'Samme øvelse som Pallof press, bare med elastik.',
+  ['Fastgør elastikken i sidehøjde, og stå sidelæns med håndtaget ind mod brystet.', 'Pres armene lige frem, til de er strakte.', 'Hold 1 sekund uden at dreje, og før tilbage.'],
+  '10/side', '30 sek', ['Hofter og skuldre peger frem.', 'Træd længere væk for mere modstand.'], { illu: 'pallof' });
+A('woodchop', 'Kabel-woodchop', 'Core', ['Core', 'Eksplosivitet'], 'Kabel', 'core',
+  'Kraft i rotation, som i et kast eller en udsparkning.',
+  ['Stå sidelæns til kablet i højeste position med begge hænder på håndtaget.', 'Træk håndtaget diagonalt ned over kroppen, mens du drejer.', 'Før kontrolleret tilbage.'],
+  '10/side', '45 sek', ['Drej fra hofte og krop, ikke kun armene.', 'Fødderne drejer med.'], { log: true });
+A('plankreach', 'Planke med skuldertryk', 'Core', ['Core', 'Balance'], 'Ingen udstyr', 'core',
+  'Stabil core, mens kroppen bevæger sig.',
+  ['Start i armstrækningsposition med fødderne lidt bredere end hoften.', 'Rør skiftevis modsat skulder med en hånd.', 'Hold hoften helt stille.'],
+  '10/side', '30 sek', ['Bred fodstilling gør det lettere.', 'Hoften må ikke vippe.']);
+
+/* --- Bæreøvelser --- */
+A('suitcase', 'Suitcase carry', 'Core', ['Core', 'Styrke', 'Balance'], 'Kettlebell', 'carry',
+  'Stabil overkrop under ensidig belastning.',
+  ['Tag en tung vægt i én hånd ved siden af kroppen.', 'Gå rank med korte, rolige skridt uden at læne dig mod siden.', 'Sæt vægten ned, og skift hånd.'],
+  '30 m/side', '60 sek', ['Skuldrene er i samme højde.', 'Spænd maven, som om nogen skulle slå dig.'], { log: true });
+A('ohcarry', 'Overhead carry', 'Core', ['Core', 'Styrke', 'Balance'], 'Kettlebell', 'carry',
+  'Stabile skuldre og core med en vægt over hovedet.',
+  ['Pres en kettlebell eller håndvægt lige op over hovedet med strakt arm.', 'Gå rank med korte skridt, mens armen holdes lodret.', 'Sæt vægten kontrolleret ned, og skift arm.'],
+  '20 m/side', '60 sek', ['Håndled og albue er i en lige linje.', 'Ribbenene ned.'], { log: true });
+A('bearcrawl', 'Bear crawl', 'Core', ['Core', 'Udholdenhed', 'Hurtighed'], 'Ingen udstyr', 'carry',
+  'Core, skuldre og kondition i en bevægelse.',
+  ['Kom på alle fire med knæene let over gulvet.', 'Kryb frem med modsat hånd og fod.', 'Hold ryggen vandret og hoften lav.'],
+  '10 m', '45 sek', ['Hold knæene så lave som muligt.', 'Små skridt og rolig kontrol.'], { hard: true });
+
+/* --- Eksplosive spring og kast --- */
+A('skater', 'Skater hop', 'Eksplosiv', ['Eksplosivitet', 'Balance', 'Hurtighed'], 'Ingen udstyr', 'plyo',
+  'Eksplosiv sidebevægelse med kontrol i landingen.',
+  ['Stå på ét ben med let bøjet knæ.', 'Hop sidelæns til det andet ben, og sving armene med.', 'Land blødt, og hold balancen et øjeblik.'],
+  '6/side', '45 sek', ['Land på forfoden.', 'Knæet følger tæerne.'], { illu: 'bounds' });
+A('boxjump', 'Box jump', 'Eksplosiv', ['Eksplosivitet', 'Styrke'], 'Bænk/kasse', 'plyo',
+  'Lodret kraft til høje bolde.',
+  ['Stå foran en stabil kasse med fødderne i hoftebredde.', 'Sæt dig let ned, og hop eksplosivt op på kassen.', 'Land blødt med bøjede knæ, og stig ned i stedet for at hoppe ned.'],
+  '5 reps', '60 sek', ['Vælg en højde, du kan lande sikkert på.', 'Gå ned i stedet for at hoppe ned.']);
+A('broadjump', 'Længdespring', 'Eksplosiv', ['Eksplosivitet', 'Styrke'], 'Ingen udstyr', 'plyo',
+  'Eksplosiv kraft fremad, som i et dyk.',
+  ['Stå med fødderne i hoftebredde og armene bag kroppen.', 'Sving armene frem, og hop så langt som muligt.', 'Land blødt i en squat, og stå stille et øjeblik.'],
+  '5 reps', '60 sek', ['Lav en lille pause mellem hvert hop.', 'Land med hoften bagud.']);
+A('tuckjump', 'Tuck jumps', 'Eksplosiv', ['Eksplosivitet', 'Udholdenhed'], 'Ingen udstyr', 'plyo',
+  'Eksplosive spring, der også hæver pulsen.',
+  ['Stå med fødderne i hoftebredde.', 'Hop eksplosivt op, og træk knæene op mod brystet.', 'Land blødt, og hop igen.'],
+  '5 reps', '60 sek', ['Fokus på højde, ikke tempo.', 'Land stille.'], { hard: true });
+A('pogo', 'Pogo-hop', 'Eksplosiv', ['Eksplosivitet', 'Skadesforebyggelse', 'Hurtighed'], 'Ingen udstyr', 'plyo',
+  'Stive, stærke ankler og læg til hurtige afsæt.',
+  ['Stå oprejst med let bøjede knæ.', 'Hop op og ned på forfoden med næsten strakte ben og kort kontakttid.', 'Hold kroppen stram og rolig.'],
+  '15 sek', '45 sek', ['Tænk: som en fjeder.', 'Hælene rører ikke gulvet.'], { secs: 15 });
+A('medslam', 'Medicinbold-slam', 'Eksplosiv', ['Eksplosivitet', 'Core', 'Udholdenhed'], 'Medicinbold', 'plyo',
+  'Eksplosiv kraft fra hele kroppen.',
+  ['Hold en medicinbold over hovedet med strakte arme.', 'Smid bolden hårdt i gulvet foran dig, mens du bøjer i hoften.', 'Saml bolden op, og gentag.'],
+  '8 reps', '60 sek', ['Brug hele kroppen.', 'Brug en blød bold, der ikke preller.']);
+A('medthrow', 'Medicinbold-kast mod væg', 'Eksplosiv', ['Eksplosivitet', 'Styrke', 'Hurtighed'], 'Medicinbold', 'plyo',
+  'Hurtig kraft i bryst og arme, som i et udkast.',
+  ['Stå foran en væg, og hold bolden ved brystet.', 'Kast bolden eksplosivt mod væggen, og grib den igen.', 'Gentag hurtigt og uden at miste kontrollen.'],
+  '8 reps', '60 sek', ['Pres fra hele kroppen.', 'Kast med begge hænder samtidig.']);
+A('burpee', 'Burpees', 'Kondition', ['Udholdenhed', 'Eksplosivitet'], 'Ingen udstyr', 'plyo',
+  'Høj puls og eksplosiv kraft i en øvelse.',
+  ['Stå oprejst, og sæt hænderne i gulvet.', 'Hop fødderne tilbage til planke, lav en armstrækning, og hop fødderne ind igen.', 'Hop eksplosivt op med armene over hovedet.'],
+  '6 reps', '60 sek', ['Hold et jævnt tempo.', 'Spring armstrækningen over, hvis det er for hårdt.'], { hard: true });
+A('slhop', 'Enbens-hop frem', 'Eksplosiv', ['Eksplosivitet', 'Balance'], 'Ingen udstyr', 'plyo',
+  'Eksplosiv enbens-kraft med kontrol i landingen.',
+  ['Stå på ét ben med let bøjet knæ.', 'Hop frem på samme ben, og land blødt.', 'Hold balancen i et sekund, og gentag.'],
+  '5/ben', '45 sek', ['Knæet følger tæerne.', 'Start med korte hop.']);
+
+/* --- Læg og ankler --- */
+A('slcalf', 'Calf raise på ét ben', 'Styrke', ['Styrke', 'Balance', 'Skadesforebyggelse'], 'Ingen udstyr', 'calf',
+  'Stærke læg og ankler, ét ben ad gangen.',
+  ['Stå på ét ben med let støtte mod en væg.', 'Pres op på tæerne, så højt du kan.', 'Sænk langsomt på 2 sekunder.'],
+  '10/ben', '30 sek', ['Hold et kort stop i toppen.', 'Rolig bevægelse, ingen vippen.'], { illu: 'calf' });
+A('tibraise', 'Tibialis raise', 'Styrke', ['Skadesforebyggelse', 'Styrke'], 'Ingen udstyr', 'calf',
+  'Stærke skinneben, der beskytter mod stød og forkert landing.',
+  ['Stå med ryggen mod en væg og fødderne et skridt frem.', 'Løft forfoden og tæerne op mod skinnebenet.', 'Sænk langsomt tilbage.'],
+  '15 reps', '30 sek', ['Hælene bliver i gulvet.', 'Langsomt og kontrolleret.']);
+A('stepcalf', 'Calf raise på trin', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Bænk/kasse', 'calf',
+  'Stærke læg med fuldt bevægeudslag.',
+  ['Stå med forfoden på kanten af et trin og hælene frit.', 'Pres op på tæerne, så højt du kan.', 'Sænk hælene under trinnet, og stræk læggen.'],
+  '12 reps', '45 sek', ['Fuldt bevægeudslag giver stærkere ankler.', 'Hold let fast i noget.'], { illu: 'calf' });
+
+/* --- Hurtige fødder og bevægelse --- */
+A('carioca', 'Carioca', 'Bevægelse', ['Hurtighed', 'Mobilitet', 'Balance'], 'Ingen udstyr', 'agility',
+  'Koordination og hurtige sidestep.',
+  ['Stå sidelæns med let bøjede knæ.', 'Kryds det bagerste ben foran og bag det forreste i et hurtigt tempo.', 'Hold overkroppen fremad og hofterne drejende.'],
+  '20 sek', '30 sek', ['Skift retning efter halvdelen af tiden.', 'Find rytmen, før du sætter tempoet op.'], { secs: 20 });
+A('ladder', 'Stigeøvelse: ind-ud', 'Bevægelse', ['Hurtighed', 'Balance'], 'Andet', 'agility',
+  'Hurtige, lette fødder.',
+  ['Stil en koordinationsstige ud, eller tegn felter på jorden.', 'Løb frem med to fødder i hvert felt og ud på siden.', 'Hold korte, lette skridt med blikket op.'],
+  '20 sek', '30 sek', ['Fødderne rører næsten ikke gulvet.', 'Blikket er frem, ikke ned.'], { secs: 20 });
+A('tdrill', 'T-drill', 'Bevægelse', ['Hurtighed', 'Udholdenhed'], 'Andet', 'agility',
+  'Skift af retning med hurtige fødder.',
+  ['Sæt fire kegler i et T-mønster, 5 m frem og 2,5 m til siderne.', 'Sprint frem, sidestep til siden, tilbage over midten og til den anden side.', 'Gå roligt tilbage til start.'],
+  '3 gange', '60 sek', ['Hold lav stilling i vendingerne.', 'Sidestep uden at krydse benene.']);
+A('sprint5', 'Korte sprint-starter', 'Eksplosiv', ['Hurtighed', 'Eksplosivitet'], 'Ingen udstyr', 'agility',
+  'Hurtigt første skridt, som i en udrykning.',
+  ['Stå i klarposition med let bøjede knæ.', 'Sprint 5–10 meter så hurtigt du kan.', 'Gå roligt tilbage.'],
+  '5 gange', '45 sek', ['Første skridt er det vigtigste.', 'Skub fra med forfoden.']);
+A('diveget', 'Dyk og rejs dig', 'Bevægelse', ['Eksplosivitet', 'Hurtighed'], 'Andet', 'agility',
+  'Tæt på en rigtig redning: dyk til siden og kom hurtigt op.',
+  ['Stå i klarposition på en blød måtte eller blødt underlag.', 'Dyk til siden med strakte arme, og land på siden af kroppen.', 'Kom op så hurtigt du kan, og vend tilbage til klarposition.'],
+  '4/side', '45 sek', ['Land på siden af kroppen, ikke på albuen.', 'Brug blødt underlag som græs eller en måtte.']);
+A('latbandwalk', 'Sidegang med elastik', 'Styrke', ['Skadesforebyggelse', 'Styrke', 'Balance'], 'Elastik', 'agility',
+  'Stærke hofter og balder, der holder knæene stabile.',
+  ['Sæt en elastik om anklerne eller over knæene.', 'Gå sidelæns i en let squat, og hold spænding i elastikken.', 'Tag 10 skridt til hver side.'],
+  '10 skridt/side', '30 sek', ['Knæene presses ud, ikke ind.', 'Fødderne er ikke tættere end hoftebredde.']);
+
+/* --- Mobilitet --- */
+A('cossack', 'Cossack squat', 'Mobilitet', ['Mobilitet', 'Styrke', 'Balance'], 'Ingen udstyr', 'mobility',
+  'Bevægelighed i lysken og hofterne, og styrke på ét ben ad gangen.',
+  ['Stå med fødderne bredt og tæerne let udad.', 'Skub hoften til den ene side, og sænk dig ned på det bøjede ben, mens det andet ben er strakt.', 'Pres tilbage til midten, og skift side.'],
+  '5/side', '30 sek', ['Hælen på det bøjede ben bliver i gulvet.', 'Lav en mindre bevægelse, hvis det spænder.']);
+A('hips9090', '90/90 hofterotation', 'Mobilitet', ['Mobilitet', 'Skadesforebyggelse'], 'Ingen udstyr', 'mobility',
+  'Bedre rotation i hofterne.',
+  ['Sid på gulvet med begge ben bøjet 90 grader, det ene foran og det andet bag.', 'Hold ryggen ret, og læn dig frem over forreste ben.', 'Skift side ved at rotere begge knæ over.'],
+  '30 sek/side', 'Ingen', ['Sid på en pude, hvis det er for stramt.', 'Træk vejret roligt og ud i strækket.'], { secs: 30, perSide: true });
+A('wgs', 'Verdens bedste udstrækning', 'Mobilitet', ['Mobilitet'], 'Ingen udstyr', 'mobility',
+  'Åbner hofter, baglår og ryg i én flydende bevægelse.',
+  ['Tag et langt skridt frem i udfald, med hænderne i gulvet.', 'Drej overkroppen op mod forreste ben, og løft armen mod loftet.', 'Før hånden ned, og skift ben.'],
+  '5/side', 'Ingen', ['Hold bageste knæ løftet.', 'Følg hånden med øjnene.']);
+A('catcow', 'Kat-ko', 'Mobilitet', ['Mobilitet', 'Skadesforebyggelse'], 'Ingen udstyr', 'mobility',
+  'Mobil og afslappet ryg.',
+  ['Kom på alle fire med hænder under skuldre og knæ under hofter.', 'Rund ryggen mod loftet, og træk maven ind.', 'Svaj ryggen, og løft brystet.'],
+  '8 reps', 'Ingen', ['Bevæg dig i takt med vejrtrækningen.', 'Langsomt og jævnt.']);
+A('openbook', 'Åben bog (brystryg)', 'Mobilitet', ['Mobilitet'], 'Ingen udstyr', 'mobility',
+  'Bevægelighed i brystryggen, som giver bedre kast og dyk.',
+  ['Lig på siden med knæene bøjet og armene strakt frem.', 'Åbn øverste arm i en bue bagud, og følg den med blikket.', 'Før armen tilbage, og skift side.'],
+  '8/side', 'Ingen', ['Knæene bliver sammen.', 'Pust ud, mens du åbner.']);
+A('hipflexor', 'Hoftebøjer-udstrækning', 'Mobilitet', ['Mobilitet', 'Skadesforebyggelse'], 'Ingen udstyr', 'mobility',
+  'Løsner stramme hoftebøjere efter lange dage og kampe.',
+  ['Knæl på det ene knæ med det andet ben fremme, og vægten fremad.', 'Stram ballen på bageste side, og skub hoften let frem.', 'Hold, og træk vejret roligt. Skift så side.'],
+  '30 sek/side', 'Ingen', ['Ryggen er lige, ikke svajet.', 'Stram ballen for at få mere stræk.'], { secs: 30, perSide: true });
+A('anklemob', 'Ankel-mobilitet', 'Mobilitet', ['Mobilitet', 'Skadesforebyggelse'], 'Ingen udstyr', 'mobility',
+  'Bedre bevægelighed i anklerne, så du kan komme dybere.',
+  ['Stå i skridtstilling foran en væg med forreste fod få centimeter fra væggen.', 'Skub knæet frem mod væggen, uden at hælen løfter sig.', 'Før knæet tilbage, og gentag.'],
+  '10/side', 'Ingen', ['Hælen bliver i gulvet.', 'Flyt foden længere væk, når det bliver let.']);
+A('deepsquat', 'Dyb squat-hold', 'Mobilitet', ['Mobilitet'], 'Ingen udstyr', 'mobility',
+  'Åbner hofter og ankler.',
+  ['Stå med fødderne lidt bredere end skuldrene og tæerne ud.', 'Sæt dig helt ned med hænderne foran brystet.', 'Hold, og skub knæene ud med albuerne.'],
+  '30 sek', 'Ingen', ['Hold fast i en dørkarm, hvis det er svært.', 'Brystet er oppe.'], { secs: 30 });
+A('shoulderband', 'Skulder-dislocates', 'Mobilitet', ['Mobilitet', 'Skadesforebyggelse'], 'Elastik', 'mobility',
+  'Åbner skuldrene efter udkast og dyk.',
+  ['Hold en elastik eller kæp foran lårene med bredt greb.', 'Før armene i en bue over hovedet og ned bag ryggen.', 'Før tilbage på samme måde.'],
+  '10 reps', 'Ingen', ['Grib bredere, hvis det spænder.', 'Hold armene strakte.']);
+
+/* --- Fokus --- */
+A('wallball', 'Bold mod væg (hånd-øje)', 'Fokus', ['Fokus', 'Hurtighed'], 'Bold', 'focus',
+  'Hånd-øje-koordination og skarpt blik.',
+  ['Stå to meter fra en væg med en tennisbold.', 'Kast bolden mod væggen, og grib den med den modsatte hånd.', 'Skift hånd og tempo, og hold blikket på bolden.'],
+  '30 sek', '30 sek', ['Gør kastene mere uforudsigelige.', 'Hold hovedet roligt.'], { secs: 30 });
+A('dropcatch', 'Reaktionsbold (drop)', 'Fokus', ['Fokus', 'Hurtighed', 'Eksplosivitet'], 'Bold', 'focus',
+  'Hurtig reaktion på noget uventet.',
+  ['En makker holder en bold i skulderhøjde og slipper den uden varsel.', 'Reagér og grib bolden, før den rammer jorden to gange.', 'Gentag, og skift hånd.'],
+  '10 forsøg', '30 sek', ['Start i klarposition.', 'Grib bolden med begge hænder.']);
+A('visual', 'Visualisering', 'Fokus', ['Fokus'], 'Ingen udstyr', 'focus',
+  'Mental forberedelse til kampen.',
+  ['Sæt dig roligt, og luk øjnene.', 'Se dig selv klare typiske situationer: indlæg, 1-mod-1 og udspark.', 'Mærk roen og selvtilliden, og åbn øjnene.'],
+  '60 sek', 'Ingen', ['Brug den inden kamp.', 'Se, hør og mærk situationen.'], { secs: 60 });
+
+
 /* ===== Timer-byggesten ===== */
-const S = (type, secs, label) => ({ type, secs, label });
-const R = label => ({ type: 'reps', secs: 0, label });
+/* Det valgfri sidste argument "it" er indekset på den øvelse i blokken, som segmentet hører til.
+   Det bruges til at skifte labels og tider, når en øvelse er byttet ud. */
+const S = (type, secs, label, it) => ({ type, secs, label, ...(it != null ? { it } : {}) });
+const R = (label, it) => ({ type: 'reps', secs: 0, label, ...(it != null ? { it } : {}) });
 function rounds(n, segs, skipLast = true) {
   const out = [];
   for (let r = 1; r <= n; r++) {
@@ -600,8 +996,8 @@ function rounds(n, segs, skipLast = true) {
 const single = (secs, label) => [{ ...S('work', secs, label), round: 1, rounds: 1 }];
 const sides = (secs, name) => [{ ...S('work', secs, name + ' · venstre side'), round: 1, rounds: 1 }, { ...S('rest', 8, 'Skift side'), round: 1, rounds: 1 }, { ...S('work', secs, name + ' · højre side'), round: 1, rounds: 1 }];
 
-const BREATH = () => rounds(4, [S('in', 4, 'Træk vejret ind gennem næsen'), S('hold', 4, 'Hold vejret'), S('out', 4, 'Pust langsomt ud'), S('hold', 4, 'Hold')], false);
-const REACT = n => rounds(n, [S('react', 30, 'Reagér på signalet'), S('rest', 30, 'Pause')]);
+const BREATH = it => rounds(4, [S('in', 4, 'Træk vejret ind gennem næsen', it), S('hold', 4, 'Hold vejret', it), S('out', 4, 'Pust langsomt ud', it), S('hold', 4, 'Hold', it)], false);
+const REACT = (n, it) => rounds(n, [S('react', 30, 'Reagér på signalet', it), S('rest', 30, 'Pause', it)]);
 EX.breath.segs = BREATH(); EX.reaction.segs = REACT(3);
 
 /* ===== Blokke ===== */
@@ -655,12 +1051,12 @@ function buildWeek(n) {
     blocks.push({
       id: 'move', icon: 'glove', title: 'Målmands\u00ADbevægelse', tags: ['3 runder', 'Pause 30 sek'],
       items: [{ ex: 'shuffle', dose: '20 sek', secs: 20 }, { ex: 'squat', dose: '10 reps' }, { ex: 'latlunge', dose: '6/side' }, { ex: 'calf', dose: '15 reps' }],
-      timer: { name: 'Målmandsbevægelse · 3 runder', segs: rounds(3, [S('work', 20, 'Lateral shuffle'), R('Bodyweight squat × 10'), R('Lateral lunge × 6/side'), R('Calf raise × 15'), S('rest', 30, 'Pause')]) }
+      timer: { name: 'Målmandsbevægelse · 3 runder', segs: rounds(3, [S('work', 20, 'Lateral shuffle', 0), R('Bodyweight squat × 10', 1), R('Lateral lunge × 6/side', 2), R('Calf raise × 15', 3), S('rest', 30, 'Pause')]) }
     });
     blocks.push({
       id: 'core', icon: 'core', title: 'Core', tags: ['3 runder'],
       items: [{ ex: 'pallof', dose: '10/side' }, { ex: 'deadbug', dose: '8/side' }, { ex: 'sideplank', dose: '25 sek/side', secs: 25, perSide: true }],
-      timer: { name: 'Core · 3 runder', segs: rounds(3, [R('Pallof press × 10/side'), R('Dead bug × 8/side'), S('work', 25, 'Side plank · venstre side'), S('rest', 8, 'Skift side'), S('work', 25, 'Side plank · højre side'), S('rest', 30, 'Pause')]) }
+      timer: { name: 'Core · 3 runder', segs: rounds(3, [R('Pallof press × 10/side', 0), R('Dead bug × 8/side', 1), S('work', 25, 'Side plank · venstre side', 2), S('rest', 8, 'Skift side', 2), S('work', 25, 'Side plank · højre side', 2), S('rest', 30, 'Pause')]) }
     });
   } else if (n <= 4) {
     blocks.push(WARM());
@@ -669,7 +1065,7 @@ function buildWeek(n) {
       id: 'actions', icon: 'glove', title: 'Gentagne målmands\u00ADaktioner', tags: ['4 runder', 'Pause 90 sek'],
       ivl: { steps: [{ t: '20 sek', l: 'Assault bike hårdt', k: 'work' }, { t: '5/side', l: 'Lateral bounds', k: 'reps' }, { t: '5', l: 'Squat jumps', k: 'reps' }, { t: '40 sek', l: 'Rolig cykel', k: 'rest' }, { t: '90 sek', l: 'Pause', k: 'rest' }], reps: 4 },
       items: [{ ex: 'assault', dose: '20 sek', note: 'Hårdt', secs: 20 }, { ex: 'bounds', dose: '5/side' }, { ex: 'squatjump', dose: '5 reps' }],
-      timer: { name: 'Målmandsaktioner · 4 runder', segs: rounds(4, [S('work', 20, 'Assault bike · hårdt'), R('Lateral bounds × 5/side'), R('Squat jumps × 5'), S('rest', 40, 'Rolig cykel'), S('rest', 90, 'Pause')]) }
+      timer: { name: 'Målmandsaktioner · 4 runder', segs: rounds(4, [S('work', 20, 'Assault bike · hårdt', 0), R('Lateral bounds × 5/side', 1), R('Squat jumps × 5', 2), S('rest', 40, 'Rolig cykel'), S('rest', 90, 'Pause')]) }
     });
     blocks.push({
       id: 'core', icon: 'core', title: 'Core', tags: ['3 sæt', 'Pause 60 sek'],
@@ -683,7 +1079,7 @@ function buildWeek(n) {
     blocks.push({
       id: 'circuit', icon: 'glove', title: 'Målmands-circuit', tags: ['4 runder', 'Pause 60 sek'],
       items: [{ ex: 'shuffle', dose: '20 sek', secs: 20 }, { ex: 'assault', dose: '20 sek', secs: 20 }, { ex: 'squatjump', dose: '20 sek', secs: 20 }, { rest: '20 sek', label: 'Rolig bevægelse' }, { rest: '60 sek', label: 'Pause' }],
-      timer: { name: 'Målmands-circuit · 4 runder', segs: rounds(4, [S('work', 20, 'Lateral shuffle'), S('work', 20, 'Assault bike'), S('work', 20, 'Squat jumps'), S('rest', 20, 'Rolig bevægelse'), S('rest', 60, 'Pause')]) }
+      timer: { name: 'Målmands-circuit · 4 runder', segs: rounds(4, [S('work', 20, 'Lateral shuffle', 0), S('work', 20, 'Assault bike', 1), S('work', 20, 'Squat jumps', 2), S('rest', 20, 'Rolig bevægelse'), S('rest', 60, 'Pause')]) }
     });
     blocks.push({
       id: 'strength', icon: 'dumbbell', title: 'Let styrke', tags: ['2 sæt', 'Pause 90 sek'],
@@ -698,7 +1094,7 @@ function buildWeek(n) {
       id: 'ready', icon: 'glove', title: 'Paratheds\u00ADcircuit', tags: ['5 runder', 'Pause 60 sek'],
       ivl: { steps: [{ t: '15 sek', l: 'Assault bike hårdt', k: 'work' }, { t: '5/side', l: 'Lateral bounds', k: 'reps' }, { t: '5', l: 'Squat jumps', k: 'reps' }, { t: '20 sek', l: 'Rolig bevægelse', k: 'rest' }, { t: '60 sek', l: 'Pause', k: 'rest' }], reps: 5 },
       items: [{ ex: 'assault', dose: '15 sek', note: 'Hårdt', secs: 15 }, { ex: 'bounds', dose: '5/side' }, { ex: 'squatjump', dose: '5 reps' }],
-      timer: { name: 'Parathedscircuit · 5 runder', segs: rounds(5, [S('work', 15, 'Assault bike · hårdt'), R('Lateral bounds × 5/side'), R('Squat jumps × 5'), S('rest', 20, 'Rolig bevægelse'), S('rest', 60, 'Pause')]) }
+      timer: { name: 'Parathedscircuit · 5 runder', segs: rounds(5, [S('work', 15, 'Assault bike · hårdt', 0), R('Lateral bounds × 5/side', 1), R('Squat jumps × 5', 2), S('rest', 20, 'Rolig bevægelse'), S('rest', 60, 'Pause')]) }
     });
     blocks.push({
       id: 'core', icon: 'core', title: 'Core', tags: ['Pause 60 sek'],
@@ -718,7 +1114,7 @@ const WEEKS = Array.from({ length: 8 }, (_, i) => buildWeek(i + 1));
 /* ===== Fredag ===== */
 const FRIDAY = {
   items: [{ ex: 'calf', dose: '× 10' }, { ex: 'squatjump', dose: '× 5' }, { ex: 'bounds', dose: '× 5/side' }, { ex: 'fastfeet', dose: '× 10 sek', secs: 10 }, { ex: 'sideplank', dose: '× 20 sek/side', secs: 20, perSide: true }],
-  timer: { name: 'Fredag · aktivering', segs: rounds(2, [R('Calf raise × 10'), R('Squat jump × 5'), R('Lateral bounds × 5/side'), S('work', 10, 'Hurtige fødder'), S('work', 20, 'Side plank · venstre side'), S('rest', 8, 'Skift side'), S('work', 20, 'Side plank · højre side'), S('rest', 60, 'Gå roligt rundt')]) }
+  timer: { name: 'Fredag · aktivering', segs: rounds(2, [R('Calf raise × 10', 0), R('Squat jump × 5', 1), R('Lateral bounds × 5/side', 2), S('work', 10, 'Hurtige fødder', 3), S('work', 20, 'Side plank · venstre side', 4), S('rest', 8, 'Skift side', 4), S('work', 20, 'Side plank · højre side', 4), S('rest', 60, 'Gå roligt rundt')]) }
 };
 
 
@@ -729,13 +1125,13 @@ const HOME = {
     blocks: [
       { id: 'hstr', icon: 'dumbbell', title: 'Styrke', tags: ['2 runder', 'Pause 30 sek'],
         items: [{ ex: 'reverselunge', dose: '6/ben' }, { ex: 'glutebridge', dose: '12 reps' }, { ex: 'pushup', dose: '8 reps', note: 'På knæ, hvis det er for hårdt' }],
-        timer: { name: 'Hjemme · styrke', segs: rounds(2, [R('Bagudlunge × 6/ben'), R('Glute bridge × 12'), R('Armstrækninger × 8'), S('rest', 30, 'Pause')]) } },
+        timer: { name: 'Hjemme · styrke', segs: rounds(2, [R('Bagudlunge × 6/ben', 0), R('Glute bridge × 12', 1), R('Armstrækninger × 8', 2), S('rest', 30, 'Pause')]) } },
       { id: 'hcore', icon: 'core', title: 'Core', tags: ['2 runder', 'Pause 30 sek'],
         items: [{ ex: 'plank', dose: '30 sek', secs: 30 }, { ex: 'birddog', dose: '6/side' }, { ex: 'deadbug', dose: '6/side' }],
-        timer: { name: 'Hjemme · core', segs: rounds(2, [S('work', 30, 'Planke'), R('Bird dog × 6/side'), R('Dead bug × 6/side'), S('rest', 30, 'Pause')]) } },
+        timer: { name: 'Hjemme · core', segs: rounds(2, [S('work', 30, 'Planke', 0), R('Bird dog × 6/side', 1), R('Dead bug × 6/side', 2), S('rest', 30, 'Pause')]) } },
       { id: 'hfocus', icon: 'focus', title: 'Fokus & parathed', tags: ['Ca. 5 min'],
         items: [{ ex: 'breath', dose: '4 runder', note: '4 ind · 4 hold · 4 ud · 4 hold', segs: BREATH() }, { ex: 'reaction', dose: '3 × 30 sek', note: '30 sek pause mellem', segs: REACT(3) }, { ex: 'getup', dose: '5/side' }],
-        timer: { name: 'Hjemme · fokus', segs: [...BREATH(), ...REACT(3), { ...R('Hurtig rejsning × 5/side'), round: 1, rounds: 1 }] } }
+        timer: { name: 'Hjemme · fokus', segs: [...BREATH(0), ...REACT(3, 1), { ...R('Hurtig rejsning × 5/side', 2), round: 1, rounds: 1 }] } }
     ]
   },
   2: {
@@ -743,13 +1139,13 @@ const HOME = {
     blocks: [
       { id: 'hstr', icon: 'dumbbell', title: 'Styrke', tags: ['2 runder', 'Pause 30 sek'],
         items: [{ ex: 'reverselunge', dose: '8/ben' }, { ex: 'glutebridge', name: 'Glute bridge på ét ben', dose: '8/ben' }, { ex: 'pushup', dose: '12 reps' }],
-        timer: { name: 'Hjemme · styrke', segs: rounds(2, [R('Bagudlunge × 8/ben'), R('Glute bridge på ét ben × 8/ben'), R('Armstrækninger × 12'), S('rest', 30, 'Pause')]) } },
+        timer: { name: 'Hjemme · styrke', segs: rounds(2, [R('Bagudlunge × 8/ben', 0), R('Glute bridge på ét ben × 8/ben', 1), R('Armstrækninger × 12', 2), S('rest', 30, 'Pause')]) } },
       { id: 'hcore', icon: 'core', title: 'Core', tags: ['2 runder', 'Pause 30 sek'],
         items: [{ ex: 'plank', dose: '45 sek', secs: 45 }, { ex: 'birddog', dose: '8/side' }, { ex: 'sideplank', dose: '25 sek/side', secs: 25, perSide: true }],
-        timer: { name: 'Hjemme · core', segs: rounds(2, [S('work', 45, 'Planke'), R('Bird dog × 8/side'), S('work', 25, 'Side plank · venstre side'), S('rest', 8, 'Skift side'), S('work', 25, 'Side plank · højre side'), S('rest', 30, 'Pause')]) } },
+        timer: { name: 'Hjemme · core', segs: rounds(2, [S('work', 45, 'Planke', 0), R('Bird dog × 8/side', 1), S('work', 25, 'Side plank · venstre side', 2), S('rest', 8, 'Skift side', 2), S('work', 25, 'Side plank · højre side', 2), S('rest', 30, 'Pause')]) } },
       { id: 'hfocus', icon: 'focus', title: 'Fokus & parathed', tags: ['Ca. 6 min'],
         items: [{ ex: 'breath', dose: '4 runder', note: '4 ind · 4 hold · 4 ud · 4 hold', segs: BREATH() }, { ex: 'reaction', dose: '4 × 30 sek', note: '30 sek pause mellem', segs: REACT(4) }, { ex: 'getup', dose: '6/side' }],
-        timer: { name: 'Hjemme · fokus', segs: [...BREATH(), ...REACT(4), { ...R('Hurtig rejsning × 6/side'), round: 1, rounds: 1 }] } }
+        timer: { name: 'Hjemme · fokus', segs: [...BREATH(0), ...REACT(4, 1), { ...R('Hurtig rejsning × 6/side', 2), round: 1, rounds: 1 }] } }
     ]
   }
 };
@@ -788,10 +1184,10 @@ const METRICS = [
 /* ===== Tilstand (localStorage) ===== */
 const KEY = 'gk8-goalkeeper-v1';
 const DEF = () => ({
-  week: 1, start: '', done: {}, weeksDone: [], matches: [], tests: {}, logs: [],
+  week: 1, start: '', done: {}, weeksDone: [], matches: [], tests: {}, logs: [], swaps: {},
   fri: { wk: '', done: {} },
   home: { date: '', done: {} }, homeLog: [], lastExport: '',
-  settings: { sound: true, vib: true, custom: { work: 30, rest: 60, rounds: 10 }, metric: 'avg', lib: 'Alle', homeLevel: null }
+  settings: { sound: true, vib: true, custom: { work: 30, rest: 60, rounds: 10 }, metric: 'avg', lib: 'Alle', libEquip: 'Alle', libCat: 'Alle', homeLevel: null }
 });
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const clampNum = (v, lo, hi, d) => { v = +v; return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
@@ -823,6 +1219,8 @@ function mergeState(d) {
     id: Math.round(clampNum(l.id, 0, 9e15, Date.now() + i)), date: l.date, week: Math.round(clampNum(l.week, 1, 8, 1)), ex: l.ex,
     kg: clampNum(l.kg, 0, 1000, 0), reps: clampNum(l.reps, 0, 1000, 0), rpe: Math.round(clampNum(l.rpe, 0, 10, 0))
   }));
+  out.swaps = {};
+  if (isObj(d.swaps)) Object.keys(d.swaps).slice(0, 300).forEach(k => { if (/^(week|fri|home)\|[\w|]+$/.test(k) && EX[d.swaps[k]]) out.swaps[k] = d.swaps[k]; });
   out.fri = { wk: str(d.fri && d.fri.wk, 12), done: trueKeys(d.fri && d.fri.done) };
   out.home = { date: isISO(d.home && d.home.date) ? d.home.date : '', done: trueKeys(d.home && d.home.done) };
   out.homeLog = Array.isArray(d.homeLog) ? [...new Set(d.homeLog.filter(isISO))].sort().slice(-120) : [];
@@ -832,7 +1230,9 @@ function mergeState(d) {
     sound: s.sound !== false, vib: s.vib !== false,
     custom: { work: clampNum(c.work, 5, 600, 30), rest: clampNum(c.rest, 0, 600, 60), rounds: Math.round(clampNum(c.rounds, 1, 40, 10)) },
     metric: ['avg', ...METRICS.map(m => m.k)].includes(s.metric) ? s.metric : 'avg',
-    lib: CATS.includes(s.lib) ? s.lib : 'Alle',
+    lib: ['Alle', ...BENEFITS.map(b => b.k)].includes(s.lib) ? s.lib : 'Alle',
+    libEquip: ['Alle', 'home', ...EQUIPS].includes(s.libEquip) ? s.libEquip : 'Alle',
+    libCat: CATS.includes(s.libCat) ? s.libCat : 'Alle',
     homeLevel: s.homeLevel === 1 || s.homeLevel === 2 ? s.homeLevel : null
   };
   return out;
@@ -934,6 +1334,49 @@ const daDate = iso => { try { return new Date(iso + 'T12:00:00').toLocaleDateStr
 const segTotal = segs => segs.reduce((a, s) => a + (s.type === 'reps' ? 30 : s.secs), 0);
 
 /* ===== Uger og afkrydsning ===== */
+/* ===== Skift øvelse =====
+   ST.swaps[ctx] = id på den øvelse, der erstatter programmets originale (ctx = samme nøgle som afkrydsning). */
+function resolveItem(it, ctx) {
+  const sw = ST.swaps[ctx];
+  if (!it || !it.ex || !sw || !EX[sw] || sw === it.ex) return it;
+  const e = EX[sw], o = EX[it.ex];
+  if (e.pattern === 'cardio' && o.pattern === 'cardio') return { ...it, ex: sw, name: e.name, swapped: true, orig: it }; // tid og intensitet bevares
+  const dose = /^× /.test(it.dose) ? '× ' + e.dose : (String(it.dose).match(/^\d+ × /) || [''])[0] + e.dose; // bevar sæt-/gange-præfikset
+  return { ex: sw, dose, secs: e.secs, perSide: e.perSide, swapped: true, orig: it };
+}
+function swapOptions(ctx, origEx) {
+  const o = EX[origEx], kind = ctx.split('|')[0];
+  return Object.entries(EX).filter(([id, e]) => id !== origEx && e.pattern === o.pattern && (kind === 'week' || isHomeEx(e)) && (kind !== 'fri' || !e.hard));
+}
+/* Byt segmenterne i en blok ud, så den guidede timer følger de byttede øvelser */
+function swappedSegs(block, base) {
+  const segs = block.timer.segs;
+  if (!block.items) return segs;
+  const res = block.items.map((it, i) => resolveItem(it, `${base}|${i}`)).map(r => r && r.swapped ? r : null);
+  if (!res.some(Boolean)) return segs;
+  const out = [];
+  for (let k = 0; k < segs.length;) {
+    const s = segs[k], r = s.it != null ? res[s.it] : null;
+    if (!r) { out.push(s); k++; continue; }
+    let j = k; while (j < segs.length && segs[j].it === s.it) j++;
+    out.push(...replaceGroup(segs.slice(k, j), r));
+    k = j;
+  }
+  return out;
+}
+function replaceGroup(group, r) {
+  const e = EX[r.ex], nm = r.name || e.name, f = group[0];
+  const meta = { round: f.round, rounds: f.rounds, it: f.it };
+  if (e.pattern === 'cardio') return group.map(s => ({ ...s, label: nm + (s.label.includes(' · ') ? ' · ' + s.label.split(' · ').slice(1).join(' · ') : '') }));
+  const origTimed = group.find(s => s.type === 'work');
+  const secs = origTimed ? origTimed.secs : (e.secs || 0);
+  if (secs) {
+    if (e.perSide) return [{ ...S('work', secs, nm + ' · venstre side'), ...meta }, { ...S('rest', 8, 'Skift side'), ...meta }, { ...S('work', secs, nm + ' · højre side'), ...meta }];
+    return [{ ...S('work', secs, nm), ...meta }];
+  }
+  return [{ ...R(`${nm} × ${String(r.dose).replace(/^× /, '').replace(/ reps$/, '')}`), ...meta }];
+}
+
 const weekItems = n => WEEKS[n - 1].blocks.flatMap(b => b.items.map((it, i) => ({ b, it, i })).filter(x => x.it.ex));
 const isDone = ctx => {
   const p = ctx.split('|');
@@ -1045,13 +1488,14 @@ function ivlHTML(v, b) {
     <div class="ivl-steps">${steps}<div class="ivl-arrow" aria-hidden="true">${ICON.down}</div><div class="ivl-rep">${ICON.repeat}Gentag ×${v.reps}</div></div>
     <p class="ivl-meta"><span>${v.foot || 'Følg timeren, så skifter den for dig'}</span><span>${tot ? 'Ca. ' + tot + ' min' : ''}</span></p></div>`;
 }
-function itemHTML(it, ctx) {
+function itemHTML(it0, ctx) {
+  const it = resolveItem(it0, ctx);
   if (it.rest) return `<li class="item rest-row"><span class="rest-pill">${it.rest}</span>${it.label}</li>`;
   const e = EX[it.ex], name = it.name || e.name, done = isDone(ctx);
   return `<li class="item ${done ? 'is-done' : ''}">
     <button class="item-open" type="button" data-open="${ctx}" aria-label="Åbn ${esc(name)}: ${esc(it.dose)}">
       <span class="thumb" aria-hidden="true">${illustration(it.ex)}</span>
-      <span class="item-txt"><span class="nm">${name}</span><span class="ds">${it.dose}</span>${it.note ? `<span class="nt">${it.note}</span>` : ''}</span>
+      <span class="item-txt"><span class="nm">${name}</span><span class="ds">${it.dose}</span>${it.note ? `<span class="nt">${it.note}</span>` : ''}<span class="nt good">${esc(e.good.slice(0, 3).join(' · '))}</span>${it.swapped ? `<span class="nt swapped">↻ Byttet fra ${esc(it.orig.name || EX[it.orig.ex].name)}</span>` : ''}</span>
     </button>
     <button class="check" type="button" data-check="${ctx}" aria-pressed="${done}" aria-label="Markér ${esc(name)} som færdig"><span>${ICON.check}</span></button></li>`;
 }
@@ -1162,15 +1606,39 @@ function toggleHomeDone() {
 }
 
 /* ===== Øvelsesbibliotek ===== */
-function renderLibrary() {
-  const cat = ST.settings.lib || 'Alle';
-  $('libChips').innerHTML = CATS.map(c => `<button class="chip" type="button" data-cat="${c}" aria-pressed="${c === cat}">${c}</button>`).join('');
-  $('lib').innerHTML = Object.entries(EX).filter(([, e]) => cat === 'Alle' || e.cat === cat || (cat === 'Hjemme' && e.home)).map(([id, e]) => `<article class="ex-card">
+let libQ = '', libShown = 18;
+const LIB_PAGE = 18;
+function libFiltered() {
+  const g = ST.settings.lib, eq = ST.settings.libEquip, c = ST.settings.libCat, q = libQ.trim().toLowerCase();
+  return Object.entries(EX).filter(([, e]) =>
+    (g === 'Alle' || e.good.includes(g)) &&
+    (c === 'Alle' || e.cat === c) &&
+    (eq === 'Alle' || (eq === 'home' ? isHomeEx(e) : e.equip === eq)) &&
+    (!q || `${e.name} ${e.goal} ${e.good.join(' ')} ${e.equip} ${e.cat}`.toLowerCase().includes(q)));
+}
+function libCardHTML(id, e) {
+  return `<article class="ex-card">
       <button class="ex-illu" type="button" data-open="lib|${id}" aria-label="Vis ${esc(e.name)} i stor visning">${illustration(id)}</button>
-      <div class="ex-body"><span class="ex-cat">${e.cat}</span><h3>${e.name}</h3><p class="ex-goal">${e.goal}</p>
+      <div class="ex-body"><h3>${e.name}</h3>${goodTagsHTML(e)}<p class="ex-meta">${esc(e.cat)}${isHomeEx(e) ? ' · kan laves hjemme' : ''}</p><p class="ex-goal">${e.goal}</p>
         <ol class="ex-steps">${['Start', 'Bevægelse', 'Slut'].map((l, i) => `<li><b>${l}</b><span>${e.how[i]}</span></li>`).join('')}</ol>
         <dl class="ex-dose"><div><dt>Reps/tid</dt><dd>${e.dose}</dd></div><div><dt>Pause</dt><dd>${e.rest}</dd></div></dl>
-        <ul class="ex-tips">${e.tips.map(t => `<li>${ICON.tip}<span>${t}</span></li>`).join('')}</ul></div></article>`).join('');
+        <ul class="ex-tips">${e.tips.map(t => `<li>${ICON.tip}<span>${t}</span></li>`).join('')}</ul></div></article>`;
+}
+function renderLibList() {
+  const list = libFiltered(), shown = list.slice(0, libShown);
+  $('libCount').textContent = `${list.length} af ${Object.keys(EX).length} øvelser`;
+  $('lib').innerHTML = shown.length ? shown.map(([id, e]) => libCardHTML(id, e)).join('')
+    : '<p class="empty">Ingen øvelser matcher dine filtre. <button class="link-btn" type="button" id="libReset">Nulstil filtre</button></p>';
+  $('libMore').hidden = list.length <= libShown;
+  $('libMore').textContent = `Vis flere (${list.length - libShown} mere)`;
+}
+function renderLibrary() {
+  const g = ST.settings.lib;
+  $('libChips').innerHTML = ['Alle', ...BENEFITS.map(b => b.k)].map(c => `<button class="chip" type="button" data-good="${c}" aria-pressed="${c === g}">${c}</button>`).join('');
+  $('libEquip').innerHTML = [['Alle', 'Alt udstyr'], ['home', 'Kan laves hjemme'], ...EQUIPS.map(x => [x, x])].map(([v, t]) => `<option value="${v}" ${v === ST.settings.libEquip ? 'selected' : ''}>${t}</option>`).join('');
+  $('libCat').innerHTML = CATS.map(c => `<option value="${c}" ${c === ST.settings.libCat ? 'selected' : ''}>${c === 'Alle' ? 'Alle typer' : c}</option>`).join('');
+  $('libLegend').innerHTML = BENEFITS.map(b => `<dt>${b.k}</dt><dd>${b.d}</dd>`).join('');
+  renderLibList();
 }
 
 /* ===== RPE ===== */
@@ -1184,11 +1652,13 @@ let mDateTouched = false, editMatchId = null;
 function openSheet(ctx) {
   sheetCtx = ctx;
   const p = ctx.split('|');
-  let exId, item = null, block = null, where = 'Øvelsesbibliotek', src = null;
-  if (p[0] === 'week') { const n = +p[1]; block = WEEKS[n - 1].blocks.find(b => b.id === p[2]); item = block.items[+p[3]]; exId = item.ex; where = `Uge ${n} · ${block.title}`; src = `blk-${n}-${block.id}`; }
-  else if (p[0] === 'fri') { item = FRIDAY.items[+p[1]]; exId = item.ex; block = { timer: FRIDAY.timer, tags: ['2 runder'] }; where = 'Fredag · aktivering'; src = 'fredag'; }
-  else if (p[0] === 'home') { block = HOME[+p[1]].blocks.find(b => b.id === p[2]); item = block.items[+p[3]]; exId = item.ex; where = `Hjemme · ${block.title}`; src = `home-${block.id}`; }
+  let exId, item = null, block = null, where = 'Øvelsesbibliotek', src = null, base = null;
+  if (p[0] === 'week') { const n = +p[1]; block = WEEKS[n - 1].blocks.find(b => b.id === p[2]); item = block.items[+p[3]]; exId = item.ex; where = `Uge ${n} · ${block.title}`; src = `blk-${n}-${block.id}`; base = `week|${n}|${block.id}`; }
+  else if (p[0] === 'fri') { item = FRIDAY.items[+p[1]]; exId = item.ex; block = { timer: FRIDAY.timer, items: FRIDAY.items, tags: ['2 runder'] }; where = 'Fredag · aktivering'; src = 'fredag'; base = 'fri'; }
+  else if (p[0] === 'home') { block = HOME[+p[1]].blocks.find(b => b.id === p[2]); item = block.items[+p[3]]; exId = item.ex; where = `Hjemme · ${block.title}`; src = `home-${block.id}`; base = `home|${p[1]}|${block.id}`; }
   else exId = p[1];
+  const origItem = item;
+  if (item) { item = resolveItem(item, ctx); exId = item.ex; }
   const e = EX[exId], name = (item && item.name) || e.name;
   const tag = re => block && block.tags ? (block.tags.find(t => re.test(t)) || '') : '';
   const roundsTag = tag(/runder|sæt/), pauseTag = tag(/^Pause/).replace('Pause ', '');
@@ -1209,15 +1679,44 @@ function openSheet(ctx) {
     <div class="sheet-top"><div><p class="today-small">${where}</p><h3 id="sheetTitle">${name}</h3></div><button class="sheet-close" type="button" data-sheet-close aria-label="Luk">${ICON.close}</button></div>
     <div class="m-illu">${illustration(exId)}</div>
     <div class="m-dose">${tiles.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>
+    ${goodTagsHTML(e)}
     <p class="ex-goal">${e.goal}</p>
     <ol class="ex-steps">${['Start', 'Bevægelse', 'Slut'].map((l, i) => `<li><b>${l}</b><span>${e.how[i]}</span></li>`).join('')}</ol>
     <ul class="ex-tips">${e.tips.map(t => `<li>${ICON.tip}<span>${t}</span></li>`).join('')}</ul>
+    ${origItem ? `<button class="btn btn-ghost btn-block" type="button" data-swap-open>${ICON.repeat}${item.swapped ? 'Skift igen eller gendan original' : 'Skift øvelse'}</button>` : ''}
     ${e.log ? logSectionHTML(exId) : ''}
     <div class="m-actions">${timerBtn || ''}${doneBtn}</div></div>`;
   if (!timerBtn) d.querySelector('.m-actions').style.gridTemplateColumns = '1fr';
-  d._ctx = { exId, item, block, name, secs, perSide, src, segs };
+  d._ctx = { exId, item, block, name, secs, perSide, src, segs, base, origEx: origItem && origItem.ex };
   if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
   d.scrollTop = 0;
+}
+function goodTagsHTML(e) {
+  return `<div class="good-row"><span class="good-lbl">Godt til</span>${e.good.map(g => `<span class="tag lime">${g}</span>`).join('')}<span class="tag eq">${esc(e.equip)}</span></div>`;
+}
+function openSwap() {
+  const d = $('exSheet'), c = d._ctx, o = EX[c.origEx];
+  const opts = swapOptions(sheetCtx, c.origEx);
+  const li = ([id, e]) => `<li class="item ${id === c.exId ? 'is-done' : ''}"><button class="item-open" type="button" data-swap-pick="${id}" aria-label="Vælg ${esc(e.name)}">
+      <span class="thumb" aria-hidden="true">${illustration(id)}</span>
+      <span class="item-txt"><span class="nm">${e.name}${id === c.exId ? ' · valgt' : ''}</span><span class="ds">${esc(e.dose)}</span><span class="nt good">${esc(e.good.join(' · '))}</span><span class="nt">${esc(e.equip)}</span></span></button></li>`;
+  d.innerHTML = `<div class="sheet-in"><div class="grab" aria-hidden="true"></div>
+    <div class="sheet-top"><div><p class="today-small">Skift øvelse</p><h3 id="sheetTitle">${o.name}</h3></div><button class="sheet-close" type="button" data-sheet-close aria-label="Luk">${ICON.close}</button></div>
+    <p class="sec-lead">Vælg en øvelse, der træner det samme (${PATTERN_TXT[o.pattern]}). Dosis følger den nye øvelse.</p>
+    ${ST.swaps[sheetCtx] ? `<button class="btn btn-block" type="button" data-swap-pick="${c.origEx}">${ICON.reset}Gendan original: ${o.name}</button>` : ''}
+    <ul class="items">${opts.map(li).join('') || '<li class="empty">Ingen alternativer til denne øvelse endnu.</li>'}</ul>
+    <div class="m-actions" style="grid-template-columns:1fr"><button class="btn" type="button" data-swap-back>Tilbage</button></div></div>`;
+  d.scrollTop = 0;
+}
+function pickSwap(id) {
+  const ctx = sheetCtx, c = $('exSheet')._ctx;
+  if (!EX[id]) return;
+  if (id === c.origEx) delete ST.swaps[ctx]; else ST.swaps[ctx] = id;
+  save();
+  const k = ctx.split('|')[0];
+  if (k === 'week') renderWeek(); else if (k === 'fri') renderFriday(); else if (k === 'home') renderHome();
+  openSheet(ctx);
+  toast(id === c.origEx ? 'Original øvelse gendannet' : `Skiftet til ${EX[id].name}`);
 }
 const fmtNum = v => String(Math.round(v * 10) / 10).replace('.', ',');
 function logListHTML(exId) {
@@ -1526,7 +2025,7 @@ document.addEventListener('click', e => {
   if (ds.week) { selectWeek(+ds.week); return; }
   if (ds.weekdone) { toggleWeekDone(+ds.weekdone); return; }
   if (ds.go) { if (ds.go === 'program') selectWeek(curWeek()); scrollToId(ds.go); return; }
-  if (ds.timer) { const [n, id] = ds.timer.split('|'); const b = WEEKS[+n - 1].blocks.find(x => x.id === id); startProgramTimer(`Uge ${n} · ${b.timer.name}`, b.timer.segs, `blk-${n}-${id}`); return; }
+  if (ds.timer) { const [n, id] = ds.timer.split('|'); const b = WEEKS[+n - 1].blocks.find(x => x.id === id); startProgramTimer(`Uge ${n} · ${b.timer.name}`, swappedSegs(b, `week|${n}|${id}`), `blk-${n}-${id}`); return; }
   if (ds.tfsave) {
     const n = +ds.tfsave;
     ST.tests[n] = cleanTest({ date: localISO(new Date()), dist: $('tfDist').value.trim(), watt: $('tfWatt').value.trim(), hr: $('tfHr').value.trim(), rpe: $('tfRpe').value });
@@ -1535,14 +2034,17 @@ document.addEventListener('click', e => {
   if (ds.logsave) { saveLog(ds.logsave); return; }
   if (ds.edit) { startEditMatch(ds.edit); return; }
   if (ds.rest) { startProgramTimer(`Pause · ${ds.rest} sek`, [{ ...S('rest', +ds.rest, 'Pause mellem sæt'), round: 1, rounds: 1 }], ds.src, true); return; }
-  if (ds.hometimer) { const [L, id] = ds.hometimer.split('|'); const b = HOME[+L].blocks.find(x => x.id === id); startProgramTimer(b.timer.name, b.timer.segs, `home-${id}`); return; }
+  if (ds.hometimer) { const [L, id] = ds.hometimer.split('|'); const b = HOME[+L].blocks.find(x => x.id === id); startProgramTimer(b.timer.name, swappedSegs(b, `home|${L}|${id}`), `home-${id}`); return; }
   if (ds.homelevel) { ST.settings.homeLevel = +ds.homelevel; save(); renderHome(); return; }
   if (ds.preset) { loadPreset(ds.preset); return; }
   if (ds.step) { // mus/touch håndteres af pointerdown (hold-nede); tastatur og skærmlæser giver click uden pointerdown
     if (e.detail === 0) { const [k, d] = ds.step.split('|'); stepCustom(k, +d); }
     return;
   }
-  if (ds.cat) { ST.settings.lib = ds.cat; save(); renderLibrary(); return; }
+  if (ds.good) { ST.settings.lib = ds.good; save(); libShown = LIB_PAGE; renderLibrary(); return; }
+  if ('swapOpen' in ds) { openSwap(); return; }
+  if ('swapBack' in ds) { openSheet(sheetCtx); return; }
+  if (ds.swapPick) { pickSwap(ds.swapPick); return; }
   if (ds.metric) { ST.settings.metric = ds.metric; save(); renderChart(); return; }
   if (ds.del) { if (confirm('Slet denne kamp?')) { ST.matches = ST.matches.filter(m => String(m.id) !== ds.del); save(); renderChart(); renderHistory(); } return; }
   if ('sheetClose' in ds) { closeSheet(); return; }
@@ -1557,7 +2059,7 @@ document.addEventListener('click', e => {
     if (ds.sheetTimer === 'segs') startProgramTimer(c.name, c.segs, c.src);
     else if (ds.sheetTimer === 'item') startProgramTimer(c.name, c.perSide ? sides(c.secs, c.name) : single(c.secs, c.name), c.src);
     else if (ds.sheetTimer === 'rest') startProgramTimer(`Pause · ${c.block.restTimer} sek`, [{ ...S('rest', c.block.restTimer, 'Pause mellem sæt'), round: 1, rounds: 1 }], c.src, true);
-    else startProgramTimer(c.block.timer.name, c.block.timer.segs, c.src);
+    else startProgramTimer(c.block.timer.name, swappedSegs(c.block, c.base), c.src);
     return;
   }
   switch (t.id) {
@@ -1568,11 +2070,13 @@ document.addEventListener('click', e => {
     case 'tReset': tReset(); break;
     case 'tRepsBtn': tAdvance(); break;
     case 'tBack': if (TM.src) { const el = $(TM.src) || $('program'); el.scrollIntoView({ behavior: prefersReduced() ? 'auto' : 'smooth', block: 'start' }); } break;
+    case 'libMore': libShown += LIB_PAGE; renderLibList(); break;
+    case 'libReset': ST.settings.lib = 'Alle'; ST.settings.libEquip = 'Alle'; ST.settings.libCat = 'Alle'; libQ = ''; $('libSearch').value = ''; save(); libShown = LIB_PAGE; renderLibrary(); break;
     case 'miniGo': scrollToId('timer'); break;
     case 'miniToggle': TM.running ? tPause() : tStart(); break;
     case 'tgSound': ST.settings.sound = !ST.settings.sound; t.setAttribute('aria-pressed', ST.settings.sound); save(); if (ST.settings.sound) { unlockAudio(); cue('tick'); } break;
     case 'tgVib': ST.settings.vib = !ST.settings.vib; t.setAttribute('aria-pressed', ST.settings.vib); save(); vib(60); break;
-    case 'friTimer': startProgramTimer(FRIDAY.timer.name, FRIDAY.timer.segs, 'fredag'); break;
+    case 'friTimer': startProgramTimer(FRIDAY.timer.name, swappedSegs(FRIDAY, 'fri'), 'fredag'); break;
     case 'homeDone': toggleHomeDone(); break;
     case 'friReset': ST.fri.done = {}; save(); renderFriday(); toast('Fredag nulstillet'); break;
     case 'resetAll':
@@ -1585,6 +2089,8 @@ document.addEventListener('click', e => {
     case 'importData': $('importFile').click(); break;
   }
 });
+$('libSearch').addEventListener('input', e => { libQ = e.target.value; libShown = LIB_PAGE; renderLibList(); });
+['libEquip', 'libCat'].forEach(id => $(id).addEventListener('change', e => { ST.settings[id === 'libEquip' ? 'libEquip' : 'libCat'] = e.target.value; save(); libShown = LIB_PAGE; renderLibList(); }));
 $('importFile').addEventListener('change', e => {
   const f = e.target.files[0];
   if (f) importDataFile(f);
