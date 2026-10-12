@@ -3531,16 +3531,7 @@ function coachAction(a, ds) {
     if (c.goal !== ds.goal) { c.goal = ds.goal; if (c.active) { resetPlanState(); } save(); renderCoach(); if (c.active) refreshPlan(); }
     return;
   }
-  if (a === 'saveProfile') {
-    const nm = (id, lo, hi) => { const v = parseNum($(id).value); return Number.isFinite(v) && v >= lo && v <= hi ? Math.round(v * 10) / 10 : ''; };
-    c.sex = $('cpSex').value === 'f' ? 'f' : 'm';
-    c.birth = isISO($('cpBirth').value) ? $('cpBirth').value : '';
-    c.height = nm('cpHeight', 100, 250); c.bf = nm('cpBf', 3, 60); c.targetKg = nm('cpTKg', 30, 250); c.targetBf = nm('cpTBf', 3, 60);
-    const kg = nm('cpWeight', 30, 250), today = todayISO();
-    if (kg !== '' && kg !== curWeight()) pushWeight(kg, c.bf);
-    save(); toast('Gemt'); afterCoachChange();
-    return;
-  }
+  if (a === 'saveProfile') { saveProfileFields(); save(); toast('Gemt'); afterCoachChange(); return; }
   if (a === 'saveWeight') {
     const kg = parseNum($('cwKg').value), bf = parseNum($('cwBf').value);
     if (!(kg >= 30 && kg <= 250)) { toast('Skriv en vægt mellem 30 og 250 kg'); $('cwKg').focus(); return; }
@@ -4196,6 +4187,18 @@ function buildStatusDoc() {
     coach_log: c.dossier.slice(-10).map(d => ({ date: d.date, type: d.type, text: d.text, outcome: d.outcome || null }))
   };
 }
+/* Gemmer profilfelterne uden at tegne siden igen. Kaldes også automatisk, når et felt ændres, så intet går tabt ved fx valg af mål */
+function saveProfileFields() {
+  const c = ST.coach, g = id => $(id);
+  if (!g('cpSex')) return;
+  const nm = (id, lo, hi) => { const v = parseNum(g(id).value); return Number.isFinite(v) && v >= lo && v <= hi ? Math.round(v * 10) / 10 : ''; };
+  c.sex = g('cpSex').value === 'f' ? 'f' : 'm';
+  c.birth = isISO(g('cpBirth').value) ? g('cpBirth').value : '';
+  c.height = nm('cpHeight', 100, 250); c.bf = nm('cpBf', 3, 60); c.targetKg = nm('cpTKg', 30, 250); c.targetBf = nm('cpTBf', 3, 60);
+  const kg = nm('cpWeight', 30, 250);
+  if (kg !== '' && kg !== curWeight()) pushWeight(kg, c.bf);
+}
+document.addEventListener('change', e => { if (e.target.id && /^cp(Sex|Birth|Height|Weight|Bf|TKg|TBf)$/.test(e.target.id)) { saveProfileFields(); save(); } });
 function afterCoachChange() { if (ST.coach.active) refreshPlan(); else { updateStatus(); renderCoach(); renderCoachCard(); } }
 
 /* ===== Statussiden ===== */
