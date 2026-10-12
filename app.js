@@ -34,7 +34,7 @@ function joints(p) {
     const [e, h] = a.elbow ? [a.elbow, a.hand] : ik(sh, a.hand, LEN.upper, LEN.fore, a.b ?? 1);
     return { e, h };
   });
-  return { hip, sh, head, legs, arms, front: !!p.front };
+  return { hip, sh, head, legs, arms, front: !!p.front, spine: p.spine || null };
 }
 
 function ln(a, b, w, c, extra = '') {
@@ -66,9 +66,13 @@ function figure(J, hl = []) {
   pushLeg(limb(1, true)); pushArm(limb(1, true));
   const isHl = (tag, i) => hl.includes(tag) || hl.includes(tag + '.' + i);
   let halo = '', body = '';
+  // J.spine = [dx, dy]: kontrolpunkt-forskydning, så ryggen kan tegnes buet (kat-ko)
+  const seg = (a, b, w, c, tag, extra = '') => (tag === 'torso' && J.spine)
+    ? `<path d="M${r1(a[0])} ${r1(a[1])} Q${r1((a[0] + b[0]) / 2 + J.spine[0])} ${r1((a[1] + b[1]) / 2 + J.spine[1])} ${r1(b[0])} ${r1(b[1])}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round"${extra}/>`
+    : ln(a, b, w, c, extra);
   parts.forEach(([a, b, w, c, tag, i]) => {
-    if (isHl(tag, i)) halo += ln(a, b, w + 13, COL.lime, ' opacity=".26"');
-    body += ln(a, b, w, c);
+    if (isHl(tag, i)) halo += seg(a, b, w + 13, COL.lime, tag, ' opacity=".26"');
+    body += seg(a, b, w, c, tag);
   });
   const head = `<circle cx="${r1(J.head[0])}" cy="${r1(J.head[1])}" r="11.5" fill="${COL.near}"/>`;
   // Hovedet tegnes før nærmeste arm, så armen kan krydse foran
@@ -369,6 +373,802 @@ function pallofPanel(i) {
   return s;
 }
 
+/* ===== Tegninger til de nye øvelser ===== */
+function dumbbell(h, w) { w = w || 20; return ln([h[0] - w / 2, h[1]], [h[0] + w / 2, h[1]], 4, COL.eqLine) + rect(h[0] - w / 2 - 4, h[1] - 8, 5, 16, 2, '#3B4A42', COL.eqLine, 1.5) + rect(h[0] + w / 2 - 1, h[1] - 8, 5, 16, 2, '#3B4A42', COL.eqLine, 1.5); }
+function dbEnd(h) { return circ(h[0], h[1], 8, '#3B4A42') + circ(h[0], h[1], 2.5, COL.eqLine, 'none', 0); }
+function boxP(x, y, w, h) { return rect(x, y, w, h, 5, '#2A3830', COL.eqLine, 2); }
+function wallP(x, w) { return rect(x, 14, w || 10, G - 8, 3, '#1B2520', '#2D3D34', 2); }
+function medball(c, r) { r = r || 12; return circ(c[0], c[1], r, '#3D5A46', '#9DC3A8', 2.5) + `<path d="M${c[0] - r} ${c[1]} Q${c[0]} ${c[1] - r * .55} ${c[0] + r} ${c[1]} M${c[0]} ${c[1] - r} Q${c[0] + r * .45} ${c[1]} ${c[0]} ${c[1] + r}" fill="none" stroke="#9DC3A8" stroke-width="1.6"/>`; }
+function bandP(a, b, w) { return ln(a, b, w || 3.5, '#FF9A3D'); }
+function gtext(x, y, s, cls) { return `<text x="${x}" y="${y}" text-anchor="middle" class="${cls || 'illu-note'}">${s}</text>`; }
+/* ---- Del 1: kondition, ben (squat og hofte) ---- */
+function rowerFrame(J) {
+  let vents = '';
+  for (let i = 0; i < 10; i++) { const a = rad(i * 36); vents += ln([134 + 8 * Math.cos(a), G - 34 + 8 * Math.sin(a)], [134 + 19 * Math.cos(a), G - 34 + 19 * Math.sin(a)], 2.4, '#3B4A42'); }
+  return rect(8, G - 2, 142, 6, 3, '#34433B', 'none', 0) +
+    circ(134, G - 34, 25, '#18221D', COL.eqLine, 3) + vents + circ(134, G - 34, 4, COL.eqLine, 'none', 0) +
+    ln([102, G - 8], [108, G - 36], 6, '#3B4A42') +
+    rect(J.hip[0] - 14, J.hip[1] + 6, 28, 7, 3.5, '#34433B') + circ(J.hip[0] - 8, G + 1, 3.5, COL.eqLine, 'none', 0);
+}
+function rowerHandle(J) { const h = J.arms[1].h; return ln(h, [118, G - 38], 2.2, COL.eqLine) + rect(h[0] - 2, h[1] - 6, 4, 12, 2, '#A9B8AE', 'none', 0); }
+function skiergTower(J) {
+  const T = [138, 30];
+  return bar([138, 36], [138, G + 4], 8) + circ(138, 36, 17, '#18221D', COL.eqLine, 3) + circ(138, 36, 4, COL.eqLine, 'none', 0) + rect(116, G - 2, 46, 6, 3, '#34433B', 'none', 0) +
+    ln([128, 44], J.arms[0].h, 2.2, COL.eqLine) + ln([128, 44], J.arms[1].h, 2.2, COL.eqLine);
+}
+function ropeP(J, mode) {
+  const a = J.arms[0].h, b = J.arms[1].h;
+  const d = mode === 'over' ? `M${r1(a[0])} ${r1(a[1])} C${r1(a[0] - 26)} ${G - 190} ${r1(b[0] + 26)} ${G - 190} ${r1(b[0])} ${r1(b[1])}`
+    : `M${r1(a[0])} ${r1(a[1])} C${r1(a[0] - 22)} ${G + 26} ${r1(b[0] + 22)} ${G + 26} ${r1(b[0])} ${r1(b[1])}`;
+  return `<path d="${d}" fill="none" stroke="#FF9A3D" stroke-width="2.8" stroke-linecap="round"/>`;
+}
+function kbChest(h) { return kettlebell([h[0], h[1] - 2]); }
+
+Object.assign(ILL, {
+  rower: {
+    hl: ['thigh', 'torso'], labels: ['FREMME', 'TRÆK'],
+    poses: [
+      { hip: [70, G - 24], t: 28, legs: [{ foot: [100, G - 30], b: -1 }, { foot: [102, G - 28], b: -1 }], arms: [{ hand: [116, G - 62] }, { hand: [118, G - 60] }] },
+      { hip: [38, G - 24], t: -22, legs: [{ foot: [100, G - 32], b: -1 }, { foot: [102, G - 30], b: -1 }], arms: [{ hand: [38, G - 54] }, { hand: [44, G - 52] }] }
+    ],
+    back: [J => rowerFrame(J), J => rowerFrame(J)],
+    front: [J => rowerHandle(J), J => rowerHandle(J)],
+    arrows: [[arrow(`M60 ${G - 112} L100 ${G - 112}`)], [arrow(`M100 ${G - 112} L58 ${G - 112}`, true)]]
+  },
+  run: {
+    hl: ['thigh', 'shin'], labels: ['SKRIDT 1', 'SKRIDT 2'],
+    poses: [
+      { hip: [78, G - 66], t: 14, legs: [{ foot: [36, G - 14], b: -1, toe: [30, G - 8] }, { knee: [110, G - 58], foot: [98, G - 26] }], arms: [{ hand: [112, G - 98], b: 1 }, { hand: [62, G - 92], b: 1 }] },
+      { hip: [78, G - 66], t: 14, legs: [{ knee: [110, G - 58], foot: [98, G - 26] }, { foot: [36, G - 14], b: -1, toe: [30, G - 8] }], arms: [{ hand: [62, G - 92], b: 1 }, { hand: [112, G - 98], b: 1 }] }
+    ],
+    arrows: [[arrow(`M110 22 L152 22`)], [arrow(`M110 22 L152 22`)]]
+  },
+  skierg: {
+    hl: ['upper', 'torso', 'thigh'], labels: ['STRÆK', 'TRÆK NED'],
+    poses: [
+      { hip: [72, G - 70], t: 4, legs: [{ foot: [70, G] }, { foot: [76, G] }], arms: [{ hand: [100, G - 160], b: -1 }, { hand: [104, G - 156], b: -1 }] },
+      { hip: [60, G - 52], t: 55, legs: [{ foot: [78, G], b: -1 }, { foot: [84, G], b: -1 }], arms: [{ hand: [104, G - 36] }, { hand: [108, G - 38] }] }
+    ],
+    back: [J => skiergTower(J), J => skiergTower(J)],
+    arrows: [[arrow(`M30 ${G - 150} L30 ${G - 100}`)], [arrow(`M30 ${G - 100} L30 ${G - 150}`, true)]]
+  },
+  jumprope: {
+    hl: ['shin', 'thigh'], labels: ['TOV OVER', 'HOP'],
+    poses: [
+      { front: 1, hip: [85, G - 70], legs: [{ foot: [77, G], b: 1 }, { foot: [93, G], b: -1 }], arms: [{ hand: [60, G - 86], b: 1 }, { hand: [110, G - 86], b: -1 }] },
+      { front: 1, hip: [85, G - 84], legs: [{ foot: [80, G - 16], b: 1 }, { foot: [90, G - 16], b: -1 }], arms: [{ hand: [60, G - 98], b: 1 }, { hand: [110, G - 98], b: -1 }] }
+    ],
+    back: [J => ropeP(J, 'over'), J => ropeP(J, 'under')],
+    arrows: [[], [arrow(`M140 ${G - 40} L140 ${G - 70}`)]]
+  },
+  stairs: {
+    hl: ['thigh', 'shin'], labels: ['HØJRE OP', 'VENSTRE OP'],
+    poses: [
+      { hip: [70, G - 84], t: 6, legs: [{ foot: [84, G - 20], b: -1 }, { foot: [86, G - 52], b: -1 }], arms: [{ hand: [128, G - 112], b: 1 }, { hand: [132, G - 108], b: 1 }] },
+      { hip: [70, G - 84], t: 6, legs: [{ foot: [86, G - 52], b: -1 }, { foot: [84, G - 20], b: -1 }], arms: [{ hand: [128, G - 112], b: 1 }, { hand: [132, G - 108], b: 1 }] }
+    ],
+    back: [() => stairsMachine(0), () => stairsMachine(1)],
+    arrows: [[arrow(`M30 ${G - 60} L30 ${G - 100}`)], [arrow(`M30 ${G - 100} L30 ${G - 60}`, true)]]
+  },
+  goblet: {
+    hl: ['thigh'],
+    poses: [
+      { hip: [80, G - 70], legs: [{ foot: [77, G] }, { foot: [84, G] }], arms: [{ hand: [92, G - 108], b: 1 }, { hand: [94, G - 106], b: 1 }] },
+      { hip: [56, G - 37], t: 24, legs: [{ foot: [84, G] }, { foot: [90, G] }], arms: [{ hand: [92, G - 86], b: 1 }, { hand: [94, G - 84], b: 1 }] }
+    ],
+    front: [J => kbChest(J.arms[1].h), J => kbChest(J.arms[1].h)],
+    arrows: [[arrow(`M54 ${G - 92} Q34 ${G - 76} 40 ${G - 50}`)], [arrow(`M30 ${G - 40} L30 ${G - 92}`, true)]]
+  },
+  splitsquat: {
+    hl: ['thigh'],
+    poses: [
+      { hip: [80, G - 62], legs: [{ foot: [44, G - 2], toe: [52, G], b: -1 }, { foot: [112, G], b: -1 }], arms: [{ hand: [92, G - 96], b: 1 }, { hand: [96, G - 94], b: 1 }] },
+      { hip: [80, G - 34], legs: [{ foot: [44, G - 2], toe: [52, G], b: -1 }, { foot: [112, G], b: -1 }], arms: [{ hand: [92, G - 68], b: 1 }, { hand: [96, G - 66], b: 1 }] }
+    ],
+    arrows: [[arrow(`M134 ${G - 104} L134 ${G - 56}`)], [arrow(`M134 ${G - 56} L134 ${G - 104}`, true)]]
+  },
+  walkinglunge: {
+    hl: ['thigh'], labels: ['SKRIDT 1', 'SKRIDT 2'],
+    poses: [
+      { hip: [56, G - 38], t: 2, legs: [{ foot: [18, G - 3], toe: [26, G], b: -1 }, { foot: [92, G], b: -1 }], arms: [{ hand: [68, G - 66], b: 1 }, { hand: [72, G - 64], b: 1 }] },
+      { hip: [104, G - 38], t: 2, legs: [{ foot: [138, G], b: -1 }, { foot: [66, G - 3], toe: [74, G], b: -1 }], arms: [{ hand: [116, G - 66], b: 1 }, { hand: [120, G - 64], b: 1 }] }
+    ],
+    arrows: [[arrow(`M34 24 L124 24`)], [arrow(`M30 24 L120 24`)]]
+  },
+  stepup: {
+    hl: ['thigh'],
+    poses: [
+      { hip: [66, G - 68], legs: [{ foot: [64, G], b: -1 }, { foot: [102, G - 30], b: -1 }], arms: [{ hand: [78, G - 90], b: 1 }, { hand: [82, G - 88], b: 1 }] },
+      { hip: [126, G - 98], legs: [{ foot: [122, G - 30], b: -1 }, { foot: [130, G - 30], b: -1 }], arms: [{ hand: [138, G - 120], b: 1 }, { hand: [142, G - 118], b: 1 }] }
+    ],
+    back: [() => boxP(96, G - 30, 70, 30), () => boxP(96, G - 30, 70, 30)],
+    arrows: [[arrow(`M30 ${G - 50} L30 ${G - 92}`)], [arrow(`M30 ${G - 50} L30 ${G - 92}`)]]
+  },
+  sumosquat: {
+    hl: ['thigh'],
+    poses: [
+      { front: 1, hip: [85, G - 66], legs: [{ foot: [58, G], b: 1 }, { foot: [112, G], b: -1 }], arms: [{ hand: [80, G - 100], b: 1 }, { hand: [90, G - 100], b: -1 }] },
+      { front: 1, hip: [85, G - 34], legs: [{ foot: [50, G], b: 1 }, { foot: [120, G], b: -1 }], arms: [{ hand: [80, G - 70], b: 1 }, { hand: [90, G - 70], b: -1 }] }
+    ],
+    arrows: [[arrow(`M140 ${G - 110} L140 ${G - 62}`)], [arrow(`M140 ${G - 62} L140 ${G - 110}`, true)]]
+  },
+  wallsit: {
+    hl: ['thigh'], labels: ['STÅ', 'HOLD'],
+    poses: [
+      { hip: [44, G - 70], legs: [{ foot: [48, G] }, { foot: [54, G] }], arms: [{ hand: [58, G - 72], b: 1 }, { hand: [60, G - 70], b: 1 }] },
+      { hip: [44, G - 36], legs: [{ knee: [80, G - 36], foot: [82, G] }, { knee: [78, G - 36], foot: [78, G] }], arms: [{ hand: [74, G - 42] }, { hand: [78, G - 40] }] }
+    ],
+    back: [() => wallP(14, 10), () => wallP(14, 10)],
+    arrows: [[arrow(`M130 ${G - 100} L130 ${G - 50}`)], [guide(`M96 ${G - 36} L156 ${G - 36}`)]]
+  },
+  frontsquat: {
+    hl: ['thigh'],
+    poses: [
+      { hip: [78, G - 70], legs: [{ foot: [75, G] }, { foot: [82, G] }], arms: [{ elbow: [100, G - 108], hand: [86, G - 122] }, { elbow: [102, G - 106], hand: [88, G - 120] }] },
+      { hip: [54, G - 37], t: 18, legs: [{ foot: [82, G] }, { foot: [88, G] }], arms: [{ elbow: [96, G - 72], hand: [82, G - 88] }, { elbow: [98, G - 70], hand: [84, G - 86] }] }
+    ],
+    front: [J => plateEnd(J.arms[1].h), J => plateEnd(J.arms[1].h)],
+    arrows: [[arrow(`M52 ${G - 92} Q32 ${G - 76} 38 ${G - 50}`)], [arrow(`M28 ${G - 40} L28 ${G - 92}`, true)]]
+  },
+  legpress: {
+    hl: ['thigh'],
+    poses: [
+      { hip: [72, G - 26], t: -58, legs: [{ foot: [99, G - 62], b: -1 }, { foot: [101, G - 61], b: -1 }], arms: [{ hand: [80, G - 36] }, { hand: [84, G - 34] }] },
+      { hip: [72, G - 26], t: -58, legs: [{ foot: [114, G - 82], b: -1 }, { foot: [116, G - 81], b: -1 }], arms: [{ hand: [80, G - 36] }, { hand: [84, G - 34] }] }
+    ],
+    back: [J => legPressMachine(J), J => legPressMachine(J)],
+    arrows: [[arrow(`M128 ${G - 40} L146 ${G - 66}`)], [arrow(`M146 ${G - 66} L128 ${G - 40}`, true)]]
+  },
+  singlesquat: {
+    hl: ['thigh'],
+    poses: [
+      { hip: [86, G - 70], legs: [{ foot: [124, G - 40], b: -1 }, { foot: [86, G], b: -1 }], arms: [{ hand: [116, G - 98], b: 1 }, { hand: [120, G - 96], b: 1 }] },
+      { hip: [54, G - 46], t: 16, legs: [{ foot: [100, G - 36], b: -1 }, { foot: [82, G], b: -1 }], arms: [{ hand: [92, G - 78], b: 1 }, { hand: [96, G - 76], b: 1 }] }
+    ],
+    back: [() => boxP(10, G - 38, 52, 38), () => boxP(10, G - 38, 52, 38)],
+    arrows: [[arrow(`M142 ${G - 120} L142 ${G - 70}`, false)], [arrow(`M142 ${G - 70} L142 ${G - 120}`, true)]]
+  },
+  hipthrust: {
+    hl: ['thigh', 'torso'],
+    poses: [
+      { hip: [88, G - 12], sh: [40, G - 38], head: [23, G - 46], legs: [{ foot: [124, G], b: -1 }, { foot: [128, G], b: -1 }], arms: [{ hand: [100, G - 6] }, { hand: [104, G - 6] }] },
+      { hip: [88, G - 42], sh: [40, G - 40], head: [23, G - 46], legs: [{ foot: [124, G], b: -1 }, { foot: [128, G], b: -1 }], arms: [{ hand: [100, G - 6] }, { hand: [104, G - 6] }] }
+    ],
+    back: [() => boxP(8, G - 34, 50, 34), () => boxP(8, G - 34, 50, 34)],
+    front: [J => plateEnd([J.hip[0] + 2, J.hip[1] - 8]), J => plateEnd([J.hip[0] + 2, J.hip[1] - 8])],
+    arrows: [[arrow(`M104 ${G - 30} L104 ${G - 64}`)], [arrow(`M104 ${G - 64} L104 ${G - 30}`, true)]]
+  }
+});
+
+function stairsMachine(first) {
+  const hi = G - 52, lo = G - 20;
+  const y1 = first ? lo : hi, y2 = first ? hi : lo;
+  return rect(112, G - 4, 50, 8, 3, '#34433B', 'none', 0) + bar([138, G], [138, G - 120], 7) + rect(122, G - 128, 34, 8, 3, '#34433B') +
+    rect(60, y1 + 4, 44, 9, 3, '#34433B', COL.eqLine, 2) + rect(60, y2 + 4, 44, 9, 3, '#3B4A42', COL.eqLine, 2);
+}
+function plateEnd(c) { return circ(c[0], c[1], 14, '#25322B', COL.eqLine, 3) + circ(c[0], c[1], 3, COL.eqLine, 'none', 0); }
+function legPressMachine(J) {
+  const f = J.legs[1].f, hip = J.hip, sh = J.sh;
+  return bar([88, G - 12], [150, G - 96], 6, '#2F3D35') + ln([hip[0] + 7, hip[1] + 10], [sh[0] + 7, sh[1] + 10], 13, '#34433B') +
+    rect(hip[0] - 14, hip[1] + 7, 30, 7, 3.5, '#34433B') +
+    ln([f[0] + 8, f[1] + 6], [f[0] + 20, f[1] + 15], 5, '#3B4A42') + ln([f[0] - 7, f[1] - 9], [f[0] + 9, f[1] + 11], 7, '#A9B8AE');
+}
+/* ---- Del 2: hofte, skub, træk ---- */
+function benchLong(y) { return rect(14, y, 136, 9, 4, '#34433B', COL.eqLine, 2) + bar([30, y + 9], [30, G + 4], 5) + bar([134, y + 9], [134, G + 4], 5); }
+function cableTower(x, pulleyY) { return rect(x - 8, 26, 18, G - 22, 4, '#1B2520', COL.eqLine, 2) + rect(x - 5, 40, 12, 80, 2, '#2A3830', 'none', 0) + circ(x - 8, pulleyY, 6, '#34433B'); }
+function clapMarks(x, y) { return ln([x - 6, y - 10], [x - 10, y - 18], 2.6, COL.lime) + ln([x + 2, y - 12], [x + 2, y - 22], 2.6, COL.lime) + ln([x + 10, y - 10], [x + 15, y - 17], 2.6, COL.lime); }
+function diamondIcon() {
+  return `<path d="M34 54 L48 40 L62 54 L48 68 Z" fill="none" stroke="${COL.lime}" stroke-width="3" stroke-linejoin="round"/><circle cx="48" cy="54" r="3" fill="${COL.lime}"/>` + gtext(48, 86, 'DIAMANT', 'illu-note');
+}
+
+Object.assign(ILL, {
+  slrdl: {
+    hl: ['thigh', 'torso'],
+    poses: [
+      { hip: [78, G - 70], legs: [{ foot: [80, G - 8], b: -1, toe: [88, G - 6] }, { foot: [78, G] }], arms: [{ hand: [90, G - 28], b: 1 }, { hand: [92, G - 30], b: 1 }] },
+      { hip: [84, G - 68], t: 84, legs: [{ foot: [18, G - 80], toe: [10, G - 76] }, { foot: [86, G] }], arms: [{ hand: [138, G - 30] }, { hand: [140, G - 32] }] }
+    ],
+    front: [J => dbEnd(J.arms[1].h), J => dbEnd(J.arms[1].h)],
+    arrows: [[], [arrow(`M20 ${G - 112} Q40 ${G - 130} 70 ${G - 128}`, true)]]
+  },
+  kbswing: {
+    hl: ['thigh', 'torso'], labels: ['NEDE', 'OPPE'],
+    poses: [
+      { hip: [56, G - 62], t: 48, legs: [{ foot: [84, G], b: -1 }, { foot: [90, G], b: -1 }], arms: [{ hand: [74, G - 46] }, { hand: [76, G - 44] }] },
+      { hip: [80, G - 70], t: -3, legs: [{ foot: [78, G] }, { foot: [84, G] }], arms: [{ hand: [124, G - 114] }, { hand: [126, G - 112] }] }
+    ],
+    front: [J => kettlebell([J.arms[1].h[0] - 6, J.arms[1].h[1] + 2]), J => kettlebell([J.arms[1].h[0] + 6, J.arms[1].h[1] - 4])],
+    arrows: [[arrow(`M110 ${G - 20} Q96 ${G - 70} 120 ${G - 100}`, true)], [arrow(`M30 ${G - 150} Q8 ${G - 90} 20 ${G - 40}`, true)]]
+  },
+  slbridge: {
+    hl: ['thigh', 'torso'],
+    poses: [
+      { hip: [96, G - 3], sh: [48, G - 3], head: [28, G - 8], legs: [{ foot: [152, G - 66], b: -1 }, { foot: [128, G], b: -1 }], arms: [{ hand: [88, G] }, { hand: [92, G] }] },
+      { hip: [94, G - 34], sh: [48, G - 4], head: [28, G - 8], legs: [{ foot: [150, G - 98], b: -1 }, { foot: [128, G], b: -1 }], arms: [{ hand: [88, G] }, { hand: [92, G] }] }
+    ],
+    back: [mat, mat],
+    arrows: [[], [arrow(`M100 ${G - 22} L100 ${G - 58}`)]]
+  },
+  nordic: {
+    hl: ['thigh', 'torso'],
+    poses: [
+      { hip: [86, G - 39], t: 0, legs: [{ knee: [86, G - 3], foot: [52, G - 4], toe: false }, { knee: [88, G - 3], foot: [54, G - 3], toe: false }], arms: [{ hand: [96, G - 82], b: 1 }, { hand: [100, G - 80], b: 1 }] },
+      { hip: [86, G - 39], t: 76, legs: [{ knee: [86, G - 3], foot: [52, G - 4], toe: false }, { knee: [88, G - 3], foot: [54, G - 3], toe: false }], arms: [{ hand: [152, G - 4] }, { hand: [156, G - 2] }] }
+    ],
+    back: [() => nordicStrap(), () => nordicStrap()],
+    arrows: [[], [arrow(`M100 ${G - 100} Q140 ${G - 100} 150 ${G - 60}`, true)]]
+  },
+  hamwalk: {
+    hl: ['thigh'],
+    poses: [
+      { hip: [92, G - 34], sh: [44, G - 4], head: [25, G - 9], legs: [{ foot: [124, G - 2], b: -1 }, { foot: [128, G - 2], b: -1 }], arms: [{ hand: [74, G] }, { hand: [78, G] }] },
+      { hip: [92, G - 34], sh: [44, G - 4], head: [25, G - 9], legs: [{ foot: [158, G - 2], b: -1 }, { foot: [162, G - 2], b: -1 }], arms: [{ hand: [74, G] }, { hand: [78, G] }] }
+    ],
+    back: [J => mat() + sliders(J), J => mat() + sliders(J)],
+    arrows: [[arrow(`M126 ${G - 40} L150 ${G - 40}`)], [arrow(`M150 ${G - 40} L126 ${G - 40}`, true)]]
+  },
+  kneepushup: {
+    hl: ['upper', 'fore', 'torso'],
+    poses: [
+      { hip: [82, G - 32], sh: [128, G - 42], head: [147, G - 48], legs: [{ knee: [56, G - 4], foot: [28, G - 18], toe: false }, { knee: [58, G - 4], foot: [30, G - 17], toe: false }], arms: [{ hand: [124, G], b: 1 }, { hand: [128, G], b: 1 }] },
+      { hip: [84, G - 22], sh: [128, G - 18], head: [147, G - 20], legs: [{ knee: [56, G - 4], foot: [28, G - 16], toe: false }, { knee: [58, G - 4], foot: [30, G - 15], toe: false }], arms: [{ hand: [124, G], b: 1 }, { hand: [128, G], b: 1 }] }
+    ],
+    back: [mat, mat],
+    arrows: [[arrow(`M160 ${G - 76} L160 ${G - 34}`)], [arrow(`M160 ${G - 34} L160 ${G - 76}`, true)]]
+  },
+  dbpress: {
+    hl: ['upper', 'fore'],
+    poses: [
+      { hip: [80, G - 70], legs: [{ foot: [77, G] }, { foot: [84, G] }], arms: [{ elbow: [84, G - 98], hand: [92, G - 120] }, { elbow: [86, G - 96], hand: [94, G - 118] }] },
+      { hip: [80, G - 70], legs: [{ foot: [77, G] }, { foot: [84, G] }], arms: [{ hand: [86, G - 160], b: -1 }, { hand: [90, G - 158], b: -1 }] }
+    ],
+    front: [J => dbEnd(J.arms[1].h), J => dbEnd(J.arms[1].h)],
+    arrows: [[arrow(`M136 ${G - 100} L136 ${G - 146}`)], [arrow(`M136 ${G - 146} L136 ${G - 100}`, true)]]
+  },
+  dbbench: {
+    hl: ['upper', 'fore'],
+    poses: [
+      { hip: [104, G - 34], sh: [56, G - 34], head: [37, G - 34], legs: [{ foot: [134, G], b: -1 }, { foot: [138, G], b: -1 }], arms: [{ hand: [64, G - 56], b: 1 }, { hand: [68, G - 54], b: 1 }] },
+      { hip: [104, G - 34], sh: [56, G - 34], head: [37, G - 34], legs: [{ foot: [134, G], b: -1 }, { foot: [138, G], b: -1 }], arms: [{ hand: [58, G - 78] }, { hand: [62, G - 78] }] }
+    ],
+    back: [() => benchLong(G - 27), () => benchLong(G - 27)],
+    front: [J => dbEnd(J.arms[1].h), J => dbEnd(J.arms[1].h)],
+    arrows: [[], [arrow(`M92 ${G - 60} L92 ${G - 96}`)]]
+  },
+  pikepush: {
+    hl: ['upper', 'fore', 'torso'],
+    poses: [
+      { hip: [78, G - 66], sh: [114, G - 44], head: [132, G - 36], legs: [{ foot: [42, G], toe: [50, G] }, { foot: [44, G], toe: [52, G] }], arms: [{ hand: [128, G], b: 1 }, { hand: [132, G], b: 1 }] },
+      { hip: [78, G - 66], sh: [118, G - 24], head: [138, G - 14], legs: [{ foot: [42, G], toe: [50, G] }, { foot: [44, G], toe: [52, G] }], arms: [{ hand: [128, G], b: 1 }, { hand: [132, G], b: 1 }] }
+    ],
+    back: [mat, mat],
+    arrows: [[arrow(`M60 ${G - 120} Q90 ${G - 130} 112 ${G - 84}`)], [arrow(`M112 ${G - 84} Q90 ${G - 130} 60 ${G - 120}`, true)]]
+  },
+  clappush: {
+    hl: ['upper', 'fore', 'torso'], labels: ['NED', 'HOP'],
+    poses: [
+      { hip: [82, G - 22], sh: [128, G - 18], head: [147, G - 20], legs: [{ foot: [14, G - 6], toe: [20, G] }, { foot: [16, G - 6], toe: [22, G] }], arms: [{ hand: [124, G], b: 1 }, { hand: [128, G], b: 1 }] },
+      { hip: [82, G - 44], sh: [130, G - 56], head: [149, G - 62], legs: [{ foot: [14, G - 26], toe: [20, G - 20] }, { foot: [16, G - 26], toe: [22, G - 20] }], arms: [{ hand: [146, G - 40], b: 1 }, { hand: [150, G - 40], b: 1 }] }
+    ],
+    back: [mat, mat],
+    front: [() => '', () => clapMarks(148, G - 30)],
+    arrows: [[], [arrow(`M30 ${G - 50} L30 ${G - 90}`)]]
+  },
+  dbrow: {
+    hl: ['upper', 'torso'],
+    poses: [
+      { hip: [56, G - 66], t: 78, legs: [{ foot: [48, G], b: -1 }, { foot: [66, G], b: -1 }], arms: [{ hand: [120, G - 40] }, { hand: [104, G - 30] }] },
+      { hip: [56, G - 66], t: 78, legs: [{ foot: [48, G], b: -1 }, { foot: [66, G], b: -1 }], arms: [{ hand: [120, G - 40] }, { hand: [74, G - 62], b: 1 }] }
+    ],
+    back: [() => boxP(104, G - 38, 58, 38), () => boxP(104, G - 38, 58, 38)],
+    front: [J => dbEnd(J.arms[1].h), J => dbEnd(J.arms[1].h)],
+    arrows: [[], [arrow(`M92 ${G - 20} Q70 ${G - 38} 76 ${G - 52}`, true)]]
+  },
+  invrow: {
+    hl: ['upper', 'torso'],
+    poses: [
+      { hip: [69, G - 26], sh: [118, G - 46], legs: [{ knee: [44, G - 16], foot: [20, G - 6], toe: false }, { knee: [46, G - 16], foot: [22, G - 5], toe: false }], arms: [{ hand: [124, G - 92] }, { hand: [126, G - 92] }] },
+      { hip: [70, G - 40], sh: [118, G - 74], legs: [{ knee: [45, G - 24], foot: [20, G - 6], toe: false }, { knee: [47, G - 23], foot: [22, G - 5], toe: false }], arms: [{ hand: [126, G - 92], b: 1 }, { hand: [128, G - 92], b: 1 }] }
+    ],
+    back: [() => invRack(), () => invRack()],
+    arrows: [[], [arrow(`M20 ${G - 100} L20 ${G - 130}`)]]
+  },
+  pullup: {
+    hl: ['upper', 'torso'],
+    poses: [
+      { hip: [88, G - 52], t: 0, legs: [{ foot: [68, G - 12], b: 1, toe: false }, { foot: [74, G - 10], b: 1, toe: false }], arms: [{ hand: [112, 30] }, { hand: [110, 30] }] },
+      { hip: [90, G - 82], t: 0, legs: [{ foot: [70, G - 40], b: 1, toe: false }, { foot: [76, G - 38], b: 1, toe: false }], arms: [{ hand: [112, 30], b: 1 }, { hand: [110, 30], b: 1 }] }
+    ],
+    back: [() => pullBarSide(), () => pullBarSide()],
+    arrows: [[], [arrow(`M150 ${G - 50} L150 ${G - 110}`)]]
+  },
+  bandpull: {
+    hl: ['upper', 'torso'],
+    poses: [
+      { front: 1, hip: [85, G - 70], legs: [{ foot: [78, G], b: 1 }, { foot: [92, G], b: -1 }], arms: [{ hand: [76, G - 108], b: 1 }, { hand: [94, G - 108], b: -1 }] },
+      { front: 1, hip: [85, G - 70], legs: [{ foot: [78, G], b: 1 }, { foot: [92, G], b: -1 }], arms: [{ hand: [38, G - 114], b: 1 }, { hand: [132, G - 114], b: -1 }] }
+    ],
+    front: [J => bandP(J.arms[0].h, J.arms[1].h), J => bandP(J.arms[0].h, J.arms[1].h)],
+    arrows: [[], [arrow(`M30 ${G - 134} L8 ${G - 134}`), arrow(`M140 ${G - 134} L162 ${G - 134}`)]]
+  },
+  cablerow: {
+    hl: ['upper', 'torso'],
+    poses: [
+      { hip: [50, G - 16], t: -4, legs: [{ foot: [112, G - 22], b: -1 }, { foot: [114, G - 20], b: -1 }], arms: [{ hand: [94, G - 62], b: 1 }, { hand: [96, G - 60], b: 1 }] },
+      { hip: [50, G - 16], t: -14, legs: [{ foot: [112, G - 22], b: -1 }, { foot: [114, G - 20], b: -1 }], arms: [{ hand: [52, G - 50], b: 1 }, { hand: [56, G - 48], b: 1 }] }
+    ],
+    back: [J => cableRowStation(J), J => cableRowStation(J)],
+    front: [J => ln(J.arms[1].h, [136, G - 58], 2.2, COL.eqLine) + rect(J.arms[1].h[0] - 2, J.arms[1].h[1] - 6, 4, 12, 2, '#A9B8AE', 'none', 0), J => ln(J.arms[1].h, [136, G - 58], 2.2, COL.eqLine) + rect(J.arms[1].h[0] - 2, J.arms[1].h[1] - 6, 4, 12, 2, '#A9B8AE', 'none', 0)],
+    arrows: [[arrow(`M62 ${G - 118} L102 ${G - 118}`)], [arrow(`M102 ${G - 118} L58 ${G - 118}`, true)]]
+  },
+  facepull: {
+    hl: ['upper'],
+    poses: [
+      { hip: [66, G - 70], t: -4, legs: [{ foot: [63, G] }, { foot: [70, G] }], arms: [{ hand: [112, G - 120], b: 1 }, { hand: [114, G - 118], b: 1 }] },
+      { hip: [66, G - 70], t: -4, legs: [{ foot: [63, G] }, { foot: [70, G] }], arms: [{ elbow: [78, G - 134], hand: [96, G - 122] }, { elbow: [80, G - 130], hand: [98, G - 120] }] }
+    ],
+    back: [() => cableTower(150, G - 120), () => cableTower(150, G - 120)],
+    front: [J => ln(J.arms[1].h, [144, G - 120], 2.2, COL.eqLine), J => ln(J.arms[1].h, [144, G - 120], 2.2, COL.eqLine)],
+    arrows: [[], [arrow(`M118 ${G - 150} L92 ${G - 150}`, true)]]
+  },
+  superman: {
+    hl: ['torso', 'thigh'],
+    poses: [
+      { hip: [76, G - 9], sh: [118, G - 9], head: [138, G - 10], legs: [{ knee: [48, G - 9], foot: [20, G - 9], toe: false }, { knee: [50, G - 7], foot: [22, G - 7], toe: false }], arms: [{ elbow: [140, G - 9], hand: [160, G - 8] }, { elbow: [142, G - 7], hand: [162, G - 6] }] },
+      { hip: [76, G - 12], sh: [118, G - 24], head: [137, G - 32], legs: [{ knee: [48, G - 22], foot: [20, G - 34], toe: false }, { knee: [50, G - 20], foot: [22, G - 32], toe: false }], arms: [{ elbow: [140, G - 34], hand: [160, G - 46] }, { elbow: [142, G - 32], hand: [162, G - 44] }] }
+    ],
+    back: [mat, mat],
+    arrows: [[], [arrow(`M100 ${G - 50} L100 ${G - 78}`)]]
+  }
+});
+function nordicStrap() { return rect(40, G - 14, 22, 12, 4, '#3B4A42', COL.eqLine, 2) + ln([50, G - 14], [50, G - 24], 2, COL.eqLine); }
+function sliders(J) { return ellipseS(J.legs[0].f) + ellipseS(J.legs[1].f); }
+function ellipseS(f) { return `<ellipse cx="${r1(f[0] + 2)}" cy="${G + 1}" rx="12" ry="4" fill="${COL.lime}" opacity=".35"/>`; }
+function invRack() { return bar([146, G + 4], [146, G - 100], 7) + ln([126, G - 92], [146, G - 92], 5, '#A9B8AE') + circ(126, G - 92, 5, '#A9B8AE', 'none', 0) + rect(10, G + 1, 150, 4, 2, '#24342B', 'none', 0); }
+function pullBarSide() { return bar([144, G + 4], [144, 22], 7) + ln([112, 30], [144, 30], 6, '#A9B8AE') + circ(112, 30, 5.5, '#A9B8AE', 'none', 0); }
+function pullBar() { return bar([30, G + 4], [30, 16], 6) + bar([140, G + 4], [140, 16], 6) + bar([30, 16], [140, 16], 7, '#A9B8AE'); }
+function cableRowStation(J) {
+  return rect(8, G - 6, 36, 6, 3, '#34433B', 'none', 0) + rect(J.hip[0] - 16, J.hip[1] + 6, 32, 9, 4, '#34433B') + rect(100, G - 38, 8, 38, 2, '#2A3830', COL.eqLine, 1.5) +
+    rect(128, 30, 22, G - 26, 4, '#1B2520', COL.eqLine, 2) + rect(132, 44, 14, 70, 2, '#2A3830', 'none', 0) + circ(133, G - 58, 6, '#34433B');
+}
+/* ---- Del 3: core, bære, spring, læg ---- */
+function wheelP(J) { const h = J.arms[1].h; return circ(h[0], G - 12, 12, '#18221D', COL.eqLine, 3) + circ(h[0], G - 12, 3, COL.eqLine, 'none', 0); }
+function boxBench(x, w) { return rect(x, G - 38, w, 38, 5, '#2A3830', COL.eqLine, 2); }
+function towerR(x) { return bar([x, G + 4], [x, 24], 8); }
+function russianPanel(i) {
+  const dir = i === 0 ? 1 : -1, a = rad(26 * dir);
+  const cx = 85, sy = 98;
+  const L = [cx - 24 * Math.cos(a), sy + 24 * Math.sin(a) * -1], R = [cx + 24 * Math.cos(a), sy - 24 * Math.sin(a) * -1];
+  const ball = [cx + dir * 46, 112];
+  const near = dir === 1 ? R : L;
+  let s = `<text x="85" y="20" text-anchor="middle" class="illu-note">SET OPPEFRA</text>`;
+  s += ln([78, 138], [64, 172], 10, COL.far) + ln([92, 138], [106, 172], 10, COL.far);
+  s += ln([85, 132], [85, 106], 17, COL.near);
+  s += ln(L, R, 15, COL.near);
+  s += `<circle cx="${r1(cx + dir * 3)}" cy="${sy - 14}" r="11" fill="${COL.near}" stroke="#111A15" stroke-width="2.5"/>`;
+  s += ln(near, ball, 8, COL.near) + ln(dir === 1 ? L : R, ball, 8, COL.far);
+  s += medball(ball, 12);
+  s += arrow(dir === 1 ? `M96 54 Q130 50 140 74` : `M74 54 Q40 50 30 74`, dir === 1);
+  return s;
+}
+function copenBench() { return boxBench(124, 44); }
+
+Object.assign(ILL, {
+  hollow: {
+    hl: ['torso', 'thigh'], labels: ['FLAD', 'BANAN'],
+    poses: [
+      { hip: [100, G - 9], sh: [52, G - 9], head: [33, G - 11], legs: [{ knee: [130, G - 9], foot: [158, G - 9], toe: false }, { knee: [130, G - 7], foot: [158, G - 7], toe: false }], arms: [{ elbow: [34, G - 8], hand: [12, G - 7] }, { elbow: [34, G - 6], hand: [12, G - 5] }] },
+      { hip: [100, G - 8], sh: [58, G - 26], head: [41, G - 35], legs: [{ knee: [130, G - 18], foot: [158, G - 32], toe: false }, { knee: [130, G - 16], foot: [158, G - 30], toe: false }], arms: [{ elbow: [44, G - 40], hand: [26, G - 52] }, { elbow: [44, G - 38], hand: [26, G - 50] }] }
+    ],
+    back: [mat, mat],
+    arrows: [[], [arrow(`M100 ${G - 60} L100 ${G - 40}`, true)]]
+  },
+  mtnclimber: {
+    hl: ['torso', 'thigh'],
+    poses: [
+      { hip: [84, G - 38], sh: [128, G - 46], head: [147, G - 52], legs: [{ foot: [20, G - 8], knee: [52, G - 24], toe: [14, G] }, { knee: [112, G - 40], foot: [100, G - 12], toe: [108, G - 8] }], arms: [{ hand: [126, G] }, { hand: [130, G] }] },
+      { hip: [84, G - 38], sh: [128, G - 46], head: [147, G - 52], legs: [{ knee: [112, G - 40], foot: [100, G - 12], toe: [108, G - 8] }, { foot: [20, G - 8], knee: [52, G - 24], toe: [14, G] }], arms: [{ hand: [126, G] }, { hand: [130, G] }] }
+    ],
+    back: [mat, mat],
+    arrows: [[arrow(`M116 ${G - 62} L96 ${G - 62}`, true)], [arrow(`M116 ${G - 62} L96 ${G - 62}`, true)]]
+  },
+  russiantwist: { custom: russianPanel, labels: ['TIL HØJRE', 'TIL VENSTRE'] },
+  legraise: {
+    hl: ['thigh', 'torso'],
+    poses: [
+      { hip: [92, G - 9], sh: [44, G - 9], head: [25, G - 11], legs: [{ knee: [126, G - 17], foot: [160, G - 26], toe: false }, { knee: [126, G - 15], foot: [160, G - 24], toe: false }], arms: [{ hand: [70, G - 3] }, { hand: [74, G - 3] }] },
+      { hip: [92, G - 9], sh: [44, G - 9], head: [25, G - 11], legs: [{ knee: [94, G - 44], foot: [95, G - 78], toe: false }, { knee: [96, G - 44], foot: [97, G - 78], toe: false }], arms: [{ hand: [70, G - 3] }, { hand: [74, G - 3] }] }
+    ],
+    back: [mat, mat],
+    arrows: [[arrow(`M130 ${G - 56} Q114 ${G - 66} 100 ${G - 70}`)], []]
+  },
+  bicycle: {
+    hl: ['torso', 'thigh'], labels: ['HØJRE KNÆ', 'VENSTRE KNÆ'],
+    poses: [
+      { hip: [96, G - 9], sh: [58, G - 30], head: [42, G - 40], legs: [{ foot: [152, G - 14], knee: [124, G - 12], toe: false }, { knee: [104, G - 52], foot: [124, G - 28], toe: [132, G - 26] }], arms: [{ elbow: [44, G - 60], hand: [38, G - 48] }, { elbow: [70, G - 58], hand: [44, G - 50] }] },
+      { hip: [96, G - 9], sh: [58, G - 30], head: [42, G - 40], legs: [{ knee: [104, G - 52], foot: [124, G - 28], toe: [132, G - 26] }, { foot: [152, G - 14], knee: [124, G - 12], toe: false }], arms: [{ elbow: [44, G - 60], hand: [38, G - 48] }, { elbow: [70, G - 58], hand: [44, G - 50] }] }
+    ],
+    back: [mat, mat],
+    arrows: [[arrow(`M74 ${G - 52} Q96 ${G - 72} 108 ${G - 62}`)], [arrow(`M74 ${G - 52} Q96 ${G - 72} 108 ${G - 62}`)]]
+  },
+  abwheel: {
+    hl: ['torso', 'upper'], labels: ['SAMMEN', 'RUL UD'],
+    poses: [
+      { hip: [60, G - 38], t: 64, legs: [{ knee: [57, G - 3], foot: [22, G - 6], toe: false }, { knee: [59, G - 3], foot: [24, G - 4], toe: false }], arms: [{ hand: [106, G - 14] }, { hand: [108, G - 14] }] },
+      { hip: [62, G - 34], t: 82, legs: [{ knee: [57, G - 3], foot: [22, G - 6], toe: false }, { knee: [59, G - 3], foot: [24, G - 4], toe: false }], arms: [{ hand: [150, G - 14] }, { hand: [152, G - 14] }] }
+    ],
+    back: [mat, mat],
+    front: [J => wheelP(J), J => wheelP(J)],
+    arrows: [[], [arrow(`M92 ${G - 74} L136 ${G - 74}`)]]
+  },
+  copenhagen: {
+    hl: ['torso', 'thigh'], labels: ['LAV', 'HOLD'],
+    poses: [
+      { hip: [92, G - 17], sh: [36, G - 24], head: [18, G - 32], legs: [{ foot: [112, G - 4], b: -1, toe: false }, { foot: [158, G - 44], b: -1, toe: false }], arms: [{ elbow: [36, G], hand: [14, G] }, { hand: [38, G - 70] }] },
+      { hip: [92, G - 34], sh: [36, G - 24], head: [18, G - 32], legs: [{ foot: [116, G - 6], b: -1, toe: false }, { foot: [158, G - 42], b: -1, toe: false }], arms: [{ elbow: [36, G], hand: [14, G] }, { hand: [38, G - 70] }] }
+    ],
+    back: [() => mat() + copenBench(), () => mat() + copenBench()],
+    arrows: [[], [arrow(`M92 ${G - 62} L92 ${G - 46}`, true)]]
+  },
+  bandpallof: { custom: bandPallofPanel, labels: ['START', 'SLUT'] },
+  woodchop: {
+    hl: ['torso', 'upper'], labels: ['HØJT', 'LAVT'],
+    poses: [
+      { hip: [78, G - 70], t: -6, legs: [{ foot: [75, G] }, { foot: [82, G] }], arms: [{ hand: [112, G - 150], b: -1 }, { hand: [116, G - 148], b: -1 }] },
+      { hip: [70, G - 54], t: 36, legs: [{ foot: [86, G], b: -1 }, { foot: [92, G], b: -1 }], arms: [{ hand: [70, G - 40], b: 1 }, { hand: [74, G - 38], b: 1 }] }
+    ],
+    back: [() => towerR(152), () => towerR(152)],
+    front: [J => ln(J.arms[1].h, [146, G - 164], 2.2, COL.eqLine), J => ln(J.arms[1].h, [146, G - 164], 2.2, COL.eqLine)],
+    arrows: [[], [arrow(`M122 ${G - 140} L74 ${G - 62}`, true)]]
+  },
+  plankreach: {
+    hl: ['torso', 'upper'], labels: ['PLANKE', 'RØR SKULDER'],
+    poses: [
+      { hip: [84, G - 40], sh: [128, G - 48], head: [147, G - 54], legs: [{ knee: [50, G - 22], foot: [16, G - 7], toe: [10, G] }, { knee: [52, G - 20], foot: [18, G - 6], toe: [12, G] }], arms: [{ hand: [126, G] }, { hand: [130, G] }] },
+      { hip: [84, G - 40], sh: [128, G - 48], head: [147, G - 54], legs: [{ knee: [50, G - 22], foot: [16, G - 7], toe: [10, G] }, { knee: [52, G - 20], foot: [18, G - 6], toe: [12, G] }], arms: [{ hand: [126, G] }, { elbow: [150, G - 36], hand: [138, G - 56] }] }
+    ],
+    back: [mat, mat],
+    arrows: [[], [arrow(`M158 ${G - 28} Q160 ${G - 60} 144 ${G - 72}`, true)]]
+  },
+  suitcase: {
+    hl: ['torso', 'fore'], labels: ['STÅ', 'GÅ'],
+    poses: [
+      { hip: [80, G - 70], legs: [{ foot: [77, G] }, { foot: [84, G] }], arms: [{ hand: [64, G - 60], b: 1 }, { hand: [86, G - 52] }] },
+      { hip: [80, G - 70], legs: [{ foot: [50, G] }, { foot: [110, G] }], arms: [{ hand: [48, G - 78], b: 1 }, { hand: [86, G - 52] }] }
+    ],
+    front: [J => kettlebell(J.arms[1].h), J => kettlebell(J.arms[1].h)],
+    arrows: [[], [arrow(`M30 24 L100 24`)]]
+  },
+  ohcarry: {
+    hl: ['torso', 'upper'], labels: ['STÅ', 'GÅ'],
+    poses: [
+      { hip: [78, G - 70], legs: [{ foot: [75, G] }, { foot: [82, G] }], arms: [{ hand: [60, G - 62], b: 1 }, { hand: [86, G - 160], b: -1 }] },
+      { hip: [78, G - 70], legs: [{ foot: [50, G] }, { foot: [108, G] }], arms: [{ hand: [46, G - 74], b: 1 }, { hand: [86, G - 160], b: -1 }] }
+    ],
+    front: [J => ohBell(J.arms[1].h), J => ohBell(J.arms[1].h)],
+    arrows: [[], [arrow(`M30 24 L100 24`)]]
+  },
+  bearcrawl: {
+    hl: ['torso', 'upper'], labels: ['START', 'KRYB'],
+    poses: [
+      { hip: [72, G - 50], sh: [118, G - 54], head: [136, G - 62], legs: [{ knee: [96, G - 22], foot: [64, G - 8], toe: [58, G - 2] }, { knee: [98, G - 20], foot: [66, G - 6], toe: [60, G] }], arms: [{ hand: [122, G] }, { hand: [126, G] }] },
+      { hip: [72, G - 50], sh: [118, G - 54], head: [136, G - 62], legs: [{ knee: [112, G - 26], foot: [84, G - 8], toe: [78, G - 2] }, { knee: [98, G - 20], foot: [66, G - 6], toe: [60, G] }], arms: [{ hand: [122, G] }, { hand: [150, G - 6] }] }
+    ],
+    back: [mat, mat],
+    arrows: [[], [arrow(`M70 ${G - 90} L120 ${G - 90}`)]]
+  }
+});
+function ohBell(h) { return circ(h[0] + 12, h[1] + 2, 10, '#34433B', COL.eqLine, 2.5) + `<path d="M${h[0] + 5} ${h[1] - 4} Q${h[0] + 12} ${h[1] - 15} ${h[0] + 19} ${h[1] - 4}" fill="none" stroke="${COL.eqLine}" stroke-width="3" stroke-linecap="round"/>`; }
+function bandPallofPanel(i) {
+  let s = pallofPanel(i);
+  s = s.replace(/<rect x="8" y="54"[^>]*\/>/, `<rect x="14" y="66" width="10" height="60" rx="3" fill="#1B2520" stroke="${COL.eqLine}" stroke-width="2"/><circle cx="28" cy="96" r="5" fill="#FF9A3D"/>`);
+  s = s.replace('stroke="#8FA096" stroke-width="2.2"', 'stroke="#FF9A3D" stroke-width="3.2"');
+  return s;
+}
+/* ---- Del 4: spring, læg, hurtige fødder ---- */
+function ballS(c, r) { r = r || 7; return circ(c[0], c[1], r, '#C8F03C', '#8FA83A', 2) + `<path d="M${c[0] - r} ${c[1]} Q${c[0]} ${c[1] - r * .8} ${c[0] + r} ${c[1]}" fill="none" stroke="#6D8A1A" stroke-width="1.3"/>`; }
+function impact(x, y) { return ln([x - 20, y], [x - 30, y - 6], 2.6, COL.lime) + ln([x + 20, y], [x + 30, y - 6], 2.6, COL.lime) + ln([x, y - 8], [x, y - 18], 2.6, COL.lime); }
+function speedLines(x, y, n) { let s = ''; for (let i = 0; i < (n || 3); i++) s += ln([x - i * 0, y + i * 9], [x - 16, y + i * 9], 2.4, COL.lime); return s; }
+function cone(x, y, c) { return `<path d="M${x - 9} ${y + 8} L${x} ${y - 10} L${x + 9} ${y + 8} Z" fill="${c || '#FF9A3D'}" stroke="#111A15" stroke-width="1.5" stroke-linejoin="round"/>`; }
+function ctext(x, y, s) { return `<text x="${x}" y="${y}" text-anchor="middle" fill="#C8F03C" style="font:800 15px var(--font-d,sans-serif)">${s}</text>`; }
+function foot(x, y) { return `<ellipse cx="${x}" cy="${y}" rx="8" ry="12" fill="${COL.lime}" opacity=".92"/>`; }
+function ladderPanel(i) {
+  const x0 = 54, x1 = 116, ys = [24, 56, 88, 120, 152, 184];
+  let s = ln([x0, 24], [x0, 184], 4, COL.eqLine) + ln([x1, 24], [x1, 184], 4, COL.eqLine);
+  ys.forEach(y => { s += ln([x0, y], [x1, y], 4, COL.eqLine); });
+  if (i === 0) { s += foot(70, 104) + foot(100, 104); s += arrow('M85 70 L85 44') ; s += gtext(85, 204, '') }
+  else { s += foot(32, 136) + foot(138, 136); s += foot(70, 72) + foot(100, 72); s += arrow('M85 56 L85 40', true); }
+  return s;
+}
+function tdrillPanel(i) {
+  const A = [85, 164], B = [85, 108], C = [28, 108], D = [142, 108];
+  let s = cone(A[0], A[1]) + cone(B[0], B[1]) + cone(C[0], C[1]) + cone(D[0], D[1]);
+  s += ctext(A[0], A[1] + 24, 'A') + ctext(B[0], B[1] - 16, 'B') + ctext(C[0], C[1] - 16, 'C') + ctext(D[0], D[1] - 16, 'D');
+  if (i === 0) { s += `<text x="85" y="28" text-anchor="middle" class="illu-note">5 M OG 2,5 M</text>` + ln([A[0], A[1] - 12], [B[0], B[1] + 12], 1.5, '#2D3D34') + ln([C[0] + 10, C[1]], [D[0] - 10, D[1]], 1.5, '#2D3D34'); }
+  else {
+    s += arrow(`M85 150 L85 126`) + arrow(`M72 108 L44 108`) + arrow(`M40 96 L128 96`, true) + arrow(`M128 120 L100 120`, true);
+    s += `<text x="85" y="28" text-anchor="middle" class="illu-note">SPRINT · SIDESTEP</text>`;
+  }
+  return s;
+}
+function hips9090Panel(i) {
+  const d = i === 0 ? 1 : -1;
+  let s = `<text x="85" y="22" text-anchor="middle" class="illu-note">SET OPPEFRA</text>`;
+  s += ln([85 + d * 2, 148], [85, 108], 17, COL.near);
+  s += ln([68, 108], [102, 108], 15, COL.near) + `<circle cx="${85 + d * 2}" cy="92" r="11" fill="${COL.near}" stroke="#111A15" stroke-width="2.5"/>`;
+  // forreste ben (90 grader): lår ud til siden, læg frem
+  s += ln([85 - d * 4, 150], [85 - d * 44, 150], 10, COL.near) + ln([85 - d * 44, 150], [85 - d * 44, 112], 9, COL.near);
+  // bageste ben: lår ud til den anden side, læg bagud
+  s += ln([85 + d * 4, 152], [85 + d * 44, 152], 10, COL.far) + ln([85 + d * 44, 152], [85 + d * 44, 190], 9, COL.far);
+  s += ln([85 - d * 4, 150], [85 - d * 4, 150], 1, COL.near);
+  s += arrow(i === 0 ? 'M40 60 Q85 40 130 60' : 'M130 60 Q85 40 40 60', i === 1);
+  return s;
+}
+function openBookPanel(i) {
+  let s = `<text x="85" y="20" text-anchor="middle" class="illu-note">SET OPPEFRA</text>`;
+  s += `<rect x="20" y="168" width="130" height="5" rx="2" fill="#24342B"/>`;
+  s += ln([110, 108], [124, 70], 10, COL.far) + ln([124, 70], [96, 60], 9, COL.far);
+  s += ln([112, 112], [132, 84], 11, COL.near) + ln([132, 84], [106, 70], 10, COL.near);
+  s += ln([48, 108], [104, 108], 17, COL.near);
+  s += `<circle cx="32" cy="108" r="11" fill="${COL.near}" stroke="#111A15" stroke-width="2.5"/>`;
+  s += ln([54, 100], [54, 42], 8, COL.far);   // nederste arm
+  if (i === 0) s += ln([54, 106], [54, 48], 8, COL.near) + arrow('M84 50 Q96 76 84 100', false);
+  else s += ln([54, 106], [54, 164], 8, COL.near) + arrow('M84 100 Q104 130 84 156', true);
+  s += `<circle cx="54" cy="${i === 0 ? 44 : 166}" r="4.5" fill="${COL.near}"/>`;
+  return s;
+}
+function visualPanel(i) {
+  const J = joints({ hip: [78, G - 8], t: 0, legs: [{ knee: [106, G - 14], foot: [70, G - 3], toe: false }, { knee: [102, G - 18], foot: [88, G - 3], toe: false }], arms: [{ hand: [100, G - 28], b: 1 }, { hand: [104, G - 24], b: 1 }] });
+  let s = `<line x1="10" y1="${G + 5}" x2="160" y2="${G + 5}" stroke="#2D3D34" stroke-width="2"/>` + figure(J, i === 0 ? [] : ['torso']);
+  const hx = J.head[0], hy = J.head[1];
+  s += `<path d="M${r1(hx + 3)} ${r1(hy - 1)} q4 4 8 0" fill="none" stroke="#111A15" stroke-width="2" stroke-linecap="round"/>`;
+  if (i === 1) {
+    s += `<circle cx="${r1(hx + 14)}" cy="${r1(hy - 24)}" r="3.5" fill="none" stroke="${COL.lime}" stroke-width="2"/><circle cx="${r1(hx + 22)}" cy="${r1(hy - 36)}" r="5" fill="none" stroke="${COL.lime}" stroke-width="2"/>`;
+    s += `<ellipse cx="108" cy="52" rx="56" ry="38" fill="#16201B" stroke="${COL.lime}" stroke-width="2.5"/>`;
+    s += `<path d="M78 76 V48 H138 V76" fill="none" stroke="#EEF3EC" stroke-width="3.5" stroke-linejoin="round"/><path d="M82 48 V76 M134 48 V76" stroke="#7E8C83" stroke-width="1.5"/>`;
+    s += ballS([112, 66], 7) + `<path d="M118 62 L136 52" stroke="${COL.lime}" stroke-width="2" stroke-dasharray="3 4" fill="none"/>`;
+  }
+  return s;
+}
+
+Object.assign(ILL, {
+  diamondpush: {
+    hl: ['upper', 'fore', 'torso'],
+    poses: ILL.pushup.poses, back: [mat, mat], front: [() => diamondIcon(), () => diamondIcon()], arrows: ILL.pushup.arrows
+  },
+  dbrdl: {
+    hl: ['thigh', 'torso'],
+    poses: ILL.rdl.poses, front: [J => dbEnd(J.arms[1].h), J => dbEnd(J.arms[1].h)], arrows: ILL.rdl.arrows
+  },
+  skater: {
+    hl: ['thigh', 'shin'], labels: ['VENSTRE BEN', 'HØJRE BEN'],
+    poses: [
+      { front: 1, hip: [50, G - 68], t: 6, legs: [{ foot: [52, G], b: 1 }, { foot: [86, G - 14], b: -1 }], arms: [{ hand: [76, G - 84], b: -1 }, { hand: [28, G - 70], b: 1 }] },
+      { front: 1, hip: [120, G - 68], t: -6, legs: [{ foot: [84, G - 14], b: 1 }, { foot: [118, G], b: -1 }], arms: [{ hand: [94, G - 70], b: 1 }, { hand: [144, G - 84], b: -1 }] }
+    ],
+    back: [() => `<ellipse cx="52" cy="${G + 5}" rx="16" ry="3" fill="${COL.lime}" opacity=".2"/>`, () => `<ellipse cx="118" cy="${G + 5}" rx="16" ry="3" fill="${COL.lime}" opacity=".2"/>`],
+    arrows: [[arrow(`M54 22 L130 22`)], [arrow(`M130 22 L54 22`, true)]]
+  },
+  boxjump: {
+    hl: ['thigh', 'shin'],
+    poses: [
+      { hip: [50, G - 40], t: 32, legs: [{ foot: [72, G], b: -1 }, { foot: [78, G], b: -1 }], arms: [{ hand: [28, G - 56], b: 1 }, { hand: [32, G - 54], b: 1 }] },
+      { hip: [128, G - 82], t: 6, legs: [{ foot: [124, G - 28], b: -1 }, { foot: [132, G - 28], b: -1 }], arms: [{ hand: [150, G - 112], b: 1 }, { hand: [154, G - 110], b: 1 }] }
+    ],
+    back: [() => boxP(100, G - 28, 68, 28), () => boxP(100, G - 28, 68, 28)],
+    arrows: [[arrow(`M70 ${G - 100} Q100 ${G - 150} 130 ${G - 130}`)], []]
+  },
+  broadjump: {
+    hl: ['thigh', 'shin'], labels: ['AFSÆT', 'LAND'],
+    poses: [
+      { hip: [50, G - 40], t: 32, legs: [{ foot: [72, G], b: -1 }, { foot: [78, G], b: -1 }], arms: [{ hand: [28, G - 56], b: 1 }, { hand: [32, G - 54], b: 1 }] },
+      { hip: [96, G - 72], t: 62, legs: [{ foot: [48, G - 56], b: -1 }, { foot: [54, G - 50], b: -1 }], arms: [{ hand: [152, G - 126], b: 1 }, { hand: [156, G - 122], b: 1 }] }
+    ],
+    arrows: [[arrow(`M60 ${G - 100} Q100 ${G - 140} 140 ${G - 100}`)], [guide(`M20 ${G + 1} L156 ${G + 1}`)]]
+  },
+  tuckjump: {
+    hl: ['thigh', 'shin'], labels: ['SIT NED', 'KNÆ OP'],
+    poses: [
+      { hip: [56, G - 37], t: 30, legs: [{ foot: [84, G] }, { foot: [90, G] }], arms: [{ hand: [60, G - 42] }, { hand: [64, G - 40] }] },
+      { hip: [80, G - 98], t: 8, legs: [{ knee: [108, G - 98], foot: [98, G - 66] }, { knee: [110, G - 92], foot: [100, G - 60] }], arms: [{ hand: [116, G - 118], b: 1 }, { hand: [118, G - 112], b: 1 }] }
+    ],
+    back: [null, () => `<ellipse cx="86" cy="${G + 5}" rx="20" ry="3.5" fill="${COL.lime}" opacity=".16"/>`],
+    arrows: [[arrow(`M124 ${G - 30} L124 ${G - 104}`)], [arrow(`M140 ${G - 104} L140 ${G - 30}`, true)]]
+  },
+  pogo: {
+    hl: ['shin', 'thigh'], labels: ['PÅ TÆERNE', 'HOP'],
+    poses: [
+      { hip: [80, G - 66], legs: [{ foot: [79, G - 8], toe: [88, G - 1] }, { foot: [85, G - 8], toe: [94, G - 1] }], arms: [{ hand: [92, G - 52], b: 1 }, { hand: [96, G - 50], b: 1 }] },
+      { hip: [80, G - 86], legs: [{ foot: [79, G - 28], toe: [88, G - 20] }, { foot: [85, G - 28], toe: [94, G - 20] }], arms: [{ hand: [92, G - 72], b: 1 }, { hand: [96, G - 70], b: 1 }] }
+    ],
+    back: [null, () => `<ellipse cx="86" cy="${G + 5}" rx="22" ry="3.5" fill="${COL.lime}" opacity=".18"/>`],
+    front: [() => '', () => speedLines(52, G - 20, 3)],
+    arrows: [[arrow(`M124 ${G - 20} L124 ${G - 46}`)], [arrow(`M124 ${G - 46} L124 ${G - 20}`, true)]]
+  },
+  medslam: {
+    hl: ['upper', 'torso', 'thigh'], labels: ['OVER HOVEDET', 'SLAM'],
+    poses: [
+      { hip: [76, G - 70], t: -6, legs: [{ foot: [73, G] }, { foot: [80, G] }], arms: [{ hand: [84, G - 142], b: -1 }, { hand: [86, G - 140], b: -1 }] },
+      { hip: [58, G - 48], t: 52, legs: [{ foot: [78, G], b: -1 }, { foot: [84, G], b: -1 }], arms: [{ hand: [112, G - 26] }, { hand: [114, G - 24] }] }
+    ],
+    front: [J => medball([J.arms[1].h[0] + 4, J.arms[1].h[1] - 18], 12), J => medball([J.arms[1].h[0] + 8, G - 12], 12) + impact(J.arms[1].h[0] + 8, G + 2)],
+    arrows: [[], [arrow(`M70 ${G - 150} Q112 ${G - 140} 124 ${G - 74}`)]]
+  },
+  medthrow: {
+    hl: ['upper', 'torso'], labels: ['VED BRYSTET', 'KAST'],
+    poses: [
+      { hip: [66, G - 68], t: -6, legs: [{ foot: [52, G], b: -1 }, { foot: [86, G], b: -1 }], arms: [{ hand: [98, G - 100], b: 1 }, { hand: [100, G - 98], b: 1 }] },
+      { hip: [70, G - 66], t: 10, legs: [{ foot: [50, G], b: -1 }, { foot: [88, G], b: -1 }], arms: [{ hand: [124, G - 114] }, { hand: [126, G - 112] }] }
+    ],
+    back: [() => wallP(152, 10), () => wallP(152, 10)],
+    front: [J => medball([J.arms[1].h[0] + 10, J.arms[1].h[1] - 2], 12), () => medball([142, G - 114], 12) + speedLines(120, G - 124, 3)],
+    arrows: [[], []]
+  },
+  burpee: {
+    hl: ['torso', 'thigh'], labels: ['PLANKE', 'HOP'],
+    poses: [
+      { hip: [84, G - 38], sh: [128, G - 46], head: [147, G - 52], legs: [{ knee: [50, G - 22], foot: [16, G - 7], toe: [10, G] }, { knee: [52, G - 20], foot: [18, G - 6], toe: [12, G] }], arms: [{ hand: [126, G] }, { hand: [130, G] }] },
+      { hip: [80, G - 72], t: 0, legs: [{ foot: [76, G - 8], toe: [86, G - 1] }, { foot: [84, G - 8], toe: [94, G - 1] }], arms: [{ hand: [90, G - 166], b: -1 }, { hand: [96, G - 164], b: -1 }] }
+    ],
+    back: [mat, () => `<ellipse cx="82" cy="${G + 5}" rx="22" ry="3.5" fill="${COL.lime}" opacity=".18"/>`],
+    arrows: [[], [arrow(`M130 ${G - 30} L130 ${G - 76}`)]]
+  },
+  slhop: {
+    hl: ['thigh', 'shin'], labels: ['PÅ ÉT BEN', 'HOP FREM'],
+    poses: [
+      { hip: [58, G - 66], t: 6, legs: [{ foot: [34, G - 34], b: -1, toe: [28, G - 28] }, { foot: [58, G - 2], b: -1 }], arms: [{ hand: [80, G - 86], b: 1 }, { hand: [38, G - 80], b: 1 }] },
+      { hip: [114, G - 84], t: 10, legs: [{ foot: [90, G - 52], b: -1, toe: [84, G - 46] }, { foot: [116, G - 18], b: -1 }], arms: [{ hand: [140, G - 106], b: 1 }, { hand: [92, G - 100], b: 1 }] }
+    ],
+    back: [null, () => `<ellipse cx="116" cy="${G + 5}" rx="20" ry="3.5" fill="${COL.lime}" opacity=".18"/>`],
+    arrows: [[], [arrow(`M20 ${G - 130} L80 ${G - 130}`)]]
+  },
+  slcalf: {
+    hl: ['shin'], labels: ['START', 'OP PÅ TÆERNE'],
+    poses: [
+      { hip: [84, G - 70], legs: [{ foot: [64, G - 34], b: -1, toe: [58, G - 28] }, { foot: [84, G] }], arms: [{ hand: [138, G - 92], b: 1 }, { hand: [140, G - 90], b: 1 }] },
+      { hip: [84, G - 82], legs: [{ foot: [64, G - 46], b: -1, toe: [58, G - 40] }, { foot: [82, G - 12], toe: [92, G] }], arms: [{ hand: [138, G - 92], b: 1 }, { hand: [140, G - 90], b: 1 }] }
+    ],
+    back: [() => wallP(148, 12), () => wallP(148, 12)],
+    arrows: [[arrow(`M44 ${G - 4} L44 ${G - 34}`)], [arrow(`M44 ${G - 34} L44 ${G - 6}`, true)]]
+  },
+  tibraise: {
+    hl: ['shin'], labels: ['TÆER NED', 'TÆER OP'],
+    poses: [
+      { hip: [44, G - 68], t: -4, legs: [{ foot: [62, G] }, { foot: [70, G] }], arms: [{ hand: [48, G - 60], b: 1 }, { hand: [52, G - 58], b: 1 }] },
+      { hip: [44, G - 68], t: -4, legs: [{ foot: [62, G], toe: [71, G - 9] }, { foot: [70, G], toe: [79, G - 9] }], arms: [{ hand: [48, G - 60], b: 1 }, { hand: [52, G - 58], b: 1 }] }
+    ],
+    back: [() => wallP(14, 10), () => wallP(14, 10)],
+    arrows: [[], [arrow(`M110 ${G - 4} L110 ${G - 36}`)]]
+  },
+  stepcalf: {
+    hl: ['shin'], labels: ['HÆLE NED', 'OP PÅ TÆERNE'],
+    poses: [
+      { hip: [88, G - 82], legs: [{ foot: [86, G - 12], toe: [97, G - 14] }, { foot: [90, G - 12], toe: [101, G - 14] }], arms: [{ hand: [96, G - 70], b: 1 }, { hand: [100, G - 68], b: 1 }] },
+      { hip: [88, G - 98], legs: [{ foot: [86, G - 28], toe: [97, G - 14] }, { foot: [90, G - 28], toe: [101, G - 14] }], arms: [{ hand: [96, G - 86], b: 1 }, { hand: [100, G - 84], b: 1 }] }
+    ],
+    back: [() => boxP(80, G - 14, 74, 14), () => boxP(80, G - 14, 74, 14)],
+    arrows: [[arrow(`M44 ${G - 4} L44 ${G - 40}`)], [arrow(`M44 ${G - 40} L44 ${G - 6}`, true)]]
+  },
+  carioca: {
+    hl: ['thigh', 'shin'], labels: ['SIDESTEP', 'KRYDS'],
+    poses: [
+      { front: 1, hip: [85, G - 62], legs: [{ foot: [62, G], b: 1 }, { foot: [106, G], b: -1 }], arms: [{ hand: [60, G - 82], b: 1 }, { hand: [114, G - 74], b: -1 }] },
+      { front: 1, hip: [80, G - 62], legs: [{ foot: [96, G], b: -1 }, { foot: [126, G - 10], b: -1 }], arms: [{ hand: [58, G - 82], b: 1 }, { hand: [108, G - 72], b: -1 }], t: 6 }
+    ],
+    arrows: [[arrow(`M44 24 L130 24`)], [arrow(`M44 24 L130 24`)]]
+  },
+  ladder: { custom: ladderPanel, labels: ['IND', 'UD'] },
+  tdrill: { custom: tdrillPanel, labels: ['OPSÆTNING', 'LØB'] },
+  sprint5: {
+    hl: ['thigh', 'shin'], labels: ['KLAR', 'ACCELERÉR'],
+    poses: [
+      { hip: [68, G - 56], t: 24, legs: [{ foot: [60, G], b: -1 }, { foot: [98, G], b: -1 }], arms: [{ hand: [100, G - 86], b: 1 }, { hand: [104, G - 82], b: 1 }] },
+      { hip: [74, G - 62], t: 40, legs: [{ foot: [34, G - 8], b: -1, toe: [28, G - 2] }, { knee: [106, G - 64], foot: [100, G - 30] }], arms: [{ hand: [104, G - 90], b: 1 }, { hand: [50, G - 96], b: 1 }] }
+    ],
+    arrows: [[], [arrow(`M110 24 L154 24`)]]
+  },
+  diveget: {
+    hl: ['torso', 'upper'], labels: ['KLAR', 'DYK'],
+    poses: [
+      { front: 1, hip: [85, G - 60], legs: [{ foot: [66, G], b: 1 }, { foot: [104, G], b: -1 }], arms: [{ hand: [66, G - 70], b: 1 }, { hand: [104, G - 70], b: -1 }] },
+      { front: 1, hip: [58, G - 66], t: 78, legs: [{ foot: [14, G - 42], b: 1 }, { foot: [18, G - 54], b: 1 }], arms: [{ hand: [152, G - 94] }, { hand: [156, G - 82] }] }
+    ],
+    back: [null, null],
+    arrows: [[], [arrow(`M30 ${G - 120} L120 ${G - 120}`)]]
+  },
+  latbandwalk: {
+    hl: ['thigh'], labels: ['SAMMEN', 'SKRIDT UD'],
+    poses: [
+      { front: 1, hip: [85, G - 58], legs: [{ foot: [72, G], b: 1 }, { foot: [98, G], b: -1 }], arms: [{ hand: [76, G - 92], b: 1 }, { hand: [94, G - 92], b: -1 }] },
+      { front: 1, hip: [85, G - 56], legs: [{ foot: [60, G], b: 1 }, { foot: [118, G], b: -1 }], arms: [{ hand: [76, G - 92], b: 1 }, { hand: [94, G - 92], b: -1 }] }
+    ],
+    front: [J => bandP([J.legs[0].f[0], J.legs[0].f[1] - 8], [J.legs[1].f[0], J.legs[1].f[1] - 8]), J => bandP([J.legs[0].f[0], J.legs[0].f[1] - 8], [J.legs[1].f[0], J.legs[1].f[1] - 8])],
+    arrows: [[], [arrow(`M130 ${G - 20} L156 ${G - 20}`)]]
+  },
+  cossack: {
+    hl: ['thigh'], labels: ['BRED STILLING', 'SÆT DIG TIL SIDEN'],
+    poses: [
+      { front: 1, hip: [85, G - 56], legs: [{ foot: [46, G], b: 1 }, { foot: [124, G], b: -1 }], arms: [{ hand: [78, G - 94], b: 1 }, { hand: [92, G - 94], b: -1 }] },
+      { front: 1, hip: [58, G - 36], legs: [{ foot: [38, G], b: 1 }, { foot: [128, G - 4], b: -1, toe: false }], arms: [{ hand: [66, G - 78], b: 1 }, { hand: [80, G - 78], b: -1 }] }
+    ],
+    arrows: [[], [arrow(`M110 ${G - 70} L74 ${G - 70}`, true)]]
+  },
+  hips9090: { custom: hips9090Panel, labels: ['VENSTRE FORAN', 'HØJRE FORAN'] },
+  wgs: {
+    hl: ['thigh', 'torso'], labels: ['HÆNDER NED', 'ÅBN OP'],
+    poses: [
+      { hip: [72, G - 34], t: 70, legs: [{ foot: [24, G - 3], toe: [32, G], b: -1 }, { foot: [112, G], b: -1 }], arms: [{ hand: [108, G - 2] }, { hand: [114, G - 2] }] },
+      { hip: [72, G - 34], t: 38, legs: [{ foot: [24, G - 3], toe: [32, G], b: -1 }, { foot: [112, G], b: -1 }], arms: [{ hand: [110, G - 2] }, { hand: [100, G - 108], b: -1 }] }
+    ],
+    arrows: [[], [arrow(`M130 ${G - 40} Q150 ${G - 90} 120 ${G - 130}`)]]
+  },
+  catcow: {
+    hl: ['torso'], labels: ['KAT', 'KO'],
+    poses: [
+      { hip: [70, G - 42], sh: [118, G - 46], head: [136, G - 34], spine: [0, -34], legs: [{ knee: [70, G - 4], foot: [36, G - 4], toe: false }, { knee: [72, G - 3], foot: [38, G - 3], toe: false }], arms: [{ hand: [118, G] }, { hand: [122, G] }] },
+      { hip: [70, G - 42], sh: [118, G - 46], head: [138, G - 64], spine: [0, 30], legs: [{ knee: [70, G - 4], foot: [36, G - 4], toe: false }, { knee: [72, G - 3], foot: [38, G - 3], toe: false }], arms: [{ hand: [118, G] }, { hand: [122, G] }] }
+    ],
+    back: [mat, mat],
+    arrows: [[arrow(`M90 ${G - 102} L90 ${G - 82}`, true)], [arrow(`M90 ${G - 24} L90 ${G - 44}`, true)]]
+  },
+  openbook: { custom: openBookPanel, labels: ['ARME FREM', 'ÅBN'] },
+  hipflexor: {
+    hl: ['thigh.0', 'torso'], labels: ['START', 'SKUB HOFTEN FREM'],
+    poses: [
+      { hip: [58, G - 40], t: 0, legs: [{ knee: [46, G - 3], foot: [12, G - 6], toe: false }, { knee: [92, G - 38], foot: [96, G] }], arms: [{ hand: [76, G - 76], b: 1 }, { hand: [80, G - 74], b: 1 }] },
+      { hip: [72, G - 40], t: -6, legs: [{ knee: [46, G - 3], foot: [12, G - 6], toe: false }, { knee: [106, G - 38], foot: [110, G] }], arms: [{ hand: [84, G - 160], b: -1 }, { hand: [88, G - 76], b: 1 }] }
+    ],
+    arrows: [[], [arrow(`M52 ${G - 60} L82 ${G - 60}`)]]
+  },
+  anklemob: {
+    hl: ['shin'], labels: ['START', 'KNÆ MOD VÆGGEN'],
+    poses: [
+      { hip: [86, G - 66], t: 4, legs: [{ foot: [48, G], b: -1 }, { foot: [112, G], b: -1 }], arms: [{ hand: [134, G - 104], b: 1 }, { hand: [136, G - 102], b: 1 }] },
+      { hip: [104, G - 56], t: 8, legs: [{ foot: [52, G], b: -1 }, { foot: [112, G], b: -1 }], arms: [{ hand: [134, G - 104], b: 1 }, { hand: [136, G - 102], b: 1 }] }
+    ],
+    back: [() => wallP(148, 12), () => wallP(148, 12)],
+    arrows: [[], [arrow(`M120 ${G - 14} L142 ${G - 14}`)]]
+  },
+  deepsquat: {
+    hl: ['thigh'], labels: ['STÅ', 'DYB HOLD'],
+    poses: [
+      { front: 1, hip: [85, G - 66], legs: [{ foot: [60, G], b: 1 }, { foot: [110, G], b: -1 }], arms: [{ hand: [78, G - 98], b: 1 }, { hand: [92, G - 98], b: -1 }] },
+      { front: 1, hip: [85, G - 22], legs: [{ foot: [52, G], b: 1 }, { foot: [118, G], b: -1 }], arms: [{ elbow: [62, G - 46], hand: [80, G - 66] }, { elbow: [108, G - 46], hand: [90, G - 66] }] }
+    ],
+    arrows: [[], [arrow(`M30 ${G - 70} L30 ${G - 40}`, true)]]
+  },
+  shoulderband: {
+    hl: ['upper'], labels: ['FORAN', 'OVER HOVEDET'],
+    poses: [
+      { front: 1, hip: [85, G - 70], legs: [{ foot: [78, G], b: 1 }, { foot: [92, G], b: -1 }], arms: [{ hand: [48, G - 84], b: 1 }, { hand: [122, G - 84], b: -1 }] },
+      { front: 1, hip: [85, G - 70], legs: [{ foot: [78, G], b: 1 }, { foot: [92, G], b: -1 }], arms: [{ hand: [48, G - 158], b: -1 }, { hand: [122, G - 158], b: 1 }] }
+    ],
+    front: [J => bandP(J.arms[0].h, J.arms[1].h), J => bandP(J.arms[0].h, J.arms[1].h)],
+    arrows: [[], [arrow(`M18 ${G - 80} L18 ${G - 150}`)]]
+  },
+  wallball: {
+    hl: ['upper'], labels: ['KAST', 'GRIB'],
+    poses: [
+      { hip: [60, G - 66], t: 8, legs: [{ foot: [42, G], b: -1 }, { foot: [80, G], b: -1 }], arms: [{ hand: [90, G - 98], b: 1 }, { hand: [92, G - 96], b: 1 }] },
+      { hip: [60, G - 66], t: 8, legs: [{ foot: [42, G], b: -1 }, { foot: [80, G], b: -1 }], arms: [{ hand: [100, G - 96], b: 1 }, { hand: [102, G - 94], b: 1 }] }
+    ],
+    back: [() => wallP(150, 10), () => wallP(150, 10)],
+    front: [J => ballS([J.arms[1].h[0] + 10, J.arms[1].h[1] - 2]) + guide(`M${J.arms[1].h[0] + 18} ${J.arms[1].h[1] - 2} L142 ${G - 108}`), () => ballS([126, G - 100]) + guide(`M140 ${G - 108} L114 ${G - 100}`)],
+    arrows: [[], []]
+  },
+  dropcatch: {
+    hl: ['upper'], labels: ['MAKKER SLIPPER', 'GRIB'],
+    poses: [
+      { front: 1, hip: [85, G - 60], legs: [{ foot: [66, G], b: 1 }, { foot: [104, G], b: -1 }], arms: [{ hand: [64, G - 80], b: 1 }, { hand: [106, G - 80], b: -1 }] },
+      { front: 1, hip: [85, G - 60], legs: [{ foot: [66, G], b: 1 }, { foot: [104, G], b: -1 }], arms: [{ hand: [66, G - 78], b: 1 }, { hand: [112, G - 100], b: -1 }] }
+    ],
+    front: [() => partnerHand() + ballS([124, 46]), () => partnerHand() + ballS([116, G - 112]) + guide(`M124 58 L118 ${G - 124}`)],
+    arrows: [[], []]
+  },
+  visual: { custom: visualPanel, labels: ['LUK ØJNENE', 'SE DET FOR DIG'] }
+});
+function partnerHand() { return rect(116, 16, 18, 22, 6, '#7E8C83', 'none', 0) + `<path d="M116 38 Q125 52 134 38" fill="#7E8C83"/>` + gtext(125, 12, 'MAKKER', 'illu-note'); }
+
 const _illuCache = new Map();
 function illustration(id, cls = '') {
   const k = id + '|' + cls;
@@ -440,6 +1240,8 @@ const ICON = {
   house: SV('<path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/>'),
   focus: SV('<circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="8.5"/><path d="M12 1.8v3.4M12 18.8v3.4M1.8 12h3.4M18.8 12h3.4"/>'),
   edit: SV('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'),
+  more: SV('<circle cx="5.5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="18.5" cy="12" r="1.8" fill="currentColor"/>'),
+  chev: SV('<path d="M9 5l7 7-7 7"/>', ' stroke-width="2.6"'),
   test: SV('<path d="M9 3h6M10 3v5.5L5 19a1.5 1.5 0 0 0 1.4 2h11.2A1.5 1.5 0 0 0 19 19l-5-10.5V3"/><path d="M7.5 15h9"/>')
 };
 
@@ -671,7 +1473,7 @@ A('stairs', 'Trappemaskine', 'Kondition', ['Udholdenhed', 'Styrke'], 'Maskine', 
 A('goblet', 'Goblet squat', 'Styrke', ['Styrke', 'Core'], 'Kettlebell', 'squat',
   'Squat med vægt foran kroppen, der lærer dig at holde overkroppen rank.',
   ['Hold en kettlebell ind mod brystet med begge hænder.', 'Sæt dig ned mellem knæene, til lårene er vandrette, og brystet er oppe.', 'Pres op gennem hele foden, til du står rank.'],
-  '10 reps', '60 sek', ['Albuerne peger ned mellem knæene.', 'Hælene bliver i gulvet.'], { illu: 'squat', log: true });
+  '10 reps', '60 sek', ['Albuerne peger ned mellem knæene.', 'Hælene bliver i gulvet.'], { log: true });
 A('splitsquat', 'Split squat', 'Styrke', ['Styrke', 'Balance'], 'Ingen udstyr', 'squat',
   'Benstyrke og balance, uden at skulle bruge en bænk.',
   ['Stå i skridtstilling med et stort skridt mellem fødderne.', 'Sænk dig lige ned, til bageste knæ næsten rører gulvet.', 'Pres op gennem forreste hæl, uden at fødderne flytter sig.'],
@@ -721,7 +1523,7 @@ A('kbswing', 'Kettlebell swing', 'Eksplosiv', ['Eksplosivitet', 'Styrke', 'Udhol
 A('slbridge', 'Glute bridge på ét ben', 'Styrke', ['Styrke', 'Balance'], 'Ingen udstyr', 'hinge',
   'Stærke baller og kontrol i hoften, uden udstyr.',
   ['Lig på ryggen med det ene ben strakt i luften.', 'Pres hælen på standbenet ned, og løft hoften.', 'Hold et sekund, og sænk kontrolleret.'],
-  '8/ben', '30 sek', ['Hoften forbliver vandret.', 'Spænd ballen, ikke lænden.'], { illu: 'glutebridge' });
+  '8/ben', '30 sek', ['Hoften forbliver vandret.', 'Spænd ballen, ikke lænden.']);
 A('nordic', 'Nordic hamstring curl', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Ingen udstyr', 'hinge',
   'Stærke baglår, der beskytter mod forstrækninger i spurt og udspark.',
   ['Knæl på en blød måtte, og få en makker eller et fast anker til at holde dine ankler.', 'Sænk overkroppen langsomt fremad med lige linje fra knæ til hoved.', 'Grib gulvet med hænderne, og skub dig tilbage til start.'],
@@ -733,17 +1535,17 @@ A('hamwalk', 'Baglårs-walkout', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'An
 A('dbrdl', 'RDL med håndvægte', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Håndvægte', 'hinge',
   'Stærk bagside af lår, baller og ryg, hvis der ikke er en stang.',
   ['Stå med en håndvægt i hver hånd foran lårene.', 'Skub hoften bagud, og lad vægtene glide langs benene.', 'Pres hoften frem, og rejs dig.'],
-  '10 reps', '60 sek', ['Ryggen er lige hele tiden.', 'Hold vægtene tæt på kroppen.'], { illu: 'rdl', log: true });
+  '10 reps', '60 sek', ['Ryggen er lige hele tiden.', 'Hold vægtene tæt på kroppen.'], { log: true });
 
 /* --- Skub --- */
 A('kneepushup', 'Armstrækninger på knæ', 'Styrke', ['Styrke'], 'Ingen udstyr', 'push',
   'Lettere version af armstrækninger, når du skal bygge op.',
   ['Knæene i gulvet, hænderne lidt bredere end skuldrene.', 'Sænk brystet mod gulvet med albuerne skråt ud.', 'Pres dig op, til armene er strakte.'],
-  '10 reps', '30 sek', ['Kroppen er en lige linje fra knæ til hoved.', 'Gå videre til almindelige, når du kan lave 12.'], { illu: 'pushup' });
+  '10 reps', '30 sek', ['Kroppen er en lige linje fra knæ til hoved.', 'Gå videre til almindelige, når du kan lave 12.']);
 A('diamondpush', 'Diamant-armstrækninger', 'Styrke', ['Styrke'], 'Ingen udstyr', 'push',
   'Armstrækninger med fokus på triceps.',
   ['Placér hænderne tæt sammen under brystet, så tommel og pegefinger danner en diamant.', 'Sænk brystet mod hænderne med albuerne tæt ind.', 'Pres dig op.'],
-  '8 reps', '45 sek', ['Fokus på triceps.', 'Lav dem på knæ, hvis det er for tungt.'], { illu: 'pushup' });
+  '8 reps', '45 sek', ['Fokus på triceps.', 'Lav dem på knæ, hvis det er for tungt.']);
 A('dbpress', 'Skulderpres med håndvægte', 'Styrke', ['Styrke'], 'Håndvægte', 'push',
   'Stærke skuldre til udkast og høje bolde.',
   ['Sid eller stå med håndvægte i skulderhøjde.', 'Pres vægtene lige op over hovedet, til armene er strakte.', 'Sænk kontrolleret tilbage til skuldrene.'],
@@ -823,7 +1625,7 @@ A('copenhagen', 'Copenhagen plank', 'Core', ['Core', 'Skadesforebyggelse'], 'Bæ
 A('bandpallof', 'Pallof press med elastik', 'Core', ['Core', 'Skadesforebyggelse'], 'Elastik', 'core',
   'Samme øvelse som Pallof press, bare med elastik.',
   ['Fastgør elastikken i sidehøjde, og stå sidelæns med håndtaget ind mod brystet.', 'Pres armene lige frem, til de er strakte.', 'Hold 1 sekund uden at dreje, og før tilbage.'],
-  '10/side', '30 sek', ['Hofter og skuldre peger frem.', 'Træd længere væk for mere modstand.'], { illu: 'pallof' });
+  '10/side', '30 sek', ['Hofter og skuldre peger frem.', 'Træd længere væk for mere modstand.']);
 A('woodchop', 'Kabel-woodchop', 'Core', ['Core', 'Eksplosivitet'], 'Kabel', 'core',
   'Kraft i rotation, som i et kast eller en udsparkning.',
   ['Stå sidelæns til kablet i højeste position med begge hænder på håndtaget.', 'Træk håndtaget diagonalt ned over kroppen, mens du drejer.', 'Før kontrolleret tilbage.'],
@@ -851,7 +1653,7 @@ A('bearcrawl', 'Bear crawl', 'Core', ['Core', 'Udholdenhed', 'Hurtighed'], 'Inge
 A('skater', 'Skater hop', 'Eksplosiv', ['Eksplosivitet', 'Balance', 'Hurtighed'], 'Ingen udstyr', 'plyo',
   'Eksplosiv sidebevægelse med kontrol i landingen.',
   ['Stå på ét ben med let bøjet knæ.', 'Hop sidelæns til det andet ben, og sving armene med.', 'Land blødt, og hold balancen et øjeblik.'],
-  '6/side', '45 sek', ['Land på forfoden.', 'Knæet følger tæerne.'], { illu: 'bounds' });
+  '6/side', '45 sek', ['Land på forfoden.', 'Knæet følger tæerne.']);
 A('boxjump', 'Box jump', 'Eksplosiv', ['Eksplosivitet', 'Styrke'], 'Bænk/kasse', 'plyo',
   'Lodret kraft til høje bolde.',
   ['Stå foran en stabil kasse med fødderne i hoftebredde.', 'Sæt dig let ned, og hop eksplosivt op på kassen.', 'Land blødt med bøjede knæ, og stig ned i stedet for at hoppe ned.'],
@@ -889,7 +1691,7 @@ A('slhop', 'Enbens-hop frem', 'Eksplosiv', ['Eksplosivitet', 'Balance'], 'Ingen 
 A('slcalf', 'Calf raise på ét ben', 'Styrke', ['Styrke', 'Balance', 'Skadesforebyggelse'], 'Ingen udstyr', 'calf',
   'Stærke læg og ankler, ét ben ad gangen.',
   ['Stå på ét ben med let støtte mod en væg.', 'Pres op på tæerne, så højt du kan.', 'Sænk langsomt på 2 sekunder.'],
-  '10/ben', '30 sek', ['Hold et kort stop i toppen.', 'Rolig bevægelse, ingen vippen.'], { illu: 'calf' });
+  '10/ben', '30 sek', ['Hold et kort stop i toppen.', 'Rolig bevægelse, ingen vippen.']);
 A('tibraise', 'Tibialis raise', 'Styrke', ['Skadesforebyggelse', 'Styrke'], 'Ingen udstyr', 'calf',
   'Stærke skinneben, der beskytter mod stød og forkert landing.',
   ['Stå med ryggen mod en væg og fødderne et skridt frem.', 'Løft forfoden og tæerne op mod skinnebenet.', 'Sænk langsomt tilbage.'],
@@ -897,7 +1699,7 @@ A('tibraise', 'Tibialis raise', 'Styrke', ['Skadesforebyggelse', 'Styrke'], 'Ing
 A('stepcalf', 'Calf raise på trin', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Bænk/kasse', 'calf',
   'Stærke læg med fuldt bevægeudslag.',
   ['Stå med forfoden på kanten af et trin og hælene frit.', 'Pres op på tæerne, så højt du kan.', 'Sænk hælene under trinnet, og stræk læggen.'],
-  '12 reps', '45 sek', ['Fuldt bevægeudslag giver stærkere ankler.', 'Hold let fast i noget.'], { illu: 'calf' });
+  '12 reps', '45 sek', ['Fuldt bevægeudslag giver stærkere ankler.', 'Hold let fast i noget.']);
 
 /* --- Hurtige fødder og bevægelse --- */
 A('carioca', 'Carioca', 'Bevægelse', ['Hurtighed', 'Mobilitet', 'Balance'], 'Ingen udstyr', 'agility',
@@ -1306,7 +2108,6 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const fmt = s => { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60), r = s % 60; return `${m}:${String(r).padStart(2, '0')}`; };
 const fmtLong = s => { s = Math.max(0, Math.round(s)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
 const prefersReduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const scrollToId = id => { const el = $(id); if (el) el.scrollIntoView({ behavior: prefersReduced() ? 'auto' : 'smooth', block: 'start' }); };
 function fillIcons(root = document) { root.querySelectorAll('[data-icon]').forEach(el => { if (!el.firstElementChild) el.innerHTML = ICON[el.dataset.icon] || ''; }); }
 /* Re-render uden at miste tastaturfokus på det element, der blev trykket på */
 function withFocus(fn) {
@@ -1467,8 +2268,11 @@ function renderWeekNav() {
     return `<button class="wk" role="tab" type="button" id="tab-${W.n}" data-week="${W.n}" aria-selected="${sel}" aria-controls="weekView" tabindex="${sel ? 0 : -1}">UGE ${W.n}${done ? `<span class="ck" aria-label="gennemført">${ICON.check}</span>` : ''}</button>`;
   }).join('');
   $('weekChip').textContent = `Uge ${ST.week}`;
+  centerWeekTab();
+}
+function centerWeekTab() {
   const el = $('tab-' + ST.week), sc = $('weekNav');
-  if (el) sc.scrollTo({ left: el.offsetLeft - sc.clientWidth / 2 + el.clientWidth / 2, behavior: prefersReduced() ? 'auto' : 'smooth' });
+  if (el && sc.clientWidth) sc.scrollTo({ left: el.offsetLeft - sc.clientWidth / 2 + el.clientWidth / 2, behavior: prefersReduced() ? 'auto' : 'smooth' });
 }
 function selectWeek(n) {
   ST.week = Math.min(8, Math.max(1, n)); save();
@@ -1846,10 +2650,12 @@ function tRender() {
   $('tBack').hidden = !TM.src;
   renderMini(ph, s);
 }
-let timerInView = false;
+let timerInView = false; // sand, når timer-siden er den viste side (så skjules mini-timeren)
 function renderMini(ph, s) {
   const m = $('miniTimer'), active = !['idle', 'done'].includes(ph);
-  m.classList.toggle('show', active && !timerInView);
+  const shown = active && !timerInView;
+  m.classList.toggle('show', shown);
+  $('app').classList.toggle('has-mini', shown);
   if (m.dataset.phase !== ph) m.dataset.phase = ph;
   setText($('miniTime'), s.type === 'reps' ? fmt(TM.el) : fmt(Math.ceil(TM.left)));
   setText($('miniPhase'), ph === 'react' && TM.cue ? CUES[TM.cue] : (PHASE_TXT[ph] || ''));
@@ -1900,7 +2706,7 @@ function startStepHold(k, dir) {
 function startProgramTimer(name, segs, src, noPrep = false) {
   tLoad(name, segs, { src, autostart: true, noPrep });
   closeSheet();
-  setTimeout(() => { const el = $('timerBox'); el.scrollIntoView({ behavior: prefersReduced() ? 'auto' : 'smooth', block: 'start' }); }, 60);
+  pageScroll.timer = 0; go('timer');
 }
 
 /* Lyd, vibration, skærm */
@@ -1995,6 +2801,10 @@ function renderHistory() {
       <div class="hist-vals">${METRICS.map(x => `<span><b>${esc(m[x.k])}</b>${x.short}</span>`).join('')}</div>${m.note ? `<p>${esc(m.note)}</p>` : ''}</li>`).join('')
     : '<li class="empty">Dine kampe vises her.</li>';
 }
+function setTrackerTab(t) {
+  const g = document.querySelector('.tracker-grid'); if (g) g.dataset.tab = t;
+  document.querySelectorAll('.seg-btn').forEach(b => b.setAttribute('aria-selected', b.dataset.seg === t));
+}
 function syncMatchWeek() { if (!editMatchId && $('mWeek')) $('mWeek').value = curWeek(); }
 function setMatchEditing(id) {
   editMatchId = id;
@@ -2006,10 +2816,11 @@ function startEditMatch(id) {
   setMatchEditing(m.id);
   $('mDate').value = m.date; mDateTouched = true; $('mWeek').value = m.week; $('mNote').value = m.note || '';
   METRICS.forEach(x => { const r = $('r-' + x.k); r.value = m[x.k]; syncRange(r); });
-  $('matchForm').scrollIntoView({ behavior: prefersReduced() ? 'auto' : 'smooth', block: 'start' });
+  setTrackerTab('new'); $('page-tracker').scrollTop = 0;
   toast('Redigerer kamp. Tryk "Opdatér kamp" for at gemme.');
 }
 function renderTracker() {
+  if (!document.querySelector('.tracker-grid').dataset.tab) setTrackerTab('new');
   $('mWeek').innerHTML = WEEKS.map(W => `<option value="${W.n}">Uge ${W.n}</option>`).join('');
   if (!$('mDate').value || !mDateTouched) $('mDate').value = lastSaturday();
   syncMatchWeek();
@@ -2024,7 +2835,8 @@ document.addEventListener('click', e => {
   if (ds.check) { toggleDone(ds.check); return; }
   if (ds.week) { selectWeek(+ds.week); return; }
   if (ds.weekdone) { toggleWeekDone(+ds.weekdone); return; }
-  if (ds.go) { if (ds.go === 'program') selectWeek(curWeek()); scrollToId(ds.go); return; }
+  if (ds.go) { if (ds.go === 'program') selectWeek(curWeek()); go(ds.go); return; }
+  if (ds.seg) { setTrackerTab(ds.seg); $('page-tracker').scrollTop = 0; return; }
   if (ds.timer) { const [n, id] = ds.timer.split('|'); const b = WEEKS[+n - 1].blocks.find(x => x.id === id); startProgramTimer(`Uge ${n} · ${b.timer.name}`, swappedSegs(b, `week|${n}|${id}`), `blk-${n}-${id}`); return; }
   if (ds.tfsave) {
     const n = +ds.tfsave;
@@ -2063,16 +2875,20 @@ document.addEventListener('click', e => {
     return;
   }
   switch (t.id) {
-    case 'pcCta': { const n = curWeek(); selectWeek(n); scrollToId('program'); break; }
-    case 'weekChip': scrollToId('program'); break;
+    case 'pcCta': { const n = curWeek(); selectWeek(n); go('program'); break; }
+    case 'weekChip': go('program'); break;
     case 'tStart': tStart(); break;
     case 'tPause': tPause(); break;
     case 'tReset': tReset(); break;
     case 'tRepsBtn': tAdvance(); break;
-    case 'tBack': if (TM.src) { const el = $(TM.src) || $('program'); el.scrollIntoView({ behavior: prefersReduced() ? 'auto' : 'smooth', block: 'start' }); } break;
+    case 'tBack': if (TM.src) {
+      const pg = TM.src.startsWith('home-') ? 'hjemme' : TM.src === 'fredag' ? 'fredag' : 'program';
+      go(pg);
+      const el = $(TM.src); if (el) el.scrollIntoView({ block: 'start' });
+    } break;
     case 'libMore': libShown += LIB_PAGE; renderLibList(); break;
     case 'libReset': ST.settings.lib = 'Alle'; ST.settings.libEquip = 'Alle'; ST.settings.libCat = 'Alle'; libQ = ''; $('libSearch').value = ''; save(); libShown = LIB_PAGE; renderLibrary(); break;
-    case 'miniGo': scrollToId('timer'); break;
+    case 'miniGo': go('timer'); break;
     case 'miniToggle': TM.running ? tPause() : tStart(); break;
     case 'tgSound': ST.settings.sound = !ST.settings.sound; t.setAttribute('aria-pressed', ST.settings.sound); save(); if (ST.settings.sound) { unlockAudio(); cue('tick'); } break;
     case 'tgVib': ST.settings.vib = !ST.settings.vib; t.setAttribute('aria-pressed', ST.settings.vib); save(); vib(60); break;
@@ -2127,6 +2943,7 @@ $('matchForm').addEventListener('submit', e => {
   save(); setMatchEditing(null); mDateTouched = false;
   $('mNote').value = ''; $('mDate').value = lastSaturday(); syncMatchWeek();
   renderChart(); renderHistory(); updateBackupNote(); toast(wasEdit ? 'Kamp opdateret' : 'Kamp gemt');
+  setTrackerTab('dev'); $('page-tracker').scrollTop = 0;
 });
 let lastDayKey = localISO(new Date());
 document.addEventListener('visibilitychange', () => {
@@ -2142,18 +2959,38 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-/* Synlighed: mini-timer og aktiv bundnavigation */
-if ('IntersectionObserver' in window) {
-  new IntersectionObserver(es => { timerInView = es[0].isIntersecting; tRender(); }, { threshold: .25 }).observe($('timerBox'));
-  const links = [...document.querySelectorAll('.bottomnav a')];
-  let activeNav = null;
-  // Et smalt bånd midt i skærmen: den sektion, der krydser båndet, er aktiv (virker også for meget høje sektioner)
-  const io = new IntersectionObserver(es => {
-    es.forEach(x => { if (x.isIntersecting) activeNav = x.target.id; });
-    links.forEach(a => a.setAttribute('aria-current', a.dataset.nav === activeNav ? 'true' : 'false'));
-  }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
-  ['program', 'hjemme', 'fredag', 'timer', 'tracker', 'ovelser'].forEach(id => io.observe($(id)));
+/* ===== Sider =====
+   Hver side er en <section class="page">. Kun én vises ad gangen. Adresse: #/side, så tilbage-knappen virker. */
+const PAGES = ['idag', 'program', 'hjemme', 'fredag', 'timer', 'tracker', 'ovelser', 'progression', 'rpe', 'mere'];
+const NAV_OF = { idag: 'idag', program: 'program', timer: 'timer', ovelser: 'ovelser' }; // øvrige sider hører under "Mere"
+let curPage = null, suppressHash = false;
+const pageScroll = {};
+const routeFromHash = () => { const m = location.hash.match(/^#\/(\w+)/); return m && PAGES.includes(m[1]) ? m[1] : 'idag'; };
+function go(page) {
+  if (!PAGES.includes(page)) page = 'idag';
+  if (routeFromHash() !== page) { suppressHash = true; location.hash = '#/' + page; }
+  showPage(page);
 }
+function showPage(p) {
+  if (p === curPage) return;
+  if (curPage) { const old = $('page-' + curPage); pageScroll[curPage] = old.scrollTop; old.hidden = true; }
+  const el = $('page-' + p);
+  el.hidden = false; el.scrollTop = pageScroll[p] || 0;
+  el.classList.remove('is-entering');
+  if (!prefersReduced()) { void el.offsetWidth; el.classList.add('is-entering'); }
+  curPage = p;
+  document.title = (p === 'idag' ? '8 ugers målmandsprogram' : el.dataset.title + ' · Målmand 8');
+  $('topTitle').textContent = el.dataset.title;
+  const navId = NAV_OF[p] || 'mere';
+  document.querySelectorAll('.bottomnav a, .topnav a').forEach(a => {
+    const on = a.closest('.topnav') ? a.dataset.nav === p : a.dataset.nav === navId;
+    if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+  });
+  timerInView = p === 'timer'; tRender();
+  if (p === 'program') requestAnimationFrame(centerWeekTab);
+  const h = el.querySelector('h1, h2'); if (h && h.tabIndex === -1) h.focus({ preventScroll: true });
+}
+window.addEventListener('hashchange', () => { if (suppressHash) { suppressHash = false; return; } showPage(routeFromHash()); });
 
 /* ===== Start ===== */
 function renderAll() {
@@ -2161,10 +2998,12 @@ function renderAll() {
   renderHome(); renderFriday(); renderLibrary(); renderRPE(); renderRates(); renderTracker();
   $('tgSound').setAttribute('aria-pressed', ST.settings.sound); $('tgVib').setAttribute('aria-pressed', ST.settings.vib);
   initVibrationToggle(); buildSteppers(); renderCurrent(); updateBackupNote();
+  $('tileCount').textContent = `${Object.keys(EX).length} øvelser`;
 }
 fillIcons();
 renderAll();
 loadPreset('p1');
+showPage(routeFromHash());
 
 /* PWA: cacher appen, så den virker offline. Kræver hosting over HTTPS —
    registreres ikke, hvis filen åbnes direkte fra disk (file://) eller
