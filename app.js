@@ -1242,6 +1242,7 @@ const ICON = {
   edit: SV('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'),
   more: SV('<circle cx="5.5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="18.5" cy="12" r="1.8" fill="currentColor"/>'),
   chev: SV('<path d="M9 5l7 7-7 7"/>', ' stroke-width="2.6"'),
+  gauge: SV('<path d="M3.5 17.5a8.5 8.5 0 1 1 17 0"/><path d="M12 17.5l4.2-5.6"/><circle cx="12" cy="17.5" r="1.4" fill="currentColor"/>'),
   test: SV('<path d="M9 3h6M10 3v5.5L5 19a1.5 1.5 0 0 0 1.4 2h11.2A1.5 1.5 0 0 0 19 19l-5-10.5V3"/><path d="M7.5 15h9"/>')
 };
 
@@ -1911,7 +1912,8 @@ function buildWeek(n) {
   const ph = PHASES[phaseOf(n)];
   return { n, phase: phaseOf(n), title: ph.title, desc: ph.desc, blocks };
 }
-const WEEKS = Array.from({ length: 8 }, (_, i) => buildWeek(i + 1));
+const BASE_WEEKS = Array.from({ length: 8 }, (_, i) => buildWeek(i + 1));
+let WEEKS = BASE_WEEKS; // erstattes af det tilpassede program (computePlan), når det er aktivt
 
 /* ===== Fredag ===== */
 const FRIDAY = {
@@ -1983,10 +1985,61 @@ const METRICS = [
   { k: 'late', t: 'Overskud sidst i kampen', short: 'Overskud', c: '#F1F5EF' }
 ];
 
+/* ===== Coach: mål, tests og niveauer ===== */
+const GOALS = {
+  offseason: { name: 'Off-season: byg muskel', short: 'Byg muskel', icon: 'dumbbell', sessions: ['A', 'B', 'C'], rest: 120,
+    desc: 'Du er uden for sæsonen: tung styrketræning og mere volumen (flere sæt og gentagelser). Lidt let kondition for at holde gang i motoren.' },
+  explosive: { name: 'Bliv mere eksplosiv', short: 'Mere eksplosiv', icon: 'bolt', sessions: ['A', 'B'], rest: 150,
+    desc: 'Tung styrke i få gentagelser, spring og kast og korte sprint-intervaller. God hvile mellem sæt, så hver gentagelse er hurtig.' },
+  leanfast: { name: 'Ned i vægt for at blive hurtigere', short: 'Hurtigere og lettere', icon: 'timer', sessions: ['A', 'B', 'C'], rest: 120,
+    desc: 'Styrken holdes ved lige med få, tunge sæt. Mere kondition og intervaller, så du kan komme ned i vægt uden at tabe kraft.' },
+  bodyfat: { name: 'Lavere fedtprocent', short: 'Lavere fedt%', icon: 'flame', sessions: ['A', 'B', 'C'], rest: 60,
+    desc: 'Styrke-circuits med kort pause, intervaller og rolig kondition. Fokus på forbrænding og at bevare muskler.' }
+};
+const GOAL_KEYS = Object.keys(GOALS);
+const COACH_CATS = ['Styrke', 'Eksplosivitet', 'Kondition', 'Core'];
+/* Tests. "rec" = anbefalet kernesæt. Øvelserne med ex bruges også til at regne vægte ud i programmet. */
+const TESTS = [
+  { id: 'squat', ex: 'frontsquat', cat: 'Styrke', name: 'Frontsquat', kind: 'lift', rec: true,
+    why: 'Viser benstyrke og kraft til afsæt, spring og redninger.',
+    how: 'Varm op, og vælg en vægt, du kan tage 3–8 gange med god teknik. Skriv vægten og antal gentagelser. Stop, før teknikken går i stykker. Du skal ikke teste dit maks.' },
+  { id: 'rdl', ex: 'rdl', cat: 'Styrke', name: 'Romanian deadlift', kind: 'lift', rec: true,
+    why: 'Baglår, baller og ryg: grundlaget for sprint, hop og færre forstrækninger.',
+    how: 'Vælg en vægt, du kan tage 3–8 gange med lige ryg og stangen tæt på kroppen. Skriv vægt og gentagelser.' },
+  { id: 'bench', ex: 'dbbench', cat: 'Styrke', name: 'Bænkpres med håndvægte', kind: 'lift', perHand: true,
+    why: 'Overkropsstyrke til udkast og til at komme hurtigt op fra jorden.',
+    how: 'Skriv vægten for én håndvægt og antal gentagelser (3–8) med kontrolleret bevægelse hele vejen ned.' },
+  { id: 'pullup', ex: 'pullup', cat: 'Styrke', name: 'Pull-ups', kind: 'reps', rec: true,
+    why: 'Relativ styrke: hvor meget din krop kan trække sig selv. Står mål for ryg og arme.',
+    how: 'Tag så mange rene pull-ups som muligt, hagen over stangen og fuld nedstrækning. Kan du ikke endnu, skriv 0.' },
+  { id: 'cmj', cat: 'Eksplosivitet', name: 'Lodret hop', kind: 'num', unit: 'cm', rec: true,
+    why: 'Eksplosiv benkraft: hvor højt du kan hoppe til høje bolde.',
+    how: 'Stå ved en væg og ræk så højt du kan, og marker. Hop og marker højest muligt. Forskellen i cm er din hopshøjde. Tag bedste af 3.' },
+  { id: 'broad', cat: 'Eksplosivitet', name: 'Længdespring', kind: 'num', unit: 'cm',
+    why: 'Eksplosiv kraft fremad: afsæt og acceleration.',
+    how: 'Stå med begge fødder bag en streg, og hop så langt du kan med et land, du kan holde. Mål fra stregen til hælen. Tag bedste af 3.' },
+  { id: 'cond', cat: 'Kondition', name: 'Konditionstest', kind: 'cond', rec: true,
+    why: 'Aerob kapacitet: evnen til at gentage aktioner og være klar helt til sidst.',
+    how: 'Løbetest: løb så langt som muligt på 12 minutter (meter). Cykeltest: kør 20 minutter så hårdt og jævnt som muligt, og skriv gennemsnitlig watt.' },
+  { id: 'plank', cat: 'Core', name: 'Planke', kind: 'num', unit: 'sek', rec: true,
+    why: 'Core-udholdenhed: stabilitet i dueller, landinger og lange kampe.',
+    how: 'Hold planken på albuer med lige krop, så længe du kan. Stop, når hoften synker eller falder i svaj.' }
+];
+/* Niveau-tærskler for score 20/40/60/80/100 (mand). Løft: løftet vægt (beregnet maks) ift. kropsvægt. */
+const STD = {
+  squat: [0.7, 0.95, 1.2, 1.5, 1.85], rdl: [0.8, 1.05, 1.35, 1.7, 2.1], bench: [0.45, 0.65, 0.9, 1.15, 1.45],
+  pullup: [1, 4, 8, 12, 18], cmj: [25, 33, 41, 50, 60], broad: [180, 210, 235, 260, 285], plank: [30, 60, 100, 150, 210],
+  run: [1700, 2000, 2400, 2700, 3000], bike: [1.5, 2.0, 2.5, 3.0, 3.8]
+};
+const STD_F = { squat: .65, rdl: .65, bench: .55, pullup: .5, cmj: .8, broad: .85, plank: 1, run: .85, bike: .8 };
+const LEVEL_COL = ['#FF6B5B', '#FF9A3D', '#FFD84A', '#C8F03C', '#7EE8A2'];
+
+const DEF_COACH = () => ({ sex: 'm', birth: '', height: '', bf: '', goal: '', targetKg: '', targetBf: '', active: false, weights: [], tests: [] });
+
 /* ===== Tilstand (localStorage) ===== */
 const KEY = 'gk8-goalkeeper-v1';
 const DEF = () => ({
-  week: 1, start: '', done: {}, weeksDone: [], matches: [], tests: {}, logs: [], swaps: {},
+  week: 1, start: '', done: {}, weeksDone: [], matches: [], tests: {}, logs: [], swaps: {}, coach: DEF_COACH(),
   fri: { wk: '', done: {} },
   home: { date: '', done: {} }, homeLog: [], lastExport: '',
   settings: { sound: true, vib: true, custom: { work: 30, rest: 60, rounds: 10 }, metric: 'avg', lib: 'Alle', libEquip: 'Alle', libCat: 'Alle', homeLevel: null }
@@ -2021,6 +2074,7 @@ function mergeState(d) {
     id: Math.round(clampNum(l.id, 0, 9e15, Date.now() + i)), date: l.date, week: Math.round(clampNum(l.week, 1, 8, 1)), ex: l.ex,
     kg: clampNum(l.kg, 0, 1000, 0), reps: clampNum(l.reps, 0, 1000, 0), rpe: Math.round(clampNum(l.rpe, 0, 10, 0))
   }));
+  out.coach = cleanCoach(d.coach);
   out.swaps = {};
   if (isObj(d.swaps)) Object.keys(d.swaps).slice(0, 300).forEach(k => { if (/^(week|fri|home)\|[\w|]+$/.test(k) && EX[d.swaps[k]]) out.swaps[k] = d.swaps[k]; });
   out.fri = { wk: str(d.fri && d.fri.wk, 12), done: trueKeys(d.fri && d.fri.done) };
@@ -2142,8 +2196,8 @@ function resolveItem(it, ctx) {
   if (!it || !it.ex || !sw || !EX[sw] || sw === it.ex) return it;
   const e = EX[sw], o = EX[it.ex];
   if (e.pattern === 'cardio' && o.pattern === 'cardio') return { ...it, ex: sw, name: e.name, swapped: true, orig: it }; // tid og intensitet bevares
-  const dose = /^× /.test(it.dose) ? '× ' + e.dose : (String(it.dose).match(/^\d+ × /) || [''])[0] + e.dose; // bevar sæt-/gange-præfikset
-  return { ex: sw, dose, secs: e.secs, perSide: e.perSide, swapped: true, orig: it };
+  const dose = it.rx ? rxDose(sw, it.rx) : /^× /.test(it.dose) ? '× ' + e.dose : (String(it.dose).match(/^\d+ × /) || [''])[0] + e.dose; // bevar sæt-/gange-præfikset
+  return { ex: sw, dose, secs: e.secs, perSide: e.perSide, swapped: true, orig: it, ...(it.rx ? { rx: it.rx } : {}) };
 }
 function swapOptions(ctx, origEx) {
   const o = EX[origEx], kind = ctx.split('|')[0];
@@ -2276,6 +2330,7 @@ function centerWeekTab() {
 }
 function selectWeek(n) {
   ST.week = Math.min(8, Math.max(1, n)); save();
+  if (ST.coach.active) rebuildWeeks();
   renderWeekNav(); renderWeek();
 }
 /* Alt der afhænger af den nuværende (ikke den viste) uge */
@@ -2333,6 +2388,7 @@ function blockHTML(b, n) {
     ${b.ivl ? ivlHTML(b.ivl, b) : ''}
     <ul class="items">${b.items.map((it, i) => itemHTML(it, `week|${n}|${b.id}|${i}`)).join('')}</ul>
     ${b.testForm ? testFormHTML(n) : ''}
+    ${b.link ? `<div class="block-actions"><button class="btn btn-lime" type="button" data-ctab="${b.link.tab}" data-go="${b.link.go}">${b.link.label}</button></div>` : ''}
     ${timerBtn || restBtn ? `<div class="block-actions">${timerBtn}${restBtn}</div>` : ''}</article>`;
 }
 function renderWeek() {
@@ -2347,7 +2403,7 @@ function renderWeek() {
       <div class="phase-steps" aria-hidden="true">${PHASES.map((p, i) => `<span class="${i <= W.phase ? 'on' : ''}"></span>`).join('')}</div>
       <div class="wk-prog"><div class="bar" role="progressbar" aria-label="Øvelser klaret i uge ${W.n}" aria-valuemin="0" aria-valuemax="${st.total}" aria-valuenow="${st.done}"><i style="width:${pct}%"></i></div><b>${st.done}/${st.total}</b></div>
     </header>
-    <div class="blocks">${W.blocks.map(b => blockHTML(b, W.n)).join('')}
+    <div class="blocks">${(() => { let last = null; return W.blocks.map(b => { const h = b.session && b.session.id !== last ? (last = b.session.id, `<h3 class="sess-h">${esc(b.session.title)}</h3>`) : ''; return h + blockHTML(b, W.n); }).join(''); })()}
       <button class="btn btn-block wk-done-btn ${wd ? '' : 'btn-lime'}" type="button" data-weekdone="${W.n}" aria-pressed="${wd}">${ICON.check}${wd ? `Uge ${W.n} er gennemført` : `Markér uge ${W.n} som gennemført`}</button>
     </div></div>`;
 }
@@ -2488,7 +2544,7 @@ function openSheet(ctx) {
     <ol class="ex-steps">${['Start', 'Bevægelse', 'Slut'].map((l, i) => `<li><b>${l}</b><span>${e.how[i]}</span></li>`).join('')}</ol>
     <ul class="ex-tips">${e.tips.map(t => `<li>${ICON.tip}<span>${t}</span></li>`).join('')}</ul>
     ${origItem ? `<button class="btn btn-ghost btn-block" type="button" data-swap-open>${ICON.repeat}${item.swapped ? 'Skift igen eller gendan original' : 'Skift øvelse'}</button>` : ''}
-    ${e.log ? logSectionHTML(exId) : ''}
+    ${e.log ? logSectionHTML(exId, item) : ''}
     <div class="m-actions">${timerBtn || ''}${doneBtn}</div></div>`;
   if (!timerBtn) d.querySelector('.m-actions').style.gridTemplateColumns = '1fr';
   d._ctx = { exId, item, block, name, secs, perSide, src, segs, base, origEx: origItem && origItem.ex };
@@ -2528,12 +2584,16 @@ function logListHTML(exId) {
   if (!list.length) return '<p class="empty">Ingen registreringer endnu.</p>';
   return `<ul class="log-list">${list.map(l => `<li><span>${esc(daDate(l.date))}</span><b>${l.kg ? fmtNum(l.kg) + ' kg' : 'kropsvægt'} × ${fmtNum(l.reps)}</b>${l.rpe ? `<small>RPE ${l.rpe}</small>` : ''}</li>`).join('')}</ul>`;
 }
-function logSectionHTML(exId) {
+function logSectionHTML(exId, item) {
+  let kg = '', reps = '';
+  const last = ST.logs.filter(l => l.ex === exId).slice(-1)[0], e1 = item && item.rx && item.rx.pct ? e1RM(exId) : null;
+  if (e1) { kg = fmtNum(roundKg(exId, e1 * item.rx.pct / 100)); reps = item.rx.reps; }
+  else { if (last && last.kg) kg = fmtNum(last.kg); if (item && item.rx) reps = item.rx.reps; }
   const opts = '<option value="0">–</option>' + Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
   return `<section class="logbox" aria-label="Registrér sæt"><h4>Registrér</h4>
     <div class="log-form">
-      <label class="field">Vægt (kg)<input id="lgKg" inputmode="decimal" placeholder="0"></label>
-      <label class="field">Reps / meter<input id="lgReps" inputmode="numeric" placeholder="fx 8"></label>
+      <label class="field">Vægt (kg)<input id="lgKg" inputmode="decimal" placeholder="0" value="${esc(kg)}"></label>
+      <label class="field">Reps / meter<input id="lgReps" inputmode="numeric" placeholder="fx 8" value="${esc(reps)}"></label>
       <label class="field">RPE<select id="lgRpe">${opts}</select></label>
       <button class="btn btn-lime" type="button" data-logsave="${esc(exId)}">Gem</button>
     </div><div id="lgList">${logListHTML(exId)}</div></section>`;
@@ -2544,6 +2604,7 @@ function saveLog(exId) {
   ST.logs.push({ id: Date.now(), date: todayISO(), week: curWeek(), ex: exId, kg: Math.min(kg, 1000), reps: Math.min(reps, 1000), rpe: +$('lgRpe').value || 0 });
   ST.logs = ST.logs.slice(-500); save();
   $('lgList').innerHTML = logListHTML(exId); $('lgReps').value = ''; toast('Registreret');
+  if (ST.coach.active) { rebuildWeeks(); renderWeek(); renderCoachCard(); }
 }
 function closeSheet() { const d = $('exSheet'); if (d.open) { if (typeof d.close === 'function') d.close(); else d.removeAttribute('open'); } }
 
@@ -2835,6 +2896,8 @@ document.addEventListener('click', e => {
   if (ds.check) { toggleDone(ds.check); return; }
   if (ds.week) { selectWeek(+ds.week); return; }
   if (ds.weekdone) { toggleWeekDone(+ds.weekdone); return; }
+  if (ds.cact) { coachAction(ds.cact, ds); return; }
+  if (ds.ctab) { setCoachTab(ds.ctab); if (ds.go) go(ds.go); return; }
   if (ds.go) { if (ds.go === 'program') selectWeek(curWeek()); go(ds.go); return; }
   if (ds.seg) { setTrackerTab(ds.seg); $('page-tracker').scrollTop = 0; return; }
   if (ds.timer) { const [n, id] = ds.timer.split('|'); const b = WEEKS[+n - 1].blocks.find(x => x.id === id); startProgramTimer(`Uge ${n} · ${b.timer.name}`, swappedSegs(b, `week|${n}|${id}`), `blk-${n}-${id}`); return; }
@@ -2928,6 +2991,7 @@ $('weekNav').addEventListener('keydown', e => {
 });
 document.addEventListener('input', e => { if (e.target.matches('#rates input[type=range]')) syncRange(e.target); });
 $('mDate').addEventListener('input', () => { mDateTouched = true; });
+$('coachBody').addEventListener('input', e => { if (e.target.closest('.ctest')) updateTestLive(); });
 $('mCancel').addEventListener('click', () => { setMatchEditing(null); mDateTouched = false; $('mNote').value = ''; $('mDate').value = lastSaturday(); syncMatchWeek(); });
 $('startDate').addEventListener('change', e => { ST.start = isISO(e.target.value) ? e.target.value : ''; save(); renderCurrent(); renderProgress(); });
 $('matchForm').addEventListener('submit', e => {
@@ -2961,8 +3025,8 @@ document.addEventListener('visibilitychange', () => {
 
 /* ===== Sider =====
    Hver side er en <section class="page">. Kun én vises ad gangen. Adresse: #/side, så tilbage-knappen virker. */
-const PAGES = ['idag', 'program', 'hjemme', 'fredag', 'timer', 'tracker', 'ovelser', 'progression', 'rpe', 'mere'];
-const NAV_OF = { idag: 'idag', program: 'program', timer: 'timer', ovelser: 'ovelser' }; // øvrige sider hører under "Mere"
+const PAGES = ['idag', 'program', 'coach', 'hjemme', 'fredag', 'timer', 'tracker', 'ovelser', 'progression', 'rpe', 'mere'];
+const NAV_OF = { idag: 'idag', program: 'program', coach: 'coach', timer: 'timer', ovelser: 'ovelser' }; // øvrige sider hører under "Mere"
 let curPage = null, suppressHash = false;
 const pageScroll = {};
 const routeFromHash = () => { const m = location.hash.match(/^#\/(\w+)/); return m && PAGES.includes(m[1]) ? m[1] : 'idag'; };
@@ -2987,18 +3051,553 @@ function showPage(p) {
     if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   });
   timerInView = p === 'timer'; tRender();
-  if (p === 'program') requestAnimationFrame(centerWeekTab);
+  if (p === 'program') { if (ST.coach.active) { rebuildWeeks(); renderWeek(); } requestAnimationFrame(centerWeekTab); }
+  if (p === 'coach') renderCoach();
   const h = el.querySelector('h1, h2'); if (h && h.tabIndex === -1) h.focus({ preventScroll: true });
 }
 window.addEventListener('hashchange', () => { if (suppressHash) { suppressHash = false; return; } showPage(routeFromHash()); });
 
+/* ===== Coach: profil, niveauer og tilpasset program =====
+   Alt er regler og beregninger på telefonen: ingen server, ingen model. Programmet genberegnes, hver gang
+   du ændrer profil, tester, logger et sæt eller afslutter en uge. */
+function cleanCoach(c) {
+  const b = DEF_COACH();
+  if (!isObj(c)) return b;
+  const nm = (v, lo, hi) => { v = parseFloat(String(v ?? '').replace(',', '.')); return Number.isFinite(v) && v >= lo && v <= hi ? Math.round(v * 10) / 10 : ''; };
+  const pos = (v, hi) => { v = parseFloat(String(v ?? '').replace(',', '.')); return Number.isFinite(v) && v >= 0 && v <= hi ? Math.round(v * 10) / 10 : null; };
+  const out = {
+    sex: c.sex === 'f' ? 'f' : 'm', birth: isISO(c.birth) ? c.birth : '', height: nm(c.height, 100, 250), bf: nm(c.bf, 3, 60),
+    goal: GOAL_KEYS.includes(c.goal) ? c.goal : '', targetKg: nm(c.targetKg, 30, 250), targetBf: nm(c.targetBf, 3, 60), active: !!c.active && GOAL_KEYS.includes(c.goal), weights: [], tests: []
+  };
+  out.weights = (Array.isArray(c.weights) ? c.weights : []).filter(w => isObj(w) && isISO(w.date) && nm(w.kg, 30, 250) !== '').slice(-400)
+    .map(w => ({ date: w.date, kg: nm(w.kg, 30, 250), bf: nm(w.bf, 3, 60) })).sort((a, b) => a.date.localeCompare(b.date));
+  out.tests = (Array.isArray(c.tests) ? c.tests : []).filter(t => isObj(t) && isISO(t.date) && isObj(t.r)).slice(-20).map(t => {
+    const r = {};
+    TESTS.forEach(d => {
+      const x = t.r[d.id]; if (!isObj(x)) return;
+      if (d.kind === 'lift') { const kg = pos(x.kg, 500), reps = pos(x.reps, 50); if (kg > 0 && reps > 0) r[d.id] = { kg, reps }; }
+      else if (d.kind === 'reps') { const reps = pos(x.reps, 100); if (reps != null) r[d.id] = { reps }; }
+      else if (d.kind === 'cond') { const v = pos(x.v, 6000); if (v > 0) r[d.id] = { kind: x.kind === 'bike' ? 'bike' : 'run', v }; }
+      else { const v = pos(x.v, 1000); if (v > 0) r[d.id] = { v }; }
+    });
+    return { date: t.date, bw: nm(t.bw, 30, 250), r };
+  }).filter(t => Object.keys(t.r).length).sort((a, b) => a.date.localeCompare(b.date));
+  return out;
+}
+
+/* ---------- Profil og niveauer ---------- */
+const lastTest = () => ST.coach.tests[ST.coach.tests.length - 1] || null;
+const curWeight = () => { const w = ST.coach.weights; return w.length ? w[w.length - 1].kg : null; };
+function ageNow() {
+  const b = ST.coach.birth; if (!b) return null;
+  const d = new Date(b + 'T12:00:00'), n = new Date();
+  let a = n.getFullYear() - d.getFullYear();
+  if (n.getMonth() < d.getMonth() || (n.getMonth() === d.getMonth() && n.getDate() < d.getDate())) a--;
+  return a >= 10 && a <= 90 ? a : null;
+}
+function scoreFor(key, v, sex, age) {
+  if (!(v > 0)) return 0;
+  const f = (sex === 'f' ? STD_F[key] : 1) * (age > 30 ? Math.max(.75, 1 - .008 * (age - 30)) : 1);
+  const th = STD[key].map(x => x * f);
+  if (v < th[0]) return Math.round(20 * v / th[0]);
+  for (let i = 1; i < 5; i++) if (v < th[i]) return Math.round(20 * i + 20 * (v - th[i - 1]) / (th[i] - th[i - 1]));
+  return 100;
+}
+const levelOf = s => s == null ? '' : s < 20 ? 'Begynder' : s < 40 ? 'Under middel' : s < 60 ? 'Middel' : s < 80 ? 'God' : s < 95 ? 'Meget god' : 'Elite';
+function measureOf(t, r, bw) {
+  if (!r) return null;
+  if (t.kind === 'lift') return (r.kg > 0 && r.reps > 0 && bw) ? (t.perHand ? 2 : 1) * r.kg * (1 + Math.min(r.reps, 12) / 30) / bw : null;
+  if (t.kind === 'reps') return r.reps >= 0 ? r.reps : null;
+  if (t.kind === 'cond') return r.v > 0 ? (r.kind === 'bike' ? (bw ? r.v / bw : null) : r.v) : null;
+  return r.v > 0 ? r.v : null;
+}
+const stdKey = (t, r) => t.id === 'cond' ? (r && r.kind === 'bike' ? 'bike' : 'run') : t.id;
+function formOf(rec, bwOverride) {
+  const bw = bwOverride || (rec && rec.bw) || curWeight(), sc = {}, cats = {};
+  if (rec) TESTS.forEach(t => {
+    const m = measureOf(t, rec.r[t.id], bw);
+    if (m != null) sc[t.id] = scoreFor(stdKey(t, rec.r[t.id]), m, ST.coach.sex, ageNow());
+  });
+  COACH_CATS.forEach(c => {
+    const v = TESTS.filter(t => t.cat === c && sc[t.id] != null).map(t => sc[t.id]);
+    if (v.length) cats[c] = Math.round(v.reduce((a, b) => a + b, 0) / v.length);
+  });
+  const cv = Object.values(cats);
+  return { sc, cats, bw, overall: cv.length ? Math.round(cv.reduce((a, b) => a + b, 0) / cv.length) : null };
+}
+const E1_TEST = { frontsquat: 'squat', rdl: 'rdl', dbbench: 'bench' };
+/* Estimeret maks (1RM) for en øvelse: bedste af seneste test og loggede sæt de sidste 8 uger */
+function e1RM(exId) {
+  let best = 0;
+  const tid = E1_TEST[exId];
+  if (tid) ST.coach.tests.slice(-3).forEach(rec => { const r = rec.r[tid]; if (r && r.kg > 0 && r.reps > 0) best = Math.max(best, r.kg * (1 + Math.min(r.reps, 12) / 30)); });
+  const now = new Date(todayISO() + 'T12:00:00');
+  ST.logs.forEach(l => {
+    if (l.ex !== exId || !(l.kg > 0) || !(l.reps >= 1) || l.reps > 12) return;
+    if ((now - new Date(l.date + 'T12:00:00')) / 864e5 > 56) return;
+    const rir = l.rpe > 0 ? Math.max(0, 10 - l.rpe) : 2;
+    best = Math.max(best, l.kg * (1 + Math.min(l.reps + rir, 15) / 30));
+  });
+  return best > 0 ? best : null;
+}
+function roundKg(exId, kg) {
+  const eq = (EX[exId] || {}).equip, step = eq === 'Stang' ? 2.5 : (eq === 'Kabel' || eq === 'Maskine') ? 2.5 : (eq === 'Kettlebell' || eq === 'Håndvægte') ? 2 : 1;
+  return Math.max(step, Math.round(kg / step) * step);
+}
+/* Dosis ud fra en recept (sæt, gentagelser, % af maks). Uden kendt maks: kun sæt og gentagelser. */
+function rxDose(exId, rx) {
+  const e1 = rx.pct ? e1RM(exId) : null;
+  if (!e1) return `${rx.sets} × ${rx.reps}`;
+  const kg = roundKg(exId, e1 * rx.pct / 100);
+  return `${rx.sets} × ${rx.reps} · ${fmtNum(kg)} kg${(EX[exId] || {}).equip === 'Håndvægte' ? ' pr. hånd' : ''}`;
+}
+
+/* ---------- Tilpasset program ---------- */
+const SCH = { // [sæt, gentagelser, % af maks] pr. uge 1–8 (uge 4 og 8 er lette uger)
+  offseason: [[4, 10, 67.5], [4, 8, 72.5], [4, 8, 75], [3, 8, 62.5], [4, 8, 75], [4, 6, 80], [5, 5, 82.5], [3, 6, 65]],
+  explosive: [[5, 5, 75], [5, 4, 80], [5, 3, 85], [3, 4, 70], [5, 3, 82.5], [4, 3, 87.5], [5, 2, 90], [3, 3, 70]],
+  leanfast: [[3, 6, 75], [3, 5, 80], [3, 5, 82.5], [2, 5, 70], [3, 5, 82.5], [3, 4, 85], [3, 3, 87.5], [2, 5, 70]],
+  bodyfat: [[3, 12, 60], [3, 12, 62.5], [3, 10, 67.5], [2, 10, 55], [3, 10, 67.5], [3, 10, 70], [4, 8, 72.5], [2, 10, 55]]
+};
+const THEMES = ['OPBYGNING', 'FLERE SÆT', 'HÅRDERE', 'LET UGE', 'NY BLOK', 'HÅRDERE', 'TOPUGE', 'TEST OG LET UGE'];
+const SESS = {
+  offseason: {
+    A: { t: 'Ben', blocks: ['warm', ['str', ['quad:main', 'hinge:acc', 'uni:acc', 'calf:acc']], ['core']] },
+    B: { t: 'Overkrop', blocks: ['warm', ['str', ['push:main', 'pull:main', 'vpush:acc', 'row:acc']], ['core']] },
+    C: { t: 'Helkrop', blocks: ['warm', ['str', ['hinge:main', 'quad:acc', 'push:acc', 'pull:acc']], ['pwr', ['kbswing', 'boxjump']], ['cond', 'cont']] }
+  },
+  explosive: {
+    A: { t: 'Kraft', blocks: ['warm', ['pwr', ['boxjump', 'broadjump', 'medthrow']], ['str', ['quad:main', 'hinge:main', 'calf:acc']], ['core']] },
+    B: { t: 'Hurtighed og power', blocks: ['warm', ['pwr', ['sprint5', 'skater', 'medslam']], ['str', ['push:main', 'pull:main']], ['cond', 'int']] }
+  },
+  leanfast: {
+    A: { t: 'Styrke (bevar)', blocks: ['warm', ['str', ['quad:main', 'push:main', 'pull:main', 'hinge:acc']], ['core']] },
+    B: { t: 'Intervaller', blocks: ['warm', ['cond', 'int'], ['pwr', ['pogo', 'skater']]] },
+    C: { t: 'Rolig kondition og mobilitet', blocks: [['cond', 'cont'], ['mob', ['hipflexor', 'wgs', 'cossack']]] }
+  },
+  bodyfat: {
+    A: { t: 'Styrke-circuit', blocks: ['warm', ['str', ['quad:main', 'push:main', 'pull:main', 'hinge:acc', 'uni:acc']], ['core']] },
+    B: { t: 'Intervaller', blocks: ['warm', ['cond', 'b5'], ['core']] },
+    C: { t: 'Rolig kondition', blocks: [['cond', 'cont'], ['pwr', ['kbswing']]] }
+  }
+};
+const CORE_POOL = ['pallof', 'deadbug', 'sideplank', 'hollow', 'birddog', 'suitcase', 'copenhagen', 'plank', 'woodchop', 'legraise'];
+
+function liftFor(slot) {
+  const rec = lastTest(), f = rec ? formOf(rec) : null, strong = f && f.cats.Styrke != null ? f.cats.Styrke : null;
+  const pr = rec && rec.r.pullup ? rec.r.pullup.reps : null;
+  switch (slot) {
+    case 'quad': return strong != null && strong < 25 ? 'goblet' : 'frontsquat';
+    case 'hinge': return 'rdl';
+    case 'push': return 'dbbench';
+    case 'vpush': return 'dbpress';
+    case 'pull': return pr != null && pr >= 5 ? 'pullup' : 'latpull';
+    case 'row': return 'dbrow';
+    case 'uni': return strong != null && strong < 25 ? 'splitsquat' : 'bulgarian';
+    default: return 'slcalf';
+  }
+}
+function strItem(slot, role, g, n, ad) {
+  const ex = liftFor(slot), main = role === 'main', S0 = SCH[g][n - 1];
+  let rx;
+  if (ex === 'pullup') {
+    const pr = (lastTest() && lastTest().r.pullup ? lastTest().r.pullup.reps : 5) || 5;
+    rx = { sets: main ? Math.max(2, S0[0] + ad.sets) : 3, reps: Math.max(3, Math.round(pr * (main ? .7 : .6))) };
+  } else if (main) rx = { sets: Math.max(2, S0[0] + ad.sets), reps: S0[1], pct: Math.round(S0[2] * ad.load * 10) / 10 };
+  else rx = { sets: 3, reps: g === 'bodyfat' ? 12 : g === 'offseason' ? 10 : 8, pct: Math.round(62 * ad.load * 10) / 10 };
+  return { ex, dose: rxDose(ex, rx), note: main ? (S0[0] <= 3 && n % 4 === 0 ? 'Let uge · RPE 6' : 'RPE 7–8') : 'RPE 7–8 · vælg vægten selv', rx };
+}
+/* Cirkel af øvelser med guidet timer. "it" binder timer-segmenter til øvelsen, så bytte virker. */
+function circuit(id, icon, title, exIds, sets, restSec) {
+  const items = exIds.map(ex => ({ ex, dose: EX[ex].dose, ...(EX[ex].secs ? { secs: EX[ex].secs, perSide: !!EX[ex].perSide } : {}) }));
+  const seq = [];
+  items.forEach((it, i) => {
+    const e = EX[it.ex];
+    if (e.secs) {
+      if (e.perSide) seq.push(S('work', e.secs, e.name + ' · venstre side', i), S('rest', 8, 'Skift side', i), S('work', e.secs, e.name + ' · højre side', i));
+      else seq.push(S('work', e.secs, e.name, i));
+    } else seq.push(R(`${e.name} × ${String(e.dose).replace(/ reps$/, '')}`, i));
+  });
+  seq.push(S('rest', restSec, 'Pause'));
+  return { id, icon, title, tags: [`${sets} runder`, `Pause ${restSec} sek`], items, timer: { name: `${title} · ${sets} runder`, segs: rounds(sets, seq) } };
+}
+function condBlock(L, g, n, kind) {
+  const rec = lastTest(), f = rec ? formOf(rec) : null, cs = f && f.cats.Kondition != null ? f.cats.Kondition : null;
+  const adj = cs == null ? 0 : cs >= 70 ? 1 : cs < 35 ? -1 : 0;
+  let b;
+  if (kind === 'cont') {
+    const mins = { offseason: [20, 20, 22, 15, 22, 24, 25, 15], explosive: [20, 20, 20, 15, 20, 20, 20, 15], leanfast: [25, 28, 30, 20, 32, 35, 38, 25], bodyfat: [30, 32, 35, 25, 36, 38, 40, 28] }[g][n - 1] + adj * 3;
+    b = CONT(Math.max(12, mins), 'RPE 5–6', 'Kondition', true);
+  } else if (kind === 'int') {
+    if (g === 'explosive') b = INTERVALS(Math.max(4, [6, 7, 8, 5, 8, 9, 10, 5][n - 1] + adj), 15, 75, 'RPE 9');
+    else b = INTERVALS(Math.max(5, [8, 9, 10, 6, 10, 11, 12, 6][n - 1] + adj), 30, 60, 'RPE 8');
+  } else b = BLOCKS5(Math.max(2, [3, 3, 4, 2, 4, 4, 5, 3][n - 1] + (adj > 0 ? 1 : 0)), 'RPE 6', 'RPE 8');
+  b.id = L + '-cond'; b.icon = 'pulse'; if (kind !== 'int') b.title = 'Kondition';
+  return b;
+}
+function makeBlock(spec, L, g, n, ad) {
+  const type = Array.isArray(spec) ? spec[0] : spec, arg = Array.isArray(spec) ? spec[1] : null, G = GOALS[g];
+  if (type === 'warm') { const w = WARM(6); w.id = L + '-warm'; return w; }
+  if (type === 'str') {
+    const items = arg.map(sp => { const [slot, role] = sp.split(':'); return strItem(slot, role, g, n, ad); });
+    return { id: L + '-str', icon: 'dumbbell', title: 'Styrke', tags: [`${items[0].rx.sets} sæt`, `Pause ${G.rest} sek`], items, restTimer: G.rest };
+  }
+  if (type === 'pwr') {
+    const sets = (g === 'explosive' ? [3, 3, 4, 2, 4, 4, 5, 2] : [2, 2, 3, 2, 3, 3, 3, 2])[n - 1];
+    return circuit(L + '-pwr', 'bolt', 'Power', arg, sets, g === 'explosive' ? 90 : 60);
+  }
+  if (type === 'core') {
+    const base = (n + G.sessions.indexOf(L) * 3) % CORE_POOL.length;
+    return circuit(L + '-core', 'core', 'Core', [0, 1, 2].map(k => CORE_POOL[(base + k * 3) % CORE_POOL.length]), 3, 30);
+  }
+  if (type === 'mob') return circuit(L + '-mob', 'repeat', 'Mobilitet', arg, 2, 10);
+  if (type === 'cond') return condBlock(L, g, n, arg);
+  return null;
+}
+const linkBlock = (id, title, callout, tab, label) => ({ id, icon: 'test', title, tags: ['Min form'], callout, items: [], link: { go: 'coach', tab, label } });
+function genPlanWeek(n, ad) {
+  const g = ST.coach.goal, G = GOALS[g], blocks = [];
+  if (n === 1 && !ST.coach.tests.length) blocks.push(linkBlock('intro', 'Start med testen', 'Tag testen først, så regner appen vægte ud til dig. Uden test får du sæt, gentagelser og RPE, men ingen kilo.', 'test', 'Åbn testen'));
+  G.sessions.forEach(L => {
+    const T = SESS[g][L], session = { id: L, title: `Pas ${L} · ${T.t}` };
+    T.blocks.forEach(spec => { const b = makeBlock(spec, L, g, n, ad); if (b) { b.session = session; blocks.push(b); } });
+  });
+  if (n === 8) blocks.push(linkBlock('retest', 'Gentag din test', 'Tag testen igen, så kan du se din fremgang på pilemærkerne.', 'test', 'Åbn testen'));
+  const note = ad.msg ? ` ${ad.msg}` : '';
+  return { n, phase: phaseOf(n), title: `UGE ${n} · ${THEMES[n - 1]}`, desc: `${G.short}. ${G.sessions.length} pas om ugen.${note}`, blocks, plan: true };
+}
+function weekDoneRatio(w, weeks) {
+  const W = weeks[w - 1]; if (!W) return null;
+  const items = W.blocks.flatMap(b => b.items.map((it, i) => ({ b, it, i })).filter(x => x.it.ex));
+  if (!items.length) return null;
+  return items.filter(x => ST.done[`week|${w}|${x.b.id}|${x.i}`]).length / items.length;
+}
+/* Justering ud fra forrige uge: gennemførsel og hvor hårdt det føltes (RPE) */
+function adaptFor(n, weeks) {
+  const none = { load: 1, sets: 0, msg: '' };
+  if (n < 2 || n - 1 >= curWeek()) return none;
+  const c = weekDoneRatio(n - 1, weeks); if (c == null) return none;
+  const rp = ST.logs.filter(l => l.week === n - 1 && l.rpe > 0).map(l => l.rpe), avg = rp.length ? rp.reduce((a, b) => a + b, 0) / rp.length : null;
+  const pctTxt = `${Math.round(c * 100)} % gennemført${avg ? `, gns. RPE ${fmtNum(avg)}` : ''}`;
+  if (c < .5) return { load: .95, sets: -1, msg: `Forrige uge: ${pctTxt}. Denne uge er lidt lettere (−1 sæt, −5 %).` };
+  if (c < .75) return { load: .975, sets: 0, msg: `Forrige uge: ${pctTxt}. Belastningen sænkes 2,5 %.` };
+  if (avg && avg >= 9.5) return { load: .95, sets: 0, msg: `Forrige uge: ${pctTxt}. Det føltes for hårdt, så belastningen sænkes 5 %.` };
+  if (avg && avg <= 7 && c >= .85) return { load: 1.025, sets: 0, msg: `Forrige uge: ${pctTxt}. Det føltes let, så belastningen øges 2,5 %.` };
+  return { load: 1, sets: 0, msg: `Forrige uge: ${pctTxt}. Fortsætter som planlagt.` };
+}
+function computePlan() {
+  const c = ST.coach;
+  if (!c.active || !GOALS[c.goal]) return BASE_WEEKS;
+  const weeks = [];
+  for (let n = 1; n <= 8; n++) weeks.push(genPlanWeek(n, adaptFor(n, weeks)));
+  return weeks;
+}
+function rebuildWeeks() { WEEKS = computePlan(); }
+/* Opdatér alt, der afhænger af programmet */
+function refreshPlan() { rebuildWeeks(); renderWeekNav(); renderWeek(); renderToday(); renderProgress(); renderPlanBanner(); renderCoach(); renderCoachCard(); }
+
+/* ---------- Vægt, tendens og vejledning ---------- */
+function weightRate() { // kg pr. uge (lineær tendens over de seneste 5 uger)
+  const w = ST.coach.weights.filter(x => (new Date(todayISO() + 'T12:00:00') - new Date(x.date + 'T12:00:00')) / 864e5 <= 35);
+  if (w.length < 2) return null;
+  const t0 = new Date(w[0].date + 'T12:00:00').getTime(), xs = w.map(x => (new Date(x.date + 'T12:00:00').getTime() - t0) / 864e5 / 7), ys = w.map(x => x.kg);
+  const span = xs[xs.length - 1]; if (span < 1) return null;
+  const mx = xs.reduce((a, b) => a + b, 0) / xs.length, my = ys.reduce((a, b) => a + b, 0) / ys.length;
+  const den = xs.reduce((a, x) => a + (x - mx) ** 2, 0); if (!den) return null;
+  return xs.reduce((a, x, i) => a + (x - mx) * (ys[i] - my), 0) / den;
+}
+function weightAdvice() {
+  const c = ST.coach, w = curWeight(), rate = weightRate(); if (!w) return 'Skriv din vægt ind, så følger appen din udvikling.';
+  const pct = rate == null ? null : rate / w * 100, rt = rate == null ? '' : ` Din tendens: ${rate >= 0 ? '+' : '−'}${fmtNum(Math.abs(rate))} kg pr. uge.`;
+  if (c.goal === 'leanfast' || c.goal === 'bodyfat') {
+    if (pct == null) return 'Vej dig 2–3 gange om ugen på samme tidspunkt. Et godt tempo er ca. 0,25–0,75 % af kropsvægten pr. uge.';
+    if (pct < -1) return 'Du taber hurtigere end 1 % pr. uge.' + rt + ' Det er for hurtigt, og du risikerer at miste styrke og kraft. Spis lidt mere.';
+    if (pct > -0.1) return 'Vægten falder ikke endnu.' + rt + ' Giv det 2–3 uger, og se på kost og søvn, hvis det fortsætter.';
+    return 'Godt tempo.' + rt;
+  }
+  if (c.goal === 'offseason') {
+    if (pct == null) return 'Vej dig 2–3 gange om ugen. Et godt tempo for at bygge muskel er ca. 0,1–0,4 % af kropsvægten pr. uge.';
+    if (pct > 0.6) return 'Du tager på hurtigere end 0,6 % pr. uge.' + rt + ' Mere end det bliver mest til fedt.';
+    if (pct < 0) return 'Vægten falder.' + rt + ' Spis mere, hvis målet er at bygge muskel.';
+    return 'Godt tempo.' + rt;
+  }
+  return pct == null ? 'Vej dig 2–3 gange om ugen, så ser du tendensen.' : 'Vægten bør være stabil.' + rt;
+}
+const proteinTxt = () => { const w = curWeight(); return w ? `Generel vejledning: ca. ${Math.round(w * 1.6)}–${Math.round(w * 2.2)} g protein om dagen (1,6–2,2 g pr. kg).` : ''; };
+
+/* ===== Coach: sider og visning ===== */
+let coachTab = 'over', condKind = 'run', testDraft = null;
+const COACH_TABS = [['over', 'Overblik'], ['test', 'Test'], ['mal', 'Mål'], ['vaegt', 'Vægt']];
+
+function gaugeSVG(score) {
+  const cx = 120, cy = 112, R = 90;
+  const pt = (deg, r) => [cx + r * Math.cos(rad(deg)), cy + r * Math.sin(rad(deg))];
+  let arcs = '';
+  for (let i = 0; i < 5; i++) {
+    const [x0, y0] = pt(180 + i * 36 + 1.2, R), [x1, y1] = pt(180 + (i + 1) * 36 - 1.2, R);
+    arcs += `<path d="M${r1(x0)} ${r1(y0)} A${R} ${R} 0 0 1 ${r1(x1)} ${r1(y1)}" fill="none" stroke="${LEVEL_COL[i]}" stroke-width="20" opacity="${score == null ? .3 : 1}"/>`;
+  }
+  let needle = '';
+  if (score != null) { const [nx, ny] = pt(180 + score * 1.8, R - 26); needle = `<line x1="${cx}" y1="${cy}" x2="${r1(nx)}" y2="${r1(ny)}" stroke="#F1F5EF" stroke-width="6" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="10" fill="#F1F5EF"/><circle cx="${cx}" cy="${cy}" r="4" fill="#0C1210"/>`; }
+  return `<svg class="gauge" viewBox="0 0 240 150" role="img" aria-label="${score == null ? 'Ingen test endnu' : `Samlet form ${score} af 100: ${levelOf(score)}`}">${arcs}${needle}
+    <text x="30" y="136" text-anchor="middle" class="g-end">0</text><text x="210" y="136" text-anchor="middle" class="g-end">100</text></svg>`;
+}
+/* Skala med pilemærke */
+function scaleBar(score, small) {
+  if (score == null) return `<div class="sbar sbar-off${small ? ' sbar-sm' : ''}"><div class="sbar-track">${LEVEL_COL.map(c => `<i style="background:${c}"></i>`).join('')}</div></div>`;
+  return `<div class="sbar${small ? ' sbar-sm' : ''}" role="img" aria-label="${score} af 100: ${levelOf(score)}"><div class="sbar-track">${LEVEL_COL.map(c => `<i style="background:${c}"></i>`).join('')}</div><span class="sbar-arrow" style="left:${Math.min(98, Math.max(2, score))}%"></span></div>`;
+}
+const lvlCol = s => LEVEL_COL[Math.min(4, Math.floor(s / 20.01))];
+
+function renderCoach() {
+  const body = $('coachBody'); if (!body) return;
+  $('coachTabs').innerHTML = COACH_TABS.map(([k, t]) => `<button class="seg-btn" type="button" role="tab" data-ctab="${k}" aria-selected="${k === coachTab}">${t}</button>`).join('');
+  body.innerHTML = coachTab === 'test' ? coachTestHTML() : coachTab === 'mal' ? coachGoalHTML() : coachTab === 'vaegt' ? coachWeightHTML() : coachOverviewHTML();
+  if (coachTab === 'test') {
+    if (testDraft) { document.querySelectorAll('[data-tin]').forEach(el => { if (testDraft[el.dataset.tin] != null) el.value = testDraft[el.dataset.tin]; }); testDraft = null; }
+    updateTestLive();
+  }
+}
+function setCoachTab(t) { if (t === 'test' && coachTab !== 'test' && lastTest() && lastTest().r.cond) condKind = lastTest().r.cond.kind; coachTab = t; renderCoach(); const p = $('page-coach'); if (p) p.scrollTop = 0; }
+
+/* ----- Overblik ----- */
+function coachOverviewHTML() {
+  const c = ST.coach, rec = lastTest(), f = rec ? formOf(rec) : null, prev = c.tests.length > 1 ? formOf(c.tests[c.tests.length - 2]) : null;
+  const done = { profil: !!(c.height && curWeight() && c.birth), mal: !!c.goal, test: !!rec };
+  const steps = [['mal', 'Profil og mål', done.profil && done.mal, 'Køn, alder, højde, vægt og dit mål'], ['vaegt', 'Vægt', !!curWeight(), 'Skriv din vægt ind'], ['test', 'Test', done.test, 'Styrke, hop, kondition og core']];
+  let h = '';
+  if (!(done.profil && done.mal && done.test)) {
+    h += `<div class="panel coach-steps"><h3>Kom i gang</h3><ol>${steps.map(([tab, t, ok, sub]) => `<li class="${ok ? 'ok' : ''}"><button type="button" data-ctab="${tab}"><span class="st-dot">${ok ? ICON.check : ''}</span><span><b>${t}</b><small>${sub}</small></span>${ICON.chev}</button></li>`).join('')}</ol></div>`;
+  }
+  const delta = f && prev && f.overall != null && prev.overall != null ? f.overall - prev.overall : null;
+  h += `<div class="panel gauge-card"><h3>Din form</h3>${gaugeSVG(f ? f.overall : null)}
+    <div class="g-read">${f && f.overall != null ? `<b style="color:${lvlCol(f.overall)}">${f.overall}</b><span>${levelOf(f.overall)}</span>${delta != null && delta !== 0 ? `<em class="${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '▲ +' : '▼ −'}${Math.abs(delta)} siden sidst</em>` : ''}` : '<span>Tag testen for at se dit niveau</span>'}</div>
+    ${rec ? `<p class="g-date">Seneste test: ${esc(daDate(rec.date))}</p>` : ''}</div>`;
+  h += `<div class="panel"><h3>Fordeling</h3><div class="cats">${COACH_CATS.map(cat => {
+    const s = f ? f.cats[cat] : null;
+    return `<div class="cat"><div class="cat-top"><b>${cat}</b>${s != null ? `<span style="color:${lvlCol(s)}">${s} · ${levelOf(s)}</span>` : '<span class="muted">Ikke testet</span>'}</div>${scaleBar(s)}</div>`;
+  }).join('')}</div>${f ? weakHTML(f) : ''}
+    ${rec ? `<button class="btn btn-block btn-ghost" type="button" data-ctab="test" style="margin-top:12px">Tag testen igen</button>` : `<button class="btn btn-block btn-lime" type="button" data-ctab="test" style="margin-top:12px">Tag testen</button>`}</div>`;
+  h += planCardHTML();
+  if (c.active) {
+    const ad = adaptFor(curWeek(), WEEKS), lines = [];
+    if (ad.msg) lines.push(ad.msg);
+    lines.push(weightAdvice());
+    const lifts = [['frontsquat', 'squat'], ['rdl', 'rdl'], ['dbbench', 'bench']].map(([ex, tid]) => { const e = e1RM(ex), first = c.tests.find(t => t.r[tid]); const f0 = first ? first.r[tid] : null; const e0 = f0 ? f0.kg * (1 + Math.min(f0.reps, 12) / 30) : null; return e && e0 ? `${EX[ex].name}: ${fmtNum(e)} kg (${e >= e0 ? '+' : '−'}${fmtNum(Math.abs(e - e0))} siden første test)` : null; }).filter(Boolean);
+    h += `<div class="panel"><h3>Ugens status</h3><ul class="plain">${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>${lifts.length ? `<p class="t-sub" style="margin:12px 0 6px">Estimeret maks</p><ul class="plain">${lifts.map(l => `<li>${esc(l)}</li>`).join('')}</ul>` : ''}${proteinTxt() ? `<p class="muted" style="margin-top:10px">${esc(proteinTxt())}</p>` : ''}</div>`;
+  }
+  return h;
+}
+function weakHTML(f) {
+  const e = Object.entries(f.cats).sort((a, b) => a[1] - b[1]);
+  if (e.length < 2) return '';
+  const [wk, ws] = e[0], [st, ss] = e[e.length - 1];
+  if (ss - ws < 8) return '';
+  const tip = { Styrke: 'mere tung styrketræning', Eksplosivitet: 'spring, kast og hurtig styrke', Kondition: 'mere kondition og intervaller', Core: 'mere core-træning' }[wk];
+  return `<p class="weak"><b>Størst potentiale:</b> ${wk} (${ws}). Det kan forbedres med ${tip}. <b>Din styrke:</b> ${st} (${ss}).</p>`;
+}
+function planCardHTML() {
+  const c = ST.coach, G = GOALS[c.goal];
+  if (!G) return `<div class="panel"><h3>Dit program</h3><p>Vælg et mål, så laver appen et program, der passer til dig.</p><button class="btn btn-block btn-lime" type="button" data-ctab="mal" style="margin-top:12px">Vælg mål</button></div>`;
+  return `<div class="panel plan-card"><h3>Dit program</h3><div class="goal-chip"><span class="gc-ic">${ICON[G.icon]}</span><div><b>${G.name}</b><small>${G.sessions.length} pas om ugen · 8 uger</small></div></div>
+    <p class="muted" style="margin:8px 0 12px">${G.desc}</p>
+    ${c.active ? `<button class="btn btn-block btn-lime" type="button" data-go="program">Åbn programmet</button><button class="btn btn-block btn-ghost" type="button" data-cact="deactivate" style="margin-top:8px">Brug standardprogrammet</button>`
+      : `<button class="btn btn-block btn-lime" type="button" data-cact="activate">Lav mit program</button>`}</div>`;
+}
+
+/* ----- Test ----- */
+function coachTestHTML() {
+  const c = ST.coach, rec = lastTest(), bwOk = !!curWeight();
+  const val = (id, k) => rec && rec.r[id] && rec.r[id][k] != null ? rec.r[id][k] : '';
+  const card = t => {
+    let inputs;
+    if (t.kind === 'lift') inputs = `<label class="field">${t.perHand ? 'Vægt pr. hånd (kg)' : 'Vægt (kg)'}<input data-tin="${t.id}.kg" inputmode="decimal" placeholder="fx 60" value="${esc(val(t.id, 'kg'))}"></label><label class="field">Gentagelser<input data-tin="${t.id}.reps" inputmode="numeric" placeholder="3–8" value="${esc(val(t.id, 'reps'))}"></label>`;
+    else if (t.kind === 'reps') inputs = `<label class="field">Antal gentagelser<input data-tin="${t.id}.reps" inputmode="numeric" placeholder="fx 6" value="${esc(val(t.id, 'reps'))}"></label>`;
+    else if (t.kind === 'cond') inputs = `<div class="chips" role="group" aria-label="Type af test" style="grid-column:1/-1;padding:0 0 4px"><button class="chip" type="button" data-cact="condkind" data-kind="run" aria-pressed="${condKind === 'run'}">12 min løb</button><button class="chip" type="button" data-cact="condkind" data-kind="bike" aria-pressed="${condKind === 'bike'}">20 min cykel</button></div>
+        <label class="field" style="grid-column:1/-1">${condKind === 'run' ? 'Distance (meter)' : 'Gennemsnit (watt)'}<input data-tin="cond.v" inputmode="numeric" placeholder="${condKind === 'run' ? 'fx 2400' : 'fx 180'}" value="${esc(rec && rec.r.cond && rec.r.cond.kind === condKind ? rec.r.cond.v : '')}"></label>`;
+    else inputs = `<label class="field">${t.unit === 'cm' ? 'Resultat (cm)' : 'Resultat (sek)'}<input data-tin="${t.id}.v" inputmode="decimal" placeholder="${t.unit === 'cm' ? 'fx 40' : 'fx 90'}" value="${esc(val(t.id, 'v'))}"></label>`;
+    return `<article class="ctest" data-t="${t.id}"><header><span class="ct-cat">${t.cat}</span>${t.rec ? '<span class="ct-rec">Anbefalet</span>' : '<span class="ct-opt">Ekstra</span>'}</header><h3>${t.name}</h3>
+      <p class="ct-why">${t.why}</p><details class="ct-how"><summary>Sådan tester du</summary><p>${t.how}</p></details>
+      <div class="ct-in">${inputs}</div><div class="ct-live" id="live-${t.id}"></div></article>`;
+  };
+  return `${bwOk ? '' : `<div class="notice">Skriv først din vægt under <button class="link-btn" type="button" data-ctab="mal">Mål og profil</button>. Styrke og watt måles i forhold til kropsvægten.</div>`}
+    <p class="sec-lead">Test dig selv, når du er frisk og varm. Du behøver ikke tage alle: de anbefalede giver et godt billede. Tag testen igen i uge 8 for at se din fremgang.</p>
+    ${TESTS.map(card).join('')}
+    <button class="btn btn-block btn-lime" type="button" data-cact="saveTest">Gem test og se mit niveau</button>`;
+}
+function readTestForm() {
+  const r = {};
+  const g = k => { const el = document.querySelector(`[data-tin="${k}"]`); return el ? parseNum(el.value) : NaN; };
+  TESTS.forEach(t => {
+    if (t.kind === 'lift') { const kg = g(t.id + '.kg'), reps = g(t.id + '.reps'); if (kg > 0 && reps > 0) r[t.id] = { kg, reps }; }
+    else if (t.kind === 'reps') { const reps = g(t.id + '.reps'); if (reps >= 0) r[t.id] = { reps }; }
+    else if (t.kind === 'cond') { const v = g('cond.v'); if (v > 0) r.cond = { kind: condKind, v }; }
+    else { const v = g(t.id + '.v'); if (v > 0) r[t.id] = { v }; }
+  });
+  return r;
+}
+function updateTestLive() {
+  const r = readTestForm(), bw = curWeight();
+  TESTS.forEach(t => {
+    const el = $('live-' + t.id); if (!el) return;
+    const m = measureOf(t, r[t.id], bw);
+    if (m == null) { el.innerHTML = r[t.id] && !bw && (t.kind === 'lift' || (t.kind === 'cond' && r.cond.kind === 'bike')) ? '<span class="muted">Skriv din vægt for at se niveauet</span>' : ''; return; }
+    const s = scoreFor(stdKey(t, r[t.id]), m, ST.coach.sex, ageNow());
+    el.innerHTML = `<div class="live-top"><b style="color:${lvlCol(s)}">${s}</b><span>${levelOf(s)}</span></div>${scaleBar(s, true)}`;
+  });
+}
+
+/* ----- Mål og profil ----- */
+function coachGoalHTML() {
+  const c = ST.coach, age = ageNow();
+  return `<div class="panel"><h3>Om dig</h3>
+    <div class="form-row"><label class="field">Køn (til niveauer)<select id="cpSex"><option value="m" ${c.sex === 'm' ? 'selected' : ''}>Mand</option><option value="f" ${c.sex === 'f' ? 'selected' : ''}>Kvinde</option></select></label>
+      <label class="field">Fødselsdato<input type="date" id="cpBirth" value="${esc(c.birth)}"></label></div>
+    ${age ? `<p class="muted">Du er ${age} år.</p>` : ''}
+    <div class="form-row"><label class="field">Højde (cm)<input id="cpHeight" inputmode="numeric" placeholder="fx 185" value="${esc(c.height)}"></label>
+      <label class="field">Vægt (kg)<input id="cpWeight" inputmode="decimal" placeholder="fx 82,5" value="${esc(curWeight() ?? '')}"></label></div>
+    <label class="field">Fedtprocent (valgfri, hvis du kender den)<input id="cpBf" inputmode="decimal" placeholder="fx 14" value="${esc(c.bf)}"></label></div>
+  <div class="panel"><h3>Dit mål</h3><div class="goals" role="radiogroup" aria-label="Vælg mål">${GOAL_KEYS.map(k => {
+    const G = GOALS[k]; return `<button class="goal-card" type="button" role="radio" aria-checked="${c.goal === k}" data-cact="pickGoal" data-goal="${k}"><span class="gc-ic">${ICON[G.icon]}</span><span class="gc-t"><b>${G.name}</b><small>${G.desc}</small></span></button>`;
+  }).join('')}</div>
+    <div class="form-row" style="margin-top:12px"><label class="field">Målvægt (kg, valgfri)<input id="cpTKg" inputmode="decimal" placeholder="valgfri" value="${esc(c.targetKg)}"></label>
+      <label class="field">Mål fedtprocent (valgfri)<input id="cpTBf" inputmode="decimal" placeholder="valgfri" value="${esc(c.targetBf)}"></label></div>
+    <p class="muted" style="margin-top:8px">Appen giver generel træningsvejledning og ingen medicinsk rådgivning. Tal med din læge eller en kostvejleder ved vægttab, sygdom eller skader.</p>
+    <button class="btn btn-block btn-lime" type="button" data-cact="saveProfile" style="margin-top:12px">Gem</button></div>`;
+}
+
+/* ----- Vægt ----- */
+function weightChartSVG() {
+  const w = ST.coach.weights.slice(-60);
+  if (w.length < 2) return '<p class="empty">Skriv mindst to vægte for at se en kurve.</p>';
+  const W = 360, H = 200, L = 38, Rr = 14, T = 18, B = 26;
+  const t0 = new Date(w[0].date + 'T12:00:00').getTime(), t1 = new Date(w[w.length - 1].date + 'T12:00:00').getTime() || t0 + 1;
+  const ys = w.map(x => x.kg).concat(ST.coach.targetKg ? [+ST.coach.targetKg] : []);
+  let lo = Math.floor(Math.min(...ys) - 1), hi = Math.ceil(Math.max(...ys) + 1);
+  if (hi - lo < 4) { lo -= 1; hi += 1; }
+  const x = d => L + (new Date(d + 'T12:00:00').getTime() - t0) / Math.max(1, t1 - t0) * (W - L - Rr), y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+  let g = '';
+  [lo, (lo + hi) / 2, hi].forEach(v => { g += `<line x1="${L}" x2="${W - Rr}" y1="${y(v)}" y2="${y(v)}" stroke="#24322B" stroke-width="1.5"/><text class="ax" x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${Math.round(v)}</text>`; });
+  if (ST.coach.targetKg) g += `<line x1="${L}" x2="${W - Rr}" y1="${y(+ST.coach.targetKg)}" y2="${y(+ST.coach.targetKg)}" stroke="#C8F03C" stroke-width="2" stroke-dasharray="5 5"/><text class="ax" x="${W - Rr}" y="${y(+ST.coach.targetKg) - 6}" text-anchor="end" style="fill:#C8F03C">mål</text>`;
+  const d = w.map((p, i) => `${i ? 'L' : 'M'}${x(p.date).toFixed(1)} ${y(p.kg).toFixed(1)}`).join(' ');
+  g += `<path d="${d}" fill="none" stroke="#C8F03C" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>` + w.map(p => `<circle cx="${x(p.date).toFixed(1)}" cy="${y(p.kg).toFixed(1)}" r="4.5" fill="#16201B" stroke="#C8F03C" stroke-width="2.5"/>`).join('');
+  g += `<text class="ax" x="${L}" y="${H - 6}" text-anchor="start">${esc(daDate(w[0].date))}</text><text class="ax" x="${W - Rr}" y="${H - 6}" text-anchor="end">${esc(daDate(w[w.length - 1].date))}</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Kropsvægt over tid">${g}</svg>`;
+}
+function coachWeightHTML() {
+  const c = ST.coach, w = c.weights.slice().reverse().slice(0, 30), cur = curWeight(), last = c.weights[c.weights.length - 1];
+  return `<div class="panel"><h3>Ny vejning</h3>
+    <div class="form-row"><label class="field">Vægt (kg)<input id="cwKg" inputmode="decimal" placeholder="${cur ? fmtNum(cur) : 'fx 82,5'}" value=""></label>
+      <label class="field">Fedt % (valgfri)<input id="cwBf" inputmode="decimal" placeholder="valgfri" value=""></label></div>
+    <button class="btn btn-block btn-lime" type="button" data-cact="saveWeight">Gem vejning</button>
+    <p class="muted" style="margin-top:8px">Vej dig på samme tidspunkt, fx om morgenen efter toilet, før du spiser.</p></div>
+  <div class="panel"><h3>Udvikling</h3>${weightChartSVG()}
+    <div class="stat-row"><div><small>Nu</small><b>${cur ? fmtNum(cur) + ' kg' : '–'}</b></div><div><small>Tendens pr. uge</small><b>${weightRate() == null ? '–' : (weightRate() >= 0 ? '+' : '−') + fmtNum(Math.abs(weightRate())) + ' kg'}</b></div><div><small>Mål</small><b>${c.targetKg ? fmtNum(c.targetKg) + ' kg' : '–'}</b></div></div>
+    <p class="advice">${esc(weightAdvice())}</p>${last && last.bf ? `<p class="muted">Seneste fedtprocent: ${fmtNum(last.bf)} %</p>` : ''}</div>
+  <div class="panel"><h3>Dine vejninger</h3>${w.length ? `<ul class="history">${w.map((x, i) => `<li class="hist"><div class="hist-top"><div><b>${fmtNum(x.kg)} kg</b> <span class="tag">${esc(daDate(x.date))}</span>${x.bf ? ` <span class="tag">${fmtNum(x.bf)} %</span>` : ''}</div><button class="icon-btn" type="button" data-cact="delWeight" data-i="${x.date}|${x.kg}" aria-label="Slet vejningen ${esc(daDate(x.date))}">${ICON.trash}</button></div></li>`).join('')}</ul>` : '<p class="empty">Ingen vejninger endnu.</p>'}</div>`;
+}
+
+/* ----- Handlinger ----- */
+function coachAction(a, ds) {
+  const c = ST.coach;
+  if (a === 'condkind') {
+    testDraft = {}; document.querySelectorAll('[data-tin]').forEach(el => { testDraft[el.dataset.tin] = el.value; });
+    if (condKind !== ds.kind) testDraft['cond.v'] = '';
+    condKind = ds.kind; renderCoach(); return;
+  }
+  if (a === 'pickGoal') {
+    if (c.goal !== ds.goal) { c.goal = ds.goal; if (c.active) { resetPlanState(); } save(); renderCoach(); if (c.active) refreshPlan(); }
+    return;
+  }
+  if (a === 'saveProfile') {
+    const nm = (id, lo, hi) => { const v = parseNum($(id).value); return Number.isFinite(v) && v >= lo && v <= hi ? Math.round(v * 10) / 10 : ''; };
+    c.sex = $('cpSex').value === 'f' ? 'f' : 'm';
+    c.birth = isISO($('cpBirth').value) ? $('cpBirth').value : '';
+    c.height = nm('cpHeight', 100, 250); c.bf = nm('cpBf', 3, 60); c.targetKg = nm('cpTKg', 30, 250); c.targetBf = nm('cpTBf', 3, 60);
+    const kg = nm('cpWeight', 30, 250), today = todayISO();
+    if (kg !== '' && kg !== curWeight()) pushWeight(kg, c.bf);
+    save(); toast('Gemt'); if (c.active) refreshPlan(); else { renderCoach(); renderCoachCard(); }
+    return;
+  }
+  if (a === 'saveWeight') {
+    const kg = parseNum($('cwKg').value), bf = parseNum($('cwBf').value);
+    if (!(kg >= 30 && kg <= 250)) { toast('Skriv en vægt mellem 30 og 250 kg'); $('cwKg').focus(); return; }
+    pushWeight(Math.round(kg * 10) / 10, bf >= 3 && bf <= 60 ? Math.round(bf * 10) / 10 : ''); if (bf >= 3 && bf <= 60) c.bf = Math.round(bf * 10) / 10;
+    save(); toast('Vejning gemt'); if (c.active) refreshPlan(); else { renderCoach(); renderCoachCard(); }
+    return;
+  }
+  if (a === 'delWeight') {
+    const [d, kg] = ds.i.split('|'); const i = c.weights.findIndex(x => x.date === d && String(x.kg) === kg);
+    if (i >= 0 && confirm('Slet denne vejning?')) { c.weights.splice(i, 1); save(); renderCoach(); renderCoachCard(); }
+    return;
+  }
+  if (a === 'saveTest') {
+    const r = readTestForm();
+    if (!Object.keys(r).length) { toast('Skriv mindst ét testresultat'); return; }
+    const rec = { date: todayISO(), bw: curWeight() || '', r };
+    const same = c.tests.findIndex(t => t.date === rec.date); if (same >= 0) c.tests[same] = rec; else c.tests.push(rec);
+    c.tests = c.tests.slice(-20); save();
+    const f = formOf(rec); toast(f.overall != null ? `Din form: ${f.overall} · ${levelOf(f.overall)}` : 'Test gemt');
+    coachTab = 'over'; if (c.active) refreshPlan(); else { renderCoach(); renderCoachCard(); }
+    $('page-coach').scrollTop = 0;
+    return;
+  }
+  if (a === 'activate') {
+    if (!c.goal) { setCoachTab('mal'); return; }
+    c.active = true; resetPlanState(); save(); refreshPlan(); toast('Dit tilpassede program er klar'); go('program'); selectWeek(curWeek());
+    return;
+  }
+  if (a === 'deactivate') {
+    if (!confirm('Skift tilbage til standardprogrammet? Dit tilpassede program gemmes, og du kan aktivere det igen.')) return;
+    c.active = false; save(); refreshPlan(); toast('Standardprogrammet er aktivt');
+    return;
+  }
+}
+function pushWeight(kg, bf) {
+  const c = ST.coach, today = todayISO(), i = c.weights.findIndex(x => x.date === today);
+  const rec = { date: today, kg, bf: bf === '' || bf == null ? '' : bf };
+  if (i >= 0) c.weights[i] = rec; else c.weights.push(rec);
+  c.weights.sort((a, b) => a.date.localeCompare(b.date)); c.weights = c.weights.slice(-400);
+}
+/* Når målet ændres, nulstilles afkrydsninger og bytter for det tilpassede program (blok-id'er A-, B-, C-) */
+function resetPlanState() {
+  const mine = k => /^week\|\d+\|[ABC]-/.test(k);
+  Object.keys(ST.done).filter(mine).forEach(k => delete ST.done[k]);
+  Object.keys(ST.swaps).filter(mine).forEach(k => delete ST.swaps[k]);
+}
+
+/* ----- Banner i programmet og kort på forsiden ----- */
+function renderPlanBanner() {
+  const el = $('planBanner'); if (!el) return;
+  const c = ST.coach;
+  el.innerHTML = c.active && GOALS[c.goal]
+    ? `<div class="plan-banner on"><span>${ICON.gauge}<b>Tilpasset</b> · ${GOALS[c.goal].short}</span><button type="button" data-ctab="over" data-go="coach">Ændr</button></div>`
+    : `<div class="plan-banner"><span>${ICON.gauge}Få et program, der passer til dig</span><button type="button" data-ctab="over" data-go="coach">Min form</button></div>`;
+}
+function renderCoachCard() {
+  const el = $('coachCard'); if (!el) return;
+  const c = ST.coach, rec = lastTest(), f = rec ? formOf(rec) : null;
+  if (!f || f.overall == null) { el.innerHTML = `<div class="coach-mini"><span class="cm-ic">${ICON.gauge}</span><div><b>Min form</b><small>Skriv vægt, vælg mål og tag testen. Så tilpasser appen din træning.</small></div><button class="btn btn-sm btn-lime" type="button" data-ctab="over" data-go="coach">Start</button></div>`; return; }
+  const next = c.active ? nextSession() : null;
+  el.innerHTML = `<div class="coach-mini"><span class="cm-score" style="color:${lvlCol(f.overall)}">${f.overall}</span><div><b>${levelOf(f.overall)}</b><small>${c.active && next ? `Næste pas: ${esc(next)}` : GOALS[c.goal] ? esc(GOALS[c.goal].name) : 'Vælg et mål i Min form'}</small></div><button class="btn btn-sm" type="button" data-ctab="over" data-go="coach">Åbn</button></div>${scaleBar(f.overall, true)}`;
+}
+function nextSession() {
+  const W = WEEKS[curWeek() - 1]; if (!W || !W.plan) return null;
+  const seen = [];
+  W.blocks.forEach(b => { if (b.session && !seen.find(s => s.id === b.session.id)) seen.push({ id: b.session.id, title: b.session.title, blocks: [] }); if (b.session) seen.find(s => s.id === b.session.id).blocks.push(b); });
+  const open = seen.find(s => s.blocks.some(b => b.items.some((it, i) => it.ex && !ST.done[`week|${W.n}|${b.id}|${i}`])));
+  return open ? open.title : 'Alle pas i denne uge er klaret';
+}
+
 /* ===== Start ===== */
 function renderAll() {
+  rebuildWeeks();
   renderProgress(); renderToday(); renderDays(); renderWeekNav(); renderWeek();
   renderHome(); renderFriday(); renderLibrary(); renderRPE(); renderRates(); renderTracker();
   $('tgSound').setAttribute('aria-pressed', ST.settings.sound); $('tgVib').setAttribute('aria-pressed', ST.settings.vib);
   initVibrationToggle(); buildSteppers(); renderCurrent(); updateBackupNote();
   $('tileCount').textContent = `${Object.keys(EX).length} øvelser`;
+  renderPlanBanner(); renderCoach(); renderCoachCard();
 }
 fillIcons();
 renderAll();

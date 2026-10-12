@@ -39,6 +39,7 @@
     <nav class="topnav" aria-label="Sider">
       <a href="#/idag" data-nav="idag">I dag</a>
       <a href="#/program" data-nav="program">Program</a>
+      <a href="#/coach" data-nav="coach">Min form</a>
       <a href="#/hjemme" data-nav="hjemme">Hjemme</a>
       <a href="#/fredag" data-nav="fredag">Fredag</a>
       <a href="#/timer" data-nav="timer">Timer</a>
@@ -65,17 +66,20 @@
     </div>
     <div class="wrap page-in">
       <div class="today-card" id="todayCard"></div>
+      <div id="coachCard"></div>
       <div class="progress-card" id="heroProgress"></div>
       <div class="block-title"><h2>Min uge</h2></div>
       <ol class="days" id="days"></ol>
       <div class="block-title"><h2>Alle sider</h2></div>
       <nav class="tiles" aria-label="Alle sider">
         <a class="tile" href="#/program"><span data-icon="calendar"></span><b>Program</b><small>Uge 1–8</small></a>
+        <a class="tile" href="#/coach"><span data-icon="gauge"></span><b>Min form</b><small>Test og mål</small></a>
         <a class="tile" href="#/hjemme"><span data-icon="house"></span><b>Hjemme</b><small>Før fodbold</small></a>
         <a class="tile" href="#/fredag"><span data-icon="bolt"></span><b>Fredag</b><small>Aktivering</small></a>
         <a class="tile" href="#/timer"><span data-icon="timer"></span><b>Timer</b><small>Intervaller</small></a>
         <a class="tile" href="#/tracker"><span data-icon="chart"></span><b>Tracker</b><small>Efter kamp</small></a>
         <a class="tile" href="#/ovelser"><span data-icon="grid"></span><b>Øvelser</b><small id="tileCount">Bibliotek</small></a>
+        <a class="tile" href="#/progression"><span data-icon="flame"></span><b>Progression</b><small>Gennemførte uger</small></a>
       </nav>
     </div>
   </section>
@@ -90,10 +94,20 @@
         </div>
         <a class="link-btn" href="#/rpe">Hvad er RPE?</a>
       </div>
+      <div id="planBanner"></div>
       <nav class="weeknav" aria-label="Vælg uge">
         <div class="weeknav-scroll" role="tablist" id="weekNav"></div>
       </nav>
       <div id="weekView" role="tabpanel" aria-labelledby="progTitle"></div>
+    </div>
+  </section>
+
+  <!-- ============ MIN FORM (COACH) ============ -->
+  <section class="page" id="page-coach" data-page="coach" data-title="Min form" aria-labelledby="coachTitle" hidden>
+    <div class="wrap page-in">
+      <div class="page-head ph-title-only"><div><h2 id="coachTitle" tabindex="-1">Min form</h2></div></div>
+      <div class="seg seg4" role="tablist" id="coachTabs" aria-label="Min form"></div>
+      <div id="coachBody"></div>
     </div>
   </section>
 
@@ -272,6 +286,7 @@
     <div class="wrap page-in">
       <div class="page-head ph-title-only"><div><h2 id="moreTitle" tabindex="-1">Mere</h2></div></div>
       <nav class="list" aria-label="Flere sider">
+        <a class="list-row" href="#/coach"><span class="lr-ic" data-icon="gauge"></span><span class="lr-t"><b>Min form</b><small>Test, mål og tilpasset program</small></span><span class="lr-go" data-icon="chev"></span></a>
         <a class="list-row" href="#/hjemme"><span class="lr-ic" data-icon="house"></span><span class="lr-t"><b>Hjemme · før træning</b><small>12 min uden udstyr</small></span><span class="lr-go" data-icon="chev"></span></a>
         <a class="list-row" href="#/fredag"><span class="lr-ic" data-icon="bolt"></span><span class="lr-t"><b>Fredag · klar til kamp</b><small>Let aktivering</small></span><span class="lr-go" data-icon="chev"></span></a>
         <a class="list-row" href="#/tracker"><span class="lr-ic" data-icon="chart"></span><span class="lr-t"><b>Kamp-tracker</b><small>Registrér og følg udviklingen</small></span><span class="lr-go" data-icon="chev"></span></a>
@@ -299,6 +314,7 @@
   <ul>
     <li><a href="#/idag" data-nav="idag"><span data-icon="ball"></span>I dag</a></li>
     <li><a href="#/program" data-nav="program"><span data-icon="calendar"></span>Program</a></li>
+    <li><a href="#/coach" data-nav="coach"><span data-icon="gauge"></span>Form</a></li>
     <li><a href="#/timer" data-nav="timer"><span data-icon="timer"></span>Timer</a></li>
     <li><a href="#/ovelser" data-nav="ovelser"><span data-icon="grid"></span>Øvelser</a></li>
     <li><a href="#/mere" data-nav="mere"><span data-icon="more"></span>Mere</a></li>
