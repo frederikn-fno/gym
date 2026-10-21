@@ -1366,3 +1366,60 @@ button.list-row { width: 100%; text-align: left; }
 .logbox h4 { font-family: var(--font-b); font-weight: 700; font-size: 18px; text-transform: none; }
 .sess-h { color: var(--text); }
 #sheetTitle:focus { outline: none; }
+/* ===== UX-RUNDE (okt. 2026): mindre støj, vigtigste handling først ===== */
+/* I dag: sæsonforslag som diskret række under dagens kort */
+.season-card { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; border-color: var(--line); padding: 14px 16px; }
+.season-card .sc-ic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: rgba(77, 182, 255, .12); color: var(--rest); }
+.season-card .sc-ic svg { width: 20px; height: 20px; }
+.sc-txt { display: grid; gap: 2px; min-width: 0; }
+.sc-txt b { font-weight: 700; font-size: 16px; }
+.sc-txt > span { font-size: 14px; color: var(--muted); }
+.sc-act { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-top: 6px; }
+.sc-act .btn-sm { min-height: 40px; }
+.sc-act .link-btn { min-height: 40px; font-size: 15px; }
+.today-big.is-long { font-size: clamp(30px, 8.4vw, 50px); line-height: .98; }
+
+/* Træn-tilstand: knapperne i bunden, hvor tommelfingeren er, og ingen topknapper */
+.sess { display: flex; flex-direction: column; min-height: 100%; }
+.sess > .s-dock { margin-top: auto; }
+.app.in-session .theme-btn, .app.in-session .week-chip { display: none; }
+.app[data-page="program"] .week-chip { display: none; }
+
+/* Øvelseskort: sæt × gentagelser og pause på én række */
+.m-dose.two { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.m-dose.two div:first-child { grid-column: auto; }
+#exSheet .logbox { margin-top: 12px; }
+
+/* Program: kompakt ugekort og pas-overskrifter på én linje */
+.wk-hero.wk-compact { display: grid; gap: 6px; }
+.wk-compact h3 { font-size: clamp(28px, 7.6vw, 40px); max-width: none; }
+.wk-compact .desc { margin-top: 0; font-size: 15px; max-width: none; }
+.wk-compact .wk-rpe { display: inline; min-height: 0; margin: 0; font-size: 15px; }
+.wk-compact .wk-prog { margin-top: 6px; }
+.sess-head { align-items: flex-end; margin-top: 18px; }
+.sess-t { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.sess-t small { font-size: 13px; }
+.sess-t .warn-txt { color: var(--prep); }
+.sess-head .sess-h { font-size: clamp(24px, 6.6vw, 30px); line-height: 1; overflow-wrap: anywhere; }
+
+/* Programmer: "Din uge" foldet sammen til én linje */
+details.wp > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; min-height: 44px; }
+details.wp > summary::-webkit-details-marker { display: none; }
+.wp-sum { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.wp-sum b { font-weight: 700; font-size: 17px; }
+.wp-sum small { font-size: 14px; color: var(--muted); }
+.wp-edit { flex: none; color: var(--lime); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+details.wp[open] > summary { margin-bottom: 4px; }
+
+/* Min form uden test: ét kort, én handling */
+.form-empty { display: grid; gap: 10px; justify-items: start; }
+.form-empty .fe-ic { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--lime-soft); color: var(--lime); }
+.form-empty .fe-ic svg { width: 24px; height: 24px; }
+.form-empty .btn { justify-self: stretch; }
+.fe-miss { font-size: 14px; color: var(--muted); }
+.fe-miss .link-btn { min-height: 0; font-size: 14px; }
+
+/* Øvelser: søgning først, resten foldet sammen */
+.lib-more-info .lib-season { margin-bottom: 4px; }
+.lib-how { font-size: 14px; margin: 12px 0 4px; }
+.theme-panel { padding: 10px; }

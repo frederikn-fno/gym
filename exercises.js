@@ -319,6 +319,14 @@ A('clappush', 'Eksplosive armstrækninger', 'Eksplosiv', ['Eksplosivitet', 'Styr
   'Hurtig kraft i bryst og arme, som ved et hurtigt udkast.',
   ['Start i armstrækningsposition med spændt core.', 'Sænk kontrolleret, og pres eksplosivt op, så hænderne forlader gulvet.', 'Land blødt med let bøjede albuer.'],
   '5 reps', '60 sek', ['Gør det kun, hvis almindelige armstrækninger er lette.', 'Kvalitet frem for antal.'], { hard: true });
+A('pushdown', 'Triceps pushdown i kabel', 'Styrke', ['Styrke'], 'Kabel', 'push',
+  'Stærke triceps til lange udkast og til at stå imod med strakte arme.',
+  ['Stå tæt på kablet med et reb eller en stang i brysthøjde og albuerne ind til siden.', 'Pres håndtaget ned, til armene er helt strakte.', 'Før langsomt op igen, til underarmene er vandrette.'],
+  '12 reps', '45 sek', ['Albuerne bliver ved siden af kroppen hele vejen.', 'Overkroppen står stille. Brug ikke kropsvægten.'], { log: true });
+A('benchdip', 'Dips på bænk', 'Styrke', ['Styrke'], 'Bænk/kasse', 'push',
+  'Triceps og forreste skulder med kropsvægt. Kan laves på en stol derhjemme.',
+  ['Sæt hænderne på kanten af en bænk bag dig, og stræk benene frem.', 'Bøj albuerne bagud, og sænk dig, til overarmene er vandrette.', 'Pres dig op, til armene er strakte.'],
+  '10 reps', '45 sek', ['Hold ryggen tæt på bænken.', 'Bøj knæene for at gøre det lettere. Gå ikke dybere, end skulderen kan lide.'], { home: true });
 
 /* --- Træk --- */
 A('dbrow', 'Håndvægtsroning', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Håndvægte', 'pull',
@@ -349,6 +357,14 @@ A('superman', 'Superman', 'Core', ['Core', 'Styrke', 'Skadesforebyggelse'], 'Ing
   'Stærk nedre ryg og baller.',
   ['Lig på maven med armene strakt frem.', 'Løft arme og ben samtidig få centimeter fra gulvet.', 'Hold et sekund, og sænk roligt.'],
   '10 reps', '30 sek', ['Kig ned i gulvet, så nakken er neutral.', 'Spænd ballerne.']);
+A('dbcurl', 'Biceps curl med håndvægte', 'Styrke', ['Styrke'], 'Håndvægte', 'pull',
+  'Stærke arme til at gribe, holde fast og trække bolden ind til kroppen.',
+  ['Stå oprejst med en håndvægt i hver hånd og armene strakt ned, håndfladerne frem.', 'Bøj albuerne, og løft vægtene op mod skuldrene.', 'Sænk langsomt ned, til armene er strakte.'],
+  '10 reps', '45 sek', ['Albuerne bliver ved siden af kroppen.', 'Sving ikke med ryggen. Tag en lettere vægt, hvis du skal.'], { log: true });
+A('hammercurl', 'Hammer curl', 'Styrke', ['Styrke'], 'Håndvægte', 'pull',
+  'Underarme og greb. Gør håndleddene stærkere, når du griber hårde skud.',
+  ['Stå med en håndvægt i hver hånd og håndfladerne ind mod kroppen.', 'Bøj albuerne, og løft vægtene op mod skuldrene. Håndfladerne vender stadig ind.', 'Sænk langsomt ned.'],
+  '10 reps', '45 sek', ['Hold håndleddene lige.', 'Sænk på 2–3 sekunder.'], { illu: 'dbcurl', log: true });
 
 /* --- Core --- */
 A('hollow', 'Hollow hold', 'Core', ['Core'], 'Ingen udstyr', 'core',
@@ -699,7 +715,7 @@ const SEASON = {
   glutebridge: [2, 2, 3, 1], nordic: [3, 3, 3, 3], hamwalk: [2, 2, 2, 2], hambridgeiso: [2, 2, 3, 1],
   /* Skub */
   pushup: [2, 2, 2, 1], kneepushup: [2, 1, 1, 1], diamondpush: [2, 1, 1, 1], dbpress: [3, 2, 2, 2], dbbench: [3, 2, 2, 2], pikepush: [2, 1, 1, 1],
-  clappush: [1, 3, 2, 2], landminepress: [3, 2, 2, 2],
+  clappush: [1, 3, 2, 2], landminepress: [3, 2, 2, 2], pushdown: [2, 1, 1, 1], benchdip: [2, 1, 1, 1], dbcurl: [2, 1, 1, 1], hammercurl: [2, 1, 1, 1],
   /* Træk */
   latpull: [3, 2, 2, 2], dbrow: [3, 2, 2, 2], invrow: [2, 2, 2, 1], pullup: [3, 2, 2, 2], bandpull: [2, 2, 3, 0], cablerow: [3, 2, 2, 2], facepull: [2, 2, 3, 1],
   superman: [2, 1, 1, 1], ytw: [2, 2, 3, 0], extrot: [2, 2, 3, 0],

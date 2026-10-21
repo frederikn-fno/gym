@@ -16,6 +16,7 @@
    'warm'                    6 min cykel
    'warmfield'               FIFA 11+ løbedel (8 min)
    ['str',  ['ex:main', 'ex|ex2:acc']]   styrke med sæt, gentagelser og vægt ud fra dit niveau. main = hovedløft, acc = assistance
+   ['upper', ['ex:main', 'ex:acc'], 'Arme']   overkrop sidst i passet (titel "Overkrop", eller "Arme · valgfri" med 'Arme')
    ['speed', [[ex, sæt, 'gentagelse']]]  fart med fuld pause. Sættene stiger lidt over ugerne. Gentagelsen kan også have varianter "10 m|5 m"
    ['pwr' | 'gk' | 'prev' | 'core' | 'circ' | 'mob', [ex, ...]]  runder med guidet timer
    ['cond', 'cont' | 'runcont' | 'int' | 'short' | 'tempo' | 'rsa' | 'b5']  kondition (kan også varieres: 'int|b5') */
@@ -32,25 +33,25 @@ const PROGRAMS = [
     desc: 'Byg den styrke og muskelmasse, der giver kraft i afsættet og overkrop til at gå i dueller. Tung styrke, kast og målmandskraft, og intervaller for at holde motoren i gang. Øvelserne skifter hver anden uge.',
     sessions: {
       A: { t: 'Ben og afsæt', md: 3, blocks: ['warm', ['str', ['frontsquat|backsquat:main', 'rdl|hipthrust:acc', 'bulgarian|stepup:acc', 'slcalf|soleus:acc']], ['prev', ['nordic', 'copenhagen']], ['core', ['pallof|woodchop', 'deadbug|hollow', 'sideplank|suitcase']]] },
-      B: { t: 'Overkrop og kast', md: 2, blocks: ['warm', ['str', ['dbbench|landminepress:main', 'pullup|latpull:main', 'dbpress|pikepush:acc', 'dbrow|cablerow:acc', 'facepull|ytw:acc']], ['pwr', ['medthrow|gkthrow', 'medrot|medslam']], ['core', ['suitcase|farmer', 'hollow|abwheel', 'birddog|plankreach']]] },
+      B: { t: 'Overkrop og kast', md: 2, blocks: ['warm', ['str', ['dbbench|landminepress:main', 'pullup|latpull:main', 'dbpress|pikepush:acc', 'dbrow|cablerow:acc', 'facepull|ytw:acc']], ['pwr', ['medthrow|gkthrow', 'medrot|medslam']], ['core', ['suitcase|farmer', 'hollow|abwheel', 'birddog|plankreach']], ['upper', ['dbcurl|hammercurl:acc', 'pushdown|benchdip:acc'], 'Arme']] },
       C: { t: 'Målmandskraft og kondition', md: 2, blocks: ['warm', ['str', ['trapbar|rdl:main', 'hipthrust|slrdl:acc', 'landminepress|dbpress:acc']], ['gk', ['gkshuffledive|gkcollapse', 'gkhighcatch|gkstar', 'gkthrow|medthrow', 'gkbarrier|gkset']], ['cond', 'int|b5']] }
     }
   },
   {
     id: 'gkpre', icon: 'glove', name: 'Målmand opbygning', season: 'pre', focus: ['Målmand', 'Eksplosivitet', 'Hurtighed'],
     perWeek: 2, mins: 60, equip: 'Fitnesscenter og bane', level: 'Øvet', scheme: 'explosive', rest: 150,
-    desc: 'Gør off-season-styrken eksplosiv før sæsonen: spring, kast, hurtige første skridt og dyk. Korte, hårde intervaller giver overskud til gentagne aktioner. Øvelserne skifter hver anden uge.',
+    desc: 'Gør off-season-styrken eksplosiv før sæsonen: spring, kast, hurtige første skridt og dyk. Korte, hårde intervaller giver overskud til gentagne aktioner, og en overkropsblok holder bryst, ryg og skuldre stærke. Øvelserne skifter hver anden uge.',
     sessions: {
-      A: { t: 'Kraft og afsæt', md: 3, blocks: ['warm', ['pwr', ['depthjump|boxjump', 'lateralstick|skater', 'medrot|gkthrow']], ['str', ['backsquat|frontsquat:main', 'rdl|trapbar:main', 'slcalf|stepcalf:acc']], ['prev', ['nordic', 'copenhagen']]] },
+      A: { t: 'Kraft og afsæt', md: 3, blocks: ['warm', ['pwr', ['depthjump|boxjump', 'lateralstick|skater', 'medrot|gkthrow']], ['str', ['backsquat|frontsquat:main', 'rdl|trapbar:main', 'slcalf|stepcalf:acc']], ['prev', ['nordic', 'copenhagen']], ['upper', ['dbbench|landminepress:main', 'pullup|dbrow:acc', 'facepull|ytw:acc']]] },
       B: { t: 'Fart og reaktion', md: 2, blocks: ['warmfield', ['speed', [['wallaccel|askip', 3, '5 skift|20 m'], ['sprint5|decel', 4, '10 m|5 m'], ['cod505|mirror', 2, '2/side|15 sek']]], ['gk', ['gkset|gkdropstep', 'gkshuffledive|gkstar', 'gkcollapse|gkbarrier', 'gkdropstep|gkset']], ['cond', 'short']] }
     }
   },
   {
     id: 'gkin', icon: 'glove', name: 'Målmand in-season', season: 'in', focus: ['Målmand', 'Styrke', 'Skadeforebyggelse'],
     perWeek: 2, mins: 45, equip: 'Fitnesscenter', level: 'Alle niveauer', scheme: 'maint', rest: 120,
-    desc: 'Hold styrken og eksplosiviteten gennem sæsonen med få, tunge sæt. Det tunge pas ligger tidligt i ugen og det hurtige pas tættere på kamp, så du er frisk lørdag. Øvelserne skifter hver anden uge.',
+    desc: 'Hold styrken og eksplosiviteten gennem sæsonen med få, tunge sæt til ben og overkrop. Det tunge pas ligger tidligt i ugen og det hurtige pas tættere på kamp, så du er frisk lørdag. Øvelserne skifter hver anden uge.',
     sessions: {
-      A: { t: 'Styrke', md: 3, blocks: ['warm', ['str', ['frontsquat|backsquat:main', 'rdl|trapbar:main', 'pullup|latpull:acc']], ['prev', ['nordic', 'copenhagen', 'spanish|isosplit']]] },
+      A: { t: 'Styrke', md: 3, blocks: ['warm', ['str', ['frontsquat|backsquat:main', 'rdl|trapbar:main', 'pullup|latpull:acc']], ['prev', ['nordic', 'copenhagen', 'spanish|isosplit']], ['upper', ['dbbench|landminepress:main', 'facepull|ytw:acc']]] },
       B: { t: 'Hurtig og klar', md: 2, blocks: ['warmfield', ['speed', [['wallaccel|askip', 2, '5 skift|20 m'], ['sprint5|decel', 3, '10 m|5 m']]], ['gk', ['gkset|gkdropstep', 'gkcollapse|gkbarrier', 'gkstar|gkshuffledive']], ['pwr', ['pogo|slhop', 'lateralstick|skater', 'gkthrow|medthrow']], ['core', ['pallof|bandpallof', 'sideplank|plankreach', 'deadbug|hollow']]] }
     }
   },
@@ -60,7 +61,7 @@ const PROGRAMS = [
     desc: 'Klassisk off-season: ben, overkrop og helkrop med tunge basisløft og mere volumen. Bygger det fundament, som fart og spring senere skal stå på. Øvelserne skifter hver anden uge.',
     sessions: {
       A: { t: 'Ben', md: 3, blocks: ['warm', ['str', ['backsquat|legpress:main', 'rdl|dbrdl:acc', 'walkinglunge|bulgarian:acc', 'soleus|stepcalf:acc']], ['core', ['abwheel|hollow', 'pallof|woodchop', 'copenhagen']]] },
-      B: { t: 'Overkrop', md: 2, blocks: ['warm', ['str', ['dbbench|landminepress:main', 'pullup|latpull:main', 'dbpress|pikepush:acc', 'cablerow|dbrow:acc', 'facepull|ytw:acc']], ['core', ['suitcase|farmer', 'hollow|legraise', 'sideplank|plankreach']]] },
+      B: { t: 'Overkrop', md: 2, blocks: ['warm', ['str', ['dbbench|landminepress:main', 'pullup|latpull:main', 'dbpress|pikepush:acc', 'cablerow|dbrow:acc', 'facepull|ytw:acc']], ['core', ['suitcase|farmer', 'hollow|legraise', 'sideplank|plankreach']], ['upper', ['dbcurl|hammercurl:acc', 'pushdown|benchdip:acc'], 'Arme']] },
       C: { t: 'Helkrop og kraft', md: 3, blocks: ['warm', ['str', ['trapbar|rdl:main', 'bulgarian|stepup:acc', 'landminepress|dbpress:acc', 'invrow|dbrow:acc']], ['pwr', ['kbswing|medslam', 'boxjump|broadjump']], ['cond', 'cont']] }
     }
   },
@@ -70,16 +71,16 @@ const PROGRAMS = [
     desc: 'Hurtigere første skridt, højere topfart og skarpere vendinger. Fart med fuld pause, og tung styrke med få gentagelser, der giver kraft i afsættet. Øvelserne skifter hver anden uge.',
     sessions: {
       A: { t: 'Acceleration', md: 2, blocks: ['warmfield', ['speed', [['askip|carioca', 2, '20 m|20 sek'], ['wallaccel', 3, '5 skift'], ['sprint5', 5, '10 m'], ['decel|mirror', 3, '5 m|15 sek']]], ['str', ['trapbar|backsquat:main', 'hipthrust|slrdl:acc', 'slcalf|stepcalf:acc']], ['prev', ['nordic', 'copenhagen']]] },
-      B: { t: 'Topfart og retningsskift', md: 2, blocks: ['warmfield', ['speed', [['flysprint', 3, '20 m'], ['cod505|tdrill', 2, '2/side|3 gange'], ['mirror|ladder', 3, '15 sek|20 sek']]], ['pwr', ['skater|lateralstick', 'pogo|slhop', 'broadjump|depthjump']], ['str', ['backsquat|frontsquat:main', 'slrdl|hipthrust:acc']]] }
+      B: { t: 'Topfart og retningsskift', md: 2, blocks: ['warmfield', ['speed', [['flysprint', 3, '20 m'], ['cod505|tdrill', 2, '2/side|3 gange'], ['mirror|ladder', 3, '15 sek|20 sek']]], ['pwr', ['skater|lateralstick', 'pogo|slhop', 'broadjump|depthjump']], ['str', ['backsquat|frontsquat:main', 'slrdl|hipthrust:acc']], ['upper', ['pushup|dbbench:acc', 'dbrow|invrow:acc']]] }
     }
   },
   {
     id: 'jump', icon: 'bolt', name: 'Spring og eksplosivitet', season: 'pre', focus: ['Eksplosivitet', 'Målmand'],
     perWeek: 2, mins: 50, equip: 'Fitnesscenter', level: 'Øvet', scheme: 'explosive', rest: 150,
-    desc: 'Højere spring til indlæg og et eksplosivt sideværts afsæt. Spring og kast først, mens du er frisk, og derefter tung styrke. Øvelserne skifter hver anden uge.',
+    desc: 'Højere spring til indlæg og et eksplosivt sideværts afsæt. Spring og kast først, mens du er frisk, og derefter tung styrke og overkrop. Øvelserne skifter hver anden uge.',
     sessions: {
       A: { t: 'Lodret kraft', md: 3, blocks: ['warm', ['pwr', ['boxjump|squatjump', 'depthjump|tuckjump', 'trapjump|broadjump']], ['str', ['backsquat|frontsquat:main', 'hipthrust|slrdl:acc', 'stepcalf|soleus:acc']], ['core', ['pallof|bandpallof', 'hollow|abwheel']]] },
-      B: { t: 'Sideværts kraft', md: 2, blocks: ['warm', ['pwr', ['lateralstick|bounds', 'skater|slhop', 'gkhighcatch|gkstar', 'medrot|gkthrow']], ['str', ['trapbar|rdl:main', 'bulgarian|stepup:acc']], ['prev', ['copenhagen', 'slcalf|tibraise']]] }
+      B: { t: 'Sideværts kraft', md: 2, blocks: ['warm', ['pwr', ['lateralstick|bounds', 'skater|slhop', 'gkhighcatch|gkstar', 'medrot|gkthrow']], ['str', ['trapbar|rdl:main', 'bulgarian|stepup:acc']], ['prev', ['copenhagen', 'slcalf|tibraise']], ['upper', ['dbbench|dbpress:main', 'pullup|invrow:acc', 'facepull|ytw:acc']]] }
     }
   },
   {
@@ -89,7 +90,7 @@ const PROGRAMS = [
     sessions: {
       A: { t: 'Tempoløb', md: 3, blocks: ['warmfield', ['cond', 'tempo'], ['core', ['plank|hollow', 'sideplank|plankreach', 'birddog|deadbug']]] },
       B: { t: 'Gentagne sprint', md: 2, blocks: ['warmfield', ['cond', 'rsa'], ['prev', ['nordic', 'copenhagen']]] },
-      C: { t: 'Styrke og intervaller', md: 3, blocks: ['warm', ['str', ['goblet|frontsquat:main', 'rdl|dbrdl:main', 'pullup|invrow:acc']], ['cond', 'int|b5']] }
+      C: { t: 'Styrke og intervaller', md: 3, blocks: ['warm', ['str', ['goblet|frontsquat:main', 'rdl|dbrdl:main', 'pullup|invrow:acc', 'dbpress|pushup:acc']], ['cond', 'int|b5']] }
     }
   },
   {

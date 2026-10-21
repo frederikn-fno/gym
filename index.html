@@ -64,8 +64,8 @@ try { var t = ((JSON.parse(localStorage.getItem('gk8-goalkeeper-v1')) || {}).set
       <h1 id="heroTitle" class="vh" tabindex="-1">I dag</h1>
       <div id="startCard"></div>
       <div id="doneCard"></div>
-      <div id="seasonCard"></div>
       <div class="today-card" id="todayCard"></div>
+      <div id="seasonCard"></div>
       <div id="checkCard"></div>
       <div id="matchCard"></div>
       <div id="weekSummary"></div>
@@ -245,19 +245,20 @@ try { var t = ((JSON.parse(localStorage.getItem('gk8-goalkeeper-v1')) || {}).set
       <div class="page-head">
         <div>
           <h2 id="libTitle" tabindex="-1">Øvelses&shy;bibliotek</h2>
-          <p class="sec-lead">Tryk på en øvelse for at se den. Stjernen gemmer den som favorit, og de tre søjler viser, hvor godt den passer i off-season, opbygning og in-season.</p>
         </div>
       </div>
       <div class="lib-bar">
-        <div class="seg seg4 lib-season" id="libSeason" role="group" aria-label="Sæson"></div>
-        <div class="chips" id="libChips" role="group" aria-label="Godt til"></div>
         <label class="lib-search"><span class="sr-only">Søg</span><input type="search" id="libSearch" placeholder="Søg øvelse, fx squat eller core" autocomplete="off" autocapitalize="none" enterkeyhint="search"></label>
+        <div class="chips" id="libChips" role="group" aria-label="Godt til"></div>
       </div>
-      <details class="legend lib-more-info"><summary>Flere filtre og forklaringer</summary>
+      <details class="legend lib-more-info"><summary id="libMoreSum">Sæson, udstyr og forklaringer</summary>
+        <p class="t-sub">Sæson</p>
+        <div class="seg seg4 lib-season" id="libSeason" role="group" aria-label="Sæson"></div>
         <div class="lib-tools">
           <label class="field">Udstyr<select id="libEquip"></select></label>
           <label class="field">Type<select id="libCat"></select></label>
         </div>
+        <p class="muted lib-how">Tryk på en øvelse for at se den. Stjernen gemmer den som favorit, og de tre søjler viser, hvor godt den passer i off-season, opbygning og in-season.</p>
         <p class="t-sub">Godt til</p><dl id="libLegend"></dl>
         <p class="t-sub">Sæson og tæt på kamp</p><dl id="libSeasonLegend"></dl>
       </details>
@@ -276,13 +277,11 @@ try { var t = ((JSON.parse(localStorage.getItem('gk8-goalkeeper-v1')) || {}).set
         <a class="list-row" href="#/rutiner"><span class="lr-ic" data-icon="house"></span><span class="lr-t"><b>Rutiner</b><small>Før træning (12 min hjemme) og dagen før kamp</small></span><span class="lr-go" data-icon="chev"></span></a>
         <a class="list-row" href="#/tracker"><span class="lr-ic" data-icon="chart"></span><span class="lr-t"><b>Kampe</b><small>Registrér kampe og se udviklingen</small></span><span class="lr-go" data-icon="chev"></span></a>
         <a class="list-row" href="#/timer"><span class="lr-ic" data-icon="timer"></span><span class="lr-t"><b>Intervaltimer</b><small>Egne og færdige intervaller</small></span><span class="lr-go" data-icon="chev"></span></a>
-        <a class="list-row" href="#/programmer"><span class="lr-ic" data-icon="calendar"></span><span class="lr-t"><b>Programmer og din uge</b><small>Skift program, kampdag og træningsdage</small></span><span class="lr-go" data-icon="chev"></span></a>
         <a class="list-row" href="#/byg"><span class="lr-ic" data-icon="edit"></span><span class="lr-t"><b>Byg dit eget program</b><small>Dine øvelser, sæt og gentagelser</small></span><span class="lr-go" data-icon="chev"></span></a>
         <button class="list-row" type="button" data-rpe><span class="lr-ic" data-icon="pulse"></span><span class="lr-t"><b>RPE-guide</b><small>Hvor hårdt skal det føles?</small></span><span class="lr-go" data-icon="chev"></span></button>
       </nav>
-      <div class="block-title"><h2>Udseende</h2></div>
-      <div class="panel">
-        <p class="muted">Lys tilstand er lettere at læse i direkte sollys på banen. Du kan også skifte med solen øverst.</p>
+      <div class="block-title"><h2>Tema</h2></div>
+      <div class="panel theme-panel">
         <div class="seg theme-seg" role="group" aria-label="Tema" id="themeSeg" style="grid-template-columns: repeat(3, 1fr)">
           <button class="seg-btn" type="button" data-theme-set="dark" aria-pressed="true">Mørk</button>
           <button class="seg-btn" type="button" data-theme-set="light" aria-pressed="false">Lys</button>

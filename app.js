@@ -635,6 +635,34 @@ Object.assign(ILL, {
     front: [J => dbEnd(J.arms[1].h), J => dbEnd(J.arms[1].h)],
     arrows: [[], [arrow(`M92 ${G - 60} L92 ${G - 96}`)]]
   },
+  dbcurl: {
+    hl: ['fore', 'upper'],
+    poses: [
+      { hip: [80, G - 70], legs: [{ foot: [77, G] }, { foot: [84, G] }], arms: [{ elbow: [81, G - 95], hand: [82, G - 73] }, { elbow: [83, G - 94], hand: [84, G - 72] }] },
+      { hip: [80, G - 70], legs: [{ foot: [77, G] }, { foot: [84, G] }], arms: [{ elbow: [81, G - 95], hand: [96, G - 111] }, { elbow: [83, G - 94], hand: [98, G - 110] }] }
+    ],
+    front: [J => dbEnd(J.arms[1].h), J => dbEnd(J.arms[1].h)],
+    arrows: [[arrow(`M122 ${G - 76} Q130 ${G - 104} 112 ${G - 124}`)], [arrow(`M112 ${G - 124} Q130 ${G - 104} 122 ${G - 76}`, true)]]
+  },
+  pushdown: {
+    hl: ['fore'],
+    poses: [
+      { hip: [86, G - 70], t: 8, legs: [{ foot: [82, G] }, { foot: [89, G] }], arms: [{ elbow: [94, G - 95], hand: [112, G - 108] }, { elbow: [96, G - 95], hand: [114, G - 108] }] },
+      { hip: [86, G - 70], t: 8, legs: [{ foot: [82, G] }, { foot: [89, G] }], arms: [{ elbow: [94, G - 95], hand: [99, G - 73] }, { elbow: [96, G - 95], hand: [101, G - 73] }] }
+    ],
+    back: [() => cableTower(150, G - 137), () => cableTower(150, G - 137)],
+    front: [J => ln(J.arms[1].h, [142, G - 137], 2.2, COL.eqLine), J => ln(J.arms[1].h, [142, G - 137], 2.2, COL.eqLine)],
+    arrows: [[arrow(`M124 ${G - 98} Q128 ${G - 82} 114 ${G - 68}`)], [arrow(`M114 ${G - 68} Q128 ${G - 82} 124 ${G - 98}`, true)]]
+  },
+  benchdip: {
+    hl: ['upper', 'fore'],
+    poses: [
+      { hip: [62, G - 38], sh: [54, G - 84], legs: [{ knee: [98, G - 30], foot: [122, G] }, { knee: [101, G - 30], foot: [125, G] }], arms: [{ elbow: [51, G - 61], hand: [48, G - 38] }, { elbow: [53, G - 61], hand: [50, G - 38] }] },
+      { hip: [62, G - 16], sh: [56, G - 62], legs: [{ knee: [98, G - 24], foot: [122, G] }, { knee: [101, G - 24], foot: [125, G] }], arms: [{ elbow: [32, G - 56], hand: [48, G - 38] }, { elbow: [34, G - 56], hand: [50, G - 38] }] }
+    ],
+    back: [() => boxBench(8, 44), () => boxBench(8, 44)],
+    arrows: [[arrow(`M150 ${G - 70} L150 ${G - 34}`)], [arrow(`M150 ${G - 34} L150 ${G - 70}`, true)]]
+  },
   pikepush: {
     hl: ['upper', 'fore', 'torso'],
     poses: [
@@ -1721,7 +1749,7 @@ function updateBackupNote() {
   const hasData = ST.matches.length || ST.weeksDone.length || ST.logs.length || Object.keys(ST.done).length;
   if (ST.lastExport) {
     const days = Math.floor((new Date(todayISO() + 'T12:00:00') - new Date(ST.lastExport + 'T12:00:00')) / 864e5);
-    el.textContent = `Sidste backup: ${daDate(ST.lastExport)}.` + (days >= 14 && hasData ? ' Det er på tide at tage en ny.' : '');
+    el.textContent = `Sidste backup: ${daDate(ST.lastExport).replace(/\.$/, '')}.` + (days >= 14 && hasData ? ' Det er på tide at tage en ny.' : '');
   } else el.textContent = hasData ? 'Du har endnu ikke lavet en backup. Tryk "Eksportér data".' : '';
 }
 /* Del en fil (installeret app på telefon) eller hent den (browser). Returnerer false, hvis brugeren annullerede. */
@@ -1948,7 +1976,7 @@ const parseNum = v => parseFloat(String(v ?? '').replace(',', '.'));
 const fmtKm = v => String(Math.round(v * 100) / 100).replace('.', ',');
 function testNote(n) {
   const t = ST.tests[n], a = ST.tests[1], b = ST.tests[8];
-  let msg = t && t.date ? 'Senest gemt ' + daDate(t.date) + '. ' : 'Skriv tallene ned lige efter de 20 minutter. ';
+  let msg = t && t.date ? 'Senest gemt ' + daDate(t.date).replace(/\.$/, '') + '. ' : 'Skriv tallene ned lige efter de 20 minutter. ';
   const d1 = a && parseNum(a.dist), d8 = b && parseNum(b.dist);
   if (d1 > 0 && d8 > 0) { const diff = d8 - d1; msg += `Uge 1: ${fmtKm(d1)} km · uge 8: ${fmtKm(d8)} km (${diff >= 0 ? '+' : '−'}${fmtKm(Math.abs(diff))} km).`; }
   else if (n === 8 && d1 > 0) msg += `Din startmåling i uge 1: ${fmtKm(d1)} km.`;
@@ -1982,16 +2010,13 @@ function renderWeek() {
   const W = WEEKS[ST.week - 1], st = weekStats(W.n), pct = st.total ? Math.round(st.done / st.total * 100) : 0, wd = ST.weeksDone.includes(W.n);
   $('weekView').setAttribute('aria-labelledby', 'tab-' + W.n);
   $('weekView').innerHTML = `<div class="week-layout">
-    <header class="wk-hero">
-      <span class="bignum" aria-hidden="true">${W.n}</span>
-      <p class="wk-of">Uge ${W.n} af 8</p>
-      <h3>${W.title}</h3>
-      <p class="desc">${W.desc}</p>
-      <button class="link-btn wk-rpe" type="button" data-rpe>Hvad betyder RPE?</button>
-      <div class="phase-steps" aria-hidden="true">${PHASES.map((p, i) => `<span class="${i <= W.phase ? 'on' : ''}"></span>`).join('')}</div>
+    <header class="wk-hero wk-compact">
+      <h3>${(W.title.split('·')[1] || W.title).trim()}</h3>
+      <p class="desc">${W.desc} <button class="link-btn wk-rpe" type="button" data-rpe>Hvad er RPE?</button></p>
       <div class="wk-prog"><div class="bar" role="progressbar" aria-label="Øvelser klaret i uge ${W.n}" aria-valuemin="0" aria-valuemax="${st.total}" aria-valuenow="${st.done}"><i style="width:${pct}%"></i></div><b>${st.done}/${st.total}</b></div>
     </header>
-    <div class="blocks">${W.plan ? '' : `<button class="btn btn-block btn-lime" type="button" data-ses-start="week|${W.n}|">${ICON.play}Start dagens træning</button>`}${(() => { let last = null; return W.blocks.map(b => { let h = ''; if (b.session && b.session.id !== last) { last = b.session.id; const dd = sessionDay(b.session.id); h = `<div class="sess-head"><h3 class="sess-h">${esc(b.session.title)}</h3>${b.session.light ? '<span class="tag warn-tag">Let dag</span>' : ''}${dd != null ? `<small>${DAY_SHORT[dd]}</small>` : ''}<button class="btn btn-sm btn-lime" type="button" data-ses-start="week|${W.n}|${b.session.id}">Start pas</button></div>`; } return h + blockHTML(b, W.n); }).join(''); })()}
+    <div class="blocks">${W.plan ? '' : `<button class="btn btn-block btn-lime" type="button" data-ses-start="week|${W.n}|">${ICON.play}Start dagens træning</button>`}${(() => { let last = null; return W.blocks.map(b => { let h = ''; if (b.session && b.session.id !== last) { last = b.session.id; const dd = sessionDay(b.session.id); const [pl, pt] = b.session.title.split(' · ');
+            h = `<div class="sess-head"><div class="sess-t"><small>${esc(pl)}${dd != null ? ` · ${DAY_SHORT[dd]}` : ''}${b.session.light ? ' · <span class="warn-txt">let dag</span>' : ''}</small><h3 class="sess-h">${esc(pt || pl)}</h3></div><button class="btn btn-sm btn-lime" type="button" data-ses-start="week|${W.n}|${b.session.id}">Start pas</button></div>`; } return h + blockHTML(b, W.n); }).join(''); })()}
       <button class="btn btn-block wk-done-btn ${wd ? '' : 'btn-lime'}" type="button" data-weekdone="${W.n}" aria-pressed="${wd}">${ICON.check}${wd ? `Uge ${W.n} er gennemført` : `Markér uge ${W.n} som gennemført`}</button>
     </div></div>`;
 }
@@ -2147,6 +2172,8 @@ function renderLibList() {
     : '<p class="empty">Ingen øvelser matcher dine filtre. <button class="link-btn" type="button" id="libReset">Nulstil filtre</button></p>';
   $('libMore').hidden = list.length <= libShown;
   $('libMore').textContent = `Vis flere (${list.length - libShown} mere)`;
+  const act = [ST.settings.libSeason, ST.settings.libEquip, ST.settings.libCat].filter(v => v !== 'Alle').length; // filtre gemt i den sammenfoldede boks
+  $('libMoreSum').textContent = 'Sæson, udstyr og forklaringer' + (act ? ` · ${act} aktiv${act > 1 ? 'e' : ''}` : '');
 }
 function renderLibrary(force) {
   if (deferred('ovelser', force)) return;
@@ -2195,15 +2222,16 @@ function openSheet(ctx) {
   const e = EX[exId], name = (item && item.name) || e.name;
   const tag = re => block && block.tags ? (block.tags.find(t => re.test(t)) || '') : '';
   const roundsTag = tag(/runder|sæt/), pauseTag = tag(/^Pause/).replace('Pause ', '');
-  const tiles = [['Reps/tid', item ? item.dose.replace(/^× /, '') : e.dose]];
-  if (roundsTag) tiles.push(['Runder', roundsTag.replace(/ ?(runder|sæt)/, '') + (/sæt/.test(roundsTag) ? ' sæt' : '')]);
+  const doseTxt = item ? item.dose.replace(/^× /, '') : e.dose, hasSets = /^\d+\s*×/.test(doseTxt);
+  const tiles = [[hasSets ? 'Sæt × gentagelser' : 'Reps/tid', doseTxt]];
+  if (roundsTag && !hasSets) tiles.push(['Runder', roundsTag.replace(/ ?(runder|sæt)/, '') + (/sæt/.test(roundsTag) ? ' sæt' : '')]); // "4 × 10" siger allerede antal sæt
   tiles.push(['Pause', block && block.restTimer ? block.restTimer + ' sek' : (pauseTag || e.rest)]);
   const secs = item ? item.secs : e.secs, perSide = item ? item.perSide : e.perSide;
   let timerBtn = '';
   const segs = (item && item.segs) || e.segs;
   if (segs) timerBtn = `<button class="btn btn-lime" type="button" data-sheet-timer="segs">${ICON.play}Start ${exId === 'reaction' ? 'reaktion' : 'timer'}</button>`;
   else if (secs) timerBtn = `<button class="btn btn-lime" type="button" data-sheet-timer="item">${ICON.play}Start ${perSide ? fmt(secs) + '/side' : fmt(secs)}</button>`;
-  else if (block && block.restTimer) timerBtn = `<button class="btn btn-lime" type="button" data-sheet-timer="rest">${ICON.timer}Pause ${block.restTimer} sek</button>`;
+  else if (block && block.restTimer) timerBtn = `<button class="btn" type="button" data-sheet-timer="rest">${ICON.timer}Pause ${block.restTimer} sek</button>`; // registrering er hovedhandlingen, ikke pausen
   else if (block && block.timer) timerBtn = `<button class="btn btn-lime" type="button" data-sheet-timer="block">${ICON.play}Guidet timer</button>`;
   const canDone = p[0] !== 'lib', done = canDone && isDone(ctx);
   const doneBtn = canDone ? `<button class="btn" type="button" data-sheet-done aria-pressed="${done}">${ICON.check}${done ? 'Færdig' : 'Markér færdig'}</button>` : `<button class="btn" type="button" data-sheet-close>Luk</button>`;
@@ -2212,8 +2240,9 @@ function openSheet(ctx) {
     <div class="sheet-top"><div><p class="today-small">${where}</p><h3 id="sheetTitle">${name}</h3></div><div class="sheet-btns">${favBtn(exId)}<button class="sheet-close" type="button" data-sheet-close aria-label="Luk">${ICON.close}</button></div></div>
     <div class="m-illu" data-illu="${exId}">${illustration(exId)}</div>
     ${canAnimate(exId) ? `<button class="link-btn anim-btn" type="button" data-anim="${exId}">${ICON.play}Se bevægelsen</button>` : ''}
-    <div class="m-dose">${tiles.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>
+    <div class="m-dose${tiles.length === 2 ? ' two' : ''}">${tiles.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>
     ${item && item.prog ? `<p class="prog-line">${esc(item.prog)}</p>` : ''}
+    ${e.log ? logSectionHTML(exId, item) : ''}
     ${goodTagsHTML(e)}
     ${seasonRowHTML(e)}
     <p class="ex-goal">${e.goal}</p>
@@ -2221,7 +2250,6 @@ function openSheet(ctx) {
     <ul class="ex-tips">${e.tips.map(t => `<li>${ICON.tip}<span>${t}</span></li>`).join('')}</ul>
     ${origItem ? `<button class="btn btn-ghost btn-block" type="button" data-swap-open>${ICON.repeat}${item.swapped ? 'Skift igen eller gendan original' : 'Skift øvelse'}</button>` : ''}
     <button class="btn btn-ghost btn-block" type="button" data-addto="${exId}">${ICON.plus}Føj til eget program</button>
-    ${e.log ? logSectionHTML(exId, item) : ''}
     <div class="m-actions">${timerBtn || ''}${doneBtn}</div></div>`;
   if (!timerBtn) d.querySelector('.m-actions').style.gridTemplateColumns = '1fr';
   d._ctx = { exId, item, block, name, secs, perSide, src, segs, base, origEx: origItem && origItem.ex };
@@ -2361,10 +2389,12 @@ function tRender() {
   setText($('tRound'), `RUNDE ${s.round || 1} / ${s.rounds || 1}`);
   setText($('tPhase'), ph === 'react' ? (TM.cue ? CUES[TM.cue] : 'KLAR…') : ph === 'idle' && TM.segs[0] && TM.segs[0].type !== 'prep' ? PHASE_TXT[TM.segs[0].type] : PHASE_TXT[ph]);
   setText($('tTime'), TM.done ? '0:00' : s.type === 'reps' ? fmt(TM.el) : fmt(Math.ceil(TM.left)));
-  setText($('tLabel'), TM.done ? 'Godt arbejde' : (s.type === 'reps' ? s.label + ' · tryk når du er færdig' : (s.type === 'push' ? 'Hårdere · ' : '') + s.label));
+  const first = s.type === 'prep' && TM.segs[TM.i + 1]; // "KLAR" står allerede stort: vis i stedet, hvad der kommer
+  setText($('tLabel'), TM.done ? 'Godt arbejde' : first ? `Først: ${first.label}${first.secs ? ' · ' + fmt(first.secs) : ''}` : (s.type === 'reps' ? s.label + ' · tryk når du er færdig' : (s.type === 'push' ? 'Hårdere · ' : '') + s.label));
   $('tProg').style.width = (TM.done ? 100 : s.type === 'reps' ? 100 : s.secs ? (1 - TM.left / s.secs) * 100 : 0) + '%';
   const nx = TM.segs[TM.i + 1];
-  setText($('tNext'), TM.done ? '' : nx ? (nx.type === 'reps' ? `Næste: ${nx.label}` : `Næste: ${PHASE_TXT[nx.type]} ${fmt(nx.secs)} · ${nx.label}`) : 'Sidste del');
+  const nxTxt = nx && (nx.label || PHASE_TXT[nx.type].charAt(0) + PHASE_TXT[nx.type].slice(1).toLowerCase());
+  setText($('tNext'), TM.done ? '' : first ? '' : nx ? (nx.type === 'reps' ? `Næste: ${nxTxt}` : `Næste: ${nxTxt} · ${fmt(nx.secs)}`) : 'Sidste del');
   const rem = (s.type === 'reps' ? 0 : TM.left) + TM.tailSecs, reps = (s.type === 'reps' ? 1 : 0) + TM.tailReps;
   setText($('tTotal'), TM.done ? '' : `${fmt(rem)} tilbage${reps ? ' + reps' : ''}`);
   $('tStart').disabled = TM.running; $('tPause').disabled = !TM.running;
@@ -2785,6 +2815,7 @@ function showPage(p) {
   curPage = p;
   document.title = (p === 'idag' ? '8 ugers målmandsprogram' : el.dataset.title + ' · Målmand 8');
   $('topTitle').textContent = el.dataset.title;
+  $('app').dataset.page = p; // fx skjul uge-knappen på Program, hvor ugefanerne allerede står
   const navId = NAV_OF[p] || 'mere';
   document.querySelectorAll('.bottomnav a, .topnav a').forEach(a => {
     const on = a.closest('.topnav') ? a.dataset.nav === p : a.dataset.nav === navId;
@@ -3164,7 +3195,7 @@ function resolveAlts(arg, n) {
   return arg.map(x => Array.isArray(x) ? [pickAlt(x[0], n), x[1], pickAlt(x[2], n)] : x.includes(':') ? `${pickAlt(x.split(':')[0], n)}:${x.split(':')[1]}` : pickAlt(x, n));
 }
 function progBlock(spec, id, p, n, ad) {
-  let [type, arg] = Array.isArray(spec) ? spec : [spec];
+  let [type, arg, title] = Array.isArray(spec) ? spec : [spec];
   if (arg != null && type !== 'custom') arg = resolveAlts(arg, n);
   const sch = p.scheme, rnd = Math.max(2, P_ROUNDS[sch][n - 1] + (ad.rounds || 0)), few = Math.min(3, rnd);
   const safe = ids => ids.map(prefAlt).filter(painSafe); // risikable øvelser udelades ved smerte
@@ -3174,6 +3205,14 @@ function progBlock(spec, id, p, n, ad) {
     case 'str': {
       const items = arg.map(sp => { const [ex, role] = sp.split(':'), main = role === 'main'; return liftItem(main ? ex : prefAlt(ex), main, SCH[sch][n - 1], P_ACCR[sch], n, ad); });
       return { id, icon: 'dumbbell', title: 'Styrke', tags: [`${items[0].rx.sets} sæt`, `Pause ${p.rest} sek`], items, restTimer: p.rest };
+    }
+    /* Overkrop (pres, træk, skulder) og valgfri armøvelser. Ligger sidst i passet, så de ikke tager kræfter fra ben og spring. */
+    case 'upper': {
+      const arms = title === 'Arme', rest = arms ? 60 : Math.min(p.rest, 90), [s0, r0, pct] = SCH[sch][n - 1];
+      const row = [Math.min(3, s0), Math.max(5, r0), Math.min(80, pct)]; // ekstra blok: højst 3 sæt og ikke helt så tungt som benløftene
+      const items = arg.map(sp => { const [ex, role] = sp.split(':'), main = role === 'main'; return liftItem(main ? ex : prefAlt(ex), main, row, Math.max(10, P_ACCR[sch]), n, ad); });
+      return { id, icon: 'dumbbell', title: arms ? 'Arme · valgfri' : 'Overkrop', tags: [`${items[0].rx.sets} sæt`, `Pause ${rest} sek`], items, restTimer: rest,
+        ...(arms ? { callout: 'Kort afslutning for arme og greb. Spring den over, hvis tiden er knap.' } : {}) };
     }
     case 'speed': {
       const items = arg.map(([ex, sets, rep]) => ({ ex, dose: `${Math.max(2, sets + P_ADD[n - 1])} × ${rep}`, note: 'Fuld fart · rolig pause' }));
@@ -3215,6 +3254,8 @@ function mergeSessions(list) {
     const acc = [...new Set(str.filter(x => !x.endsWith(':main')).map(id))].filter(x => !main.includes(x)).slice(0, main.length >= 3 ? 1 : 2);
     out.push(['str', [...main.map(x => x + ':main'), ...acc.map(x => x + ':acc')]]);
   }
+  const up = [...new Set(of('upper').filter(s => !s[2]).flatMap(s => s[1]))].filter(x => !str.some(y => id(y) === id(x))).slice(0, 2); // armblokke droppes ved sammenlægning
+  if (up.length) out.push(['upper', up]);
   [['circ', 4], ['prev', 2], ['core', 2]].forEach(([t, cap]) => { const v = ids(t); if (v.length) out.push([t, v.slice(0, cap)]); });
   if (!out.some(sp => ['prev', 'core', 'circ'].includes(type(sp)))) { const v = ids('mob'); if (v.length) out.push(['mob', v.slice(0, 3)]); }
   const c = of('cond'); if (c.length) out.push(c[0]);
@@ -3588,6 +3629,7 @@ function progCardHTML(p) {
     <details class="pg-more"><summary>Se passene</summary>${progSample(p).map(s => `<p class="pg-ses"><b>${esc(s.t)}</b><span>${esc(s.ex.join(' · '))}</span></p>`).join('')}</details>
     <div class="pg-actions">${on ? `<button class="btn btn-lime" type="button" data-go="program">Åbn programmet</button>` : `<button class="btn btn-lime" type="button" data-pstart="${p.id}">Start programmet</button>`}${p.custom ? `<button class="btn btn-ghost" type="button" data-bedit="${p.id}">Ret</button>` : ''}</div></article>`;
 }
+let wpOpen = false;
 function weekPlanHTML() {
   const p = progActive(), m = ST.prog.match, asg = p ? progAssign(p) : {}, days = p ? progDays(p) : [], n = p ? progBase(p) : 0, ses = p ? progSessions(p) : {};
   const chip = (attr, v, on, label) => `<button class="chip" type="button" ${attr}="${v}" aria-pressed="${on}">${label}</button>`;
@@ -3599,15 +3641,18 @@ function weekPlanHTML() {
   const cell = i => { const L = Object.keys(asg).find(k => asg[k] === i), b = daysBefore(i);
     const t = L ? `Pas ${L}` : i === m ? 'Kamp' : seasonNow() === 'in' && b === 1 ? 'Akt' : ST.prog.ball.includes(i) ? 'Fod' : 'Hvile';
     return `<li class="${L ? 'fit' : i === m ? 'match' : ''}"><small>${DAY_SHORT[i]}</small><b>${t}</b></li>`; };
-  return `<div class="panel wp"><h3>Din uge</h3>
+  /* Foldet sammen til én linje: indstillingerne ændres sjældent, programlisten er det, man kommer for.
+     Antallet af træningsdage følger af de valgte dage (højst programmets maks). */
+  const dl = a => a.map(i => DAY_SHORT[i]).join(', ') || 'ingen';
+  const sum = `Kamp ${m < 0 ? 'ingen' : DAY_SHORT[m]} · Fodbold ${dl(ST.prog.ball)}${p ? ` · Træning ${dl(days)}` : ''}`;
+  return `<details class="panel wp"${wpOpen ? ' open' : ''}><summary><span class="wp-sum"><b>Din uge</b><small>${sum}</small></span><span class="wp-edit">${wpOpen ? 'Luk' : 'Ret'}</span></summary>
     <p class="t-sub">Kampdag</p><div class="chips wrap">${chip('data-pmatch', -1, m < 0, 'Ingen kamp')}${DAY_SHORT.map((d, i) => chip('data-pmatch', i, m === i, d)).join('')}</div>
     <p class="t-sub">Fodboldtræning</p>${row('data-pball', i => ST.prog.ball.includes(i))}
-    ${p ? `<p class="t-sub">Træningsdage om ugen</p><div class="chips" role="group" aria-label="Antal træningsdage">${Array.from({ length: progMaxDays(p) }, (_, i) => i + 1).map(k => chip('data-pcount', k, days.length === k, k === n ? `${k} · normalt` : String(k))).join('')}</div>
-      <p class="t-sub">Hvilke dage</p>${row('data-pday', i => days.includes(i))}
+    ${p ? `<p class="t-sub">Træningsdage <span class="muted">· normalt ${n}, højst ${progMaxDays(p)}</span></p>${row('data-pday', i => days.includes(i))}
       <ol class="wp-days" aria-label="Din uge">${DAY_SHORT.map((_, i) => cell(i)).join('')}</ol>
       <p class="muted">${seasonNow() === 'in' ? 'Det tunge pas lægges længst fra kampen og det hurtige tættere på. Dagen før kamp er let aktivering.' : 'Ingen kampe: passene fordeles jævnt over ugen.'}</p>
-      ${adapt}
-      ${progWarnings(p).map(w => `<p class="notice warn">${esc(w)}</p>`).join('')}` : `<p class="muted" style="margin-top:12px">${planOn() ? 'Dit tilpassede program har sine træningsdage under Min form.' : 'Målmand 8 har en fast uge: fitness onsdag, aktivering fredag og kamp lørdag. Din kampdag bruges, når du vælger et af de andre programmer.'}</p>`}</div>`;
+      ${adapt}` : `<p class="muted" style="margin-top:12px">${planOn() ? 'Dit tilpassede program har sine træningsdage under Min form.' : 'Målmand 8 har en fast uge: fitness onsdag, aktivering fredag og kamp lørdag. Din kampdag bruges, når du vælger et af de andre programmer.'}</p>`}</details>
+    ${p ? progWarnings(p).map(w => `<p class="notice warn">${esc(w)}</p>`).join('') : ''}`;
 }
 function renderProgrammer() {
   const el = $('progBody'); if (!el) return;
@@ -3622,6 +3667,8 @@ function renderProgrammer() {
     <div class="chips" role="group" aria-label="Fokus">${['Alle', ...FOCI].map(x => `<button class="chip" type="button" data-pfocus="${x}" aria-pressed="${x === f}">${x}</button>`).join('')}</div>
     <p class="lib-count">${list.length} af ${all.length} programmer · alle er 8 uger</p>
     <div class="prog-list">${list.map(progCardHTML).join('') || '<p class="empty">Ingen programmer matcher. <button class="link-btn" type="button" data-pseason="Alle" data-pfocus="Alle">Nulstil filtre</button></p>'}</div>`;
+  const wp = el.querySelector('details.wp');
+  if (wp) wp.addEventListener('toggle', () => { wpOpen = wp.open; const t = wp.querySelector('.wp-edit'); if (t) t.textContent = wpOpen ? 'Luk' : 'Ret'; });
 }
 function mondayISO() { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return localISO(d); }
 function startProgram(id) {
@@ -3821,12 +3868,13 @@ function renderToday() {
   const day = dayOf(idx);
   const phaseName = W.title.split('·')[1].trim().toLowerCase().replace(/^./, ch => ch.toUpperCase());
   const st = weekStats(n);
-  let cls = '', big = '', text = '', btn = '', act = '', icon = day.icon, extra = '';
+  let cls = '', big = '', text = '', btn = '', act = '', icon = day.icon, extra = '', small = `I dag er det ${day.full}`;
   if (planOn()) {
     const ses = todaySession();
     if (ses) {
-      cls = 'is-fit'; icon = 'dumbbell'; big = `Pas ${ses.L}`;
-      text = `${ses.title}. ${ses.done} af ${ses.total} øvelser klaret.`;
+      cls = 'is-fit'; icon = 'dumbbell'; big = ses.title.replace(/^Pas \w+ · /, '');
+      small = `Pas ${ses.L} · ${day.full}`;
+      text = `Uge ${n}. ${ses.done} af ${ses.total} øvelser klaret.`;
       btn = ses.total && ses.done >= ses.total ? 'Se pasen igen' : ses.done ? 'Fortsæt pas' : 'Start pas';
       act = `data-ses-start="week|${n}|${ses.L}"`;
       extra = `<button class="btn btn-ghost" type="button" data-go="program">Se uge ${n}</button>`;
@@ -3855,8 +3903,8 @@ function renderToday() {
   renderStartCard(); renderMatchCard(); renderDoneCard(); renderSeasonCard(); renderCheckCard();
   $('todayCard').className = `today-card ${cls}`;
   $('todayCard').innerHTML = `<span class="today-ic" aria-hidden="true">${ICON[icon]}</span>
-    <p class="today-small">I dag er det ${day.full}</p>
-    <h2 class="today-big">${big}</h2>
+    <p class="today-small">${small}</p>
+    <h2 class="today-big${big.length > 12 ? ' is-long' : ''}">${big}</h2>
     <p class="today-text">${text}</p>
     <div class="today-actions"><button class="btn ${cls ? '' : 'btn-lime'}" type="button" ${act}>${ICON.play}${btn}</button>${extra}</div>`;
 }
@@ -4231,13 +4279,16 @@ function coachOverviewHTML() {
   const c = ST.coach, rec = lastTest(), f = rec ? formOf(rec) : null, prev = c.tests.length > 1 ? formOf(c.tests[c.tests.length - 2]) : null;
   const done = { profil: !!(c.height && curWeight() && c.birth), mal: !!c.goal, test: !!rec };
   let h = '';
-  if (!(done.profil && done.mal && done.test)) {
-    const steps = [['mal', 'Profil og mål', done.profil && done.mal], ['vaegt', 'Vægt', !!curWeight()], ['test', 'Test', done.test]];
-    h += `<div class="cs-bar" role="list" aria-label="Kom i gang">${steps.map(([tab, t, ok], i) => `<button type="button" role="listitem" class="${ok ? 'ok' : ''}" data-ctab="${tab}"><span class="st-dot">${ok ? ICON.check : i + 1}</span>${t}</button>`).join('')}</div>`;
-  }
   h += statusCardHTML();
   const delta = f && prev && f.overall != null && prev.overall != null ? f.overall - prev.overall : null;
-  h += `<div class="panel form-card"><div class="fc-top"><div class="fc-gauge">${gaugeSVG(f ? f.overall : null)}</div>
+  /* Uden test: ét kort med én handling i stedet for fire tomme skalaer */
+  if (!rec) {
+    const miss = [!(done.profil && done.mal) && ['profil', 'profil og mål'], !curWeight() && ['vaegt', 'vægt']].filter(Boolean);
+    h += `<div class="panel form-empty"><span class="fe-ic" aria-hidden="true">${ICON.gauge}</span><h3>Find dit niveau</h3>
+      <p class="muted">Tag testen, så viser appen dit niveau i ${COACH_CATS.map(x => x.toLowerCase()).join(', ').replace(/, ([^,]*)$/, ' og $1')} og regner dine vægte ud.</p>
+      <button class="btn btn-lime btn-block" type="button" data-ctab="test">Tag testen</button>
+      ${miss.length ? `<p class="fe-miss">Mangler også: ${miss.map(([tab, t]) => `<button class="link-btn" type="button" data-ctab="${tab}">${t}</button>`).join(' · ')}</p>` : ''}</div>`;
+  } else h += `<div class="panel form-card"><div class="fc-top"><div class="fc-gauge">${gaugeSVG(f ? f.overall : null)}</div>
     <div class="g-read">${f && f.overall != null ? `<b style="color:${lvlCol(f.overall)}">${f.overall}</b><span>${levelOf(f.overall)}</span>${delta ? `<em class="${delta > 0 ? 'up' : 'down'}">${delta > 0 ? '▲ +' : '▼ −'}${Math.abs(delta)}</em>` : ''}<small>${rec ? 'Test ' + esc(daDate(rec.date)) : ''}</small>${GOALS[c.goal] ? `<small>Vægtet: ${GOALS[c.goal].short}</small>` : ''}` : '<span class="g-none">Tag testen for at se dit niveau</span>'}</div></div>
     <div class="cats">${COACH_CATS.map(cat => { const s = f ? f.cats[cat] : null; return `<div class="cat"><div class="cat-top"><b>${cat}</b>${s != null ? `<span style="color:${lvlCol(s)}">${s} · ${levelOf(s)}</span>` : '<span class="muted">Ikke testet</span>'}</div>${scaleBar(s, true)}</div>`; }).join('')}</div>
     ${f ? weakHTML(f) : ''}
@@ -4458,7 +4509,7 @@ function statusCardHTML() {
   return `<div class="panel st-card ${s.level}"><div class="st-top"><b class="st-h">Din status</b>${stPill(s.level, true)}</div>
       <ul class="flags">${s.flags.map(f => `<li class="${f.k}">${esc(f.t)}</li>`).join('') || '<li class="info">Ingen markeringer.</li>'}</ul>
       <p class="st-react"><b>Reaktion:</b> ${esc(s.reaction)}</p>
-      <p class="muted" style="margin-top:6px">Siden ${esc(daDate(s.since))}.${planOn() ? '' : ' Vælg et program, så ændrer programmet sig automatisk, når statussen skifter.'}</p></div>`;
+      <p class="muted" style="margin-top:6px">Siden ${esc(daDate(s.since).replace(/\.$/, ''))}.${planOn() ? '' : ' Vælg et program, så ændrer programmet sig automatisk, når statussen skifter.'}</p></div>`;
 }
 function statusMoreHTML() {
   const c = ST.coach, m = statusMetrics(), pc = v => v == null ? '–' : Math.round(v * 100) + ' %';
@@ -4585,11 +4636,11 @@ function renderSeasonCard() {
   const s = seasonSuggestion(), key = localISO(new Date()).slice(0, 7);
   if (!s || ST.prog.seasonSeen === key || progEnded()) { el.innerHTML = ''; return; }
   const cur = progActive() ? progActive().name : ST.coach.active ? 'Dit tilpassede program' : 'Målmand 8';
-  el.innerHTML = `<div class="panel season-card"><p class="eyebrow">${MONTH[new Date().getMonth()]} · ${SEASON_NAME[s.want].toLowerCase()}</p>
-    <h3>Tid til ${SEASON_NAME[s.want].toLowerCase()}?</h3>
-    <p class="muted">${esc(cur)} er lavet til ${SEASON_NAME[s.cur].toLowerCase()}. Det er ${MONTH[new Date().getMonth()]}, hvor de fleste er i ${SEASON_NAME[s.want].toLowerCase()}. Forslag: ${esc(s.prog.name)}.</p>
-    <div class="done-actions"><button class="btn btn-lime" type="button" data-pstart="${s.prog.id}">Start ${esc(s.prog.name)}</button><button class="btn btn-ghost" type="button" data-go="programmer">Se alle programmer</button></div>
-    <button class="link-btn" type="button" data-season-hide>Ikke nu</button></div>`;
+  // Et diskret forslag under dagens kort: dagens træning er altid det første, du ser
+  el.innerHTML = `<div class="panel season-card"><span class="sc-ic" aria-hidden="true">${ICON.calendar}</span>
+    <div class="sc-txt"><b>${MONTH[new Date().getMonth()].replace(/^./, c => c.toUpperCase())}: tid til ${SEASON_NAME[s.want].toLowerCase()}?</b>
+    <span>${esc(cur)} er lavet til ${SEASON_NAME[s.cur].toLowerCase()}. Forslag: ${esc(s.prog.name)}.</span>
+    <div class="sc-act"><button class="btn btn-sm" type="button" data-pstart="${s.prog.id}">Skift program</button><button class="link-btn" type="button" data-go="programmer">Se alle</button><button class="link-btn" type="button" data-season-hide>Ikke nu</button></div></div></div>`;
 }
 
 /* ===== Belastning: RPE × minutter =====
