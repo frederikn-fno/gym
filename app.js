@@ -1529,6 +1529,7 @@ const ICON = {
   glove: SV('<path d="M7 21v-4.3L4.6 13.2a1.9 1.9 0 0 1 3-2.4L9 12.3V5.2a1.5 1.5 0 0 1 3 0V11V3.9a1.5 1.5 0 0 1 3 0V11V5.4a1.5 1.5 0 0 1 3 0v8.1c0 4.4-2.5 7.5-6.6 7.5z"/><path d="M7.2 18.3h8"/>'),
   moon: SV('<path d="M20 14.6A8.2 8.2 0 0 1 9.4 4 8.2 8.2 0 1 0 20 14.6z"/>'),
   calendar: SV('<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'),
+  watch: SV('<rect x="6.5" y="6.5" width="11" height="11" rx="3"/><path d="M9 6.5 10 3h4l1 3.5M9 17.5 10 21h4l1-3.5M12 9.5V12l1.5 1.5"/>'),
   timer: SV('<circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 2M9.5 2.5h5"/>'),
   chart: SV('<path d="M3.5 20.5h17M6.5 17v-5M11 17V7.5M15.5 17v-7M20 17V4.5"/>'),
   grid: SV('<rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>'),
@@ -1889,7 +1890,7 @@ function mergeState(d) {
   out.prog = { id: known(pg.id) ? pg.id : '', match: Math.round(clampNum(pg.match, -1, 6, 5)), days: dayList(pg.days) || [], ball: dayList(pg.ball) || [0, 1, 3], doneSeen: str(pg.doneSeen, 12), seasonSeen: str(pg.seasonSeen, 12) };
   const lvl = v => Math.round(clampNum(v, 1, 5, 3));
   out.checkins = (Array.isArray(d.checkins) ? d.checkins : []).filter(c => isObj(c) && isISO(c.date)).slice(-120).map(c => ({ date: c.date, sleep: lvl(c.sleep), sore: lvl(c.sore), energy: lvl(c.energy) }));
-  out.loads = (Array.isArray(d.loads) ? d.loads : []).filter(l => isObj(l) && isISO(l.date)).slice(-400).map((l, i) => ({ id: Math.round(clampNum(l.id, 0, 9e15, Date.now() + i)), date: l.date, min: Math.round(clampNum(l.min, 1, 300, 60)), rpe: Math.round(clampNum(l.rpe, 1, 10, 6)), src: ['pas', 'fod', 'andet'].includes(l.src) ? l.src : 'pas' }));
+  out.loads = (Array.isArray(d.loads) ? d.loads : []).filter(l => isObj(l) && isISO(l.date)).slice(-400).map((l, i) => ({ id: Math.round(clampNum(l.id, 0, 9e15, Date.now() + i)), date: l.date, min: Math.round(clampNum(l.min, 1, 300, 60)), rpe: Math.round(clampNum(l.rpe, 1, 10, 6)), src: ['pas', 'fod', 'andet'].includes(l.src) ? l.src : 'pas', ...(l.gid ? { gid: String(l.gid).slice(0, 24) } : {}) })); // gid = aktivitet fra Garmin-uret
   if (out.prog.id) out.coach.active = false; // kun ét aktivt program ad gangen
   out.run = {}; if (isObj(d.run)) Object.keys(d.run).slice(0, 200).forEach(k => { if (/^(week|home|fri)\|[\w|-]+$/.test(k)) out.run[k] = Math.round(clampNum(d.run[k], 0, 20, 0)); });
   out.runDate = isISO(d.runDate) ? d.runDate : '';
@@ -2819,6 +2820,7 @@ document.addEventListener('click', e => {
   if (ds.fav) { toggleFav(ds.fav); return; }
   if (ds.addto || ds.addback || ds.addnew || ds.addpick) { addToAction(ds); return; }
   if (ds.anim) { toggleAnim(ds.anim); return; }
+  if (ds.gm) { gmAction(ds.gm); return; }
   if (Object.keys(ds).some(k => /^b(ses|add|delses|pickOpen|pgood|pbody|pmore|pick|step|move|delitem|cancel|save|edit|del)$/.test(k))) { builderAction(ds); return; }
   if (ds.load) { loadAction(ds); return; }
   if (ds.themeSet) { setTheme(ds.themeSet); return; }
@@ -2955,6 +2957,7 @@ let lastDayKey = localISO(new Date());
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
   if (TM.running) { keepAwake(true); unlockAudio(); tTick(); } else if (SES) keepAwake(true);
+  gmFetch(); // nye Garmin-data, hvis det er mere end en halv time siden
   // En installeret app kan stå åben i dagevis: opdatér dato-afhængige visninger
   const k = localISO(new Date());
   if (k !== lastDayKey) {
@@ -3934,16 +3937,18 @@ function renderCheckCard() {
       ${c.sore >= 4 ? `<button class="coach-row pain-row" type="button" data-ctab="over" data-go="coach" data-fold-open="pain"><span class="cm-ic">${ICON.shield}</span><span class="cr-t"><b>Øm et bestemt sted?</b><small>Notér det, så skåner programmet området.</small></span><span class="lr-go">${ICON.chev}</span></button>` : ''}`;
     return;
   }
-  const d = chkDraft || (c ? { ...c } : {});
+  const g = c ? null : gmCheckSuggest();
+  const d = chkDraft || (c ? { ...c } : g ? { ...g.vals, fromG: true } : {});
   chkDraft = d;
   el.innerHTML = `<div class="panel checkin"><div class="check-head"><h3>Hvordan har du det i dag?</h3><small>1 = dårligt · 5 = godt</small></div>
+    ${d.fromG && g ? `<p class="chk-gm">${ICON.check}Foreslået ud fra dit ur: ${esc(g.txt)}. Tjek, og tilføj Krop.</p>` : ''}
     ${CHK_Q.map(q => `<div class="chk-row"><p class="chk-q">${q.t}<small>${q.lo} – ${q.hi}</small></p><div class="chk-scale" role="group" aria-label="${q.t}: 1 ${q.lo.toLowerCase()}, 5 ${q.hi.toLowerCase()}">${[1, 2, 3, 4, 5].map(v => `<button class="chk-btn" type="button" data-chk="${q.k}|${v}" aria-pressed="${chkShown(q, d) === v}">${v}</button>`).join('')}</div></div>`).join('')}
     <button class="btn btn-block" type="button" data-chk-save>Gem dagens tjek</button><p class="chk-why">Tilpasser dagens pas, hvis du er træt eller øm.</p></div>`;
 }
 function checkAction(ds) {
   if ('chkEdit' in ds) { chkEdit = true; chkDraft = { ...todayCheck() }; renderCheckCard(); return; }
   if (ds.chk) {
-    const [k, v] = ds.chk.split('|'), q = CHK_Q.find(x => x.k === k); chkDraft = chkDraft || {}; chkDraft[k] = q && q.inv ? 6 - +v : +v;
+    const [k, v] = ds.chk.split('|'), q = CHK_Q.find(x => x.k === k); chkDraft = chkDraft || {}; chkDraft[k] = q && q.inv ? 6 - +v : +v; chkDraft.fromG = false;
     document.querySelectorAll(`[data-chk^="${k}|"]`).forEach(b => b.setAttribute('aria-pressed', b.dataset.chk === ds.chk));
     return;
   }
@@ -4104,7 +4109,7 @@ function renderToday() {
     if (!act) act = `data-go="${target}"`;
     if (day.kind === 'ball') extra = '<button class="btn btn-ghost" type="button" data-go="program">Se uge ' + n + '</button>';
   }
-  renderStartCard(); renderMatchCard(); renderDoneCard(); renderSeasonCard(); renderCheckCard();
+  renderStartCard(); renderMatchCard(); renderDoneCard(); renderSeasonCard(); renderCheckCard(); renderGarminCard();
   $('todayCard').className = `today-card ${cls}`;
   $('todayCard').innerHTML = `<span class="today-ic" aria-hidden="true">${ICON[icon]}</span>
     <p class="today-small">${small}</p>
@@ -4498,6 +4503,7 @@ function coachOverviewHTML() {
     ${f ? weakHTML(f) : ''}
     <div class="fc-actions"><button class="btn ${rec ? '' : 'btn-lime'}" type="button" data-ctab="test">${rec ? 'Tag testen igen' : 'Tag testen'}</button><button class="btn btn-ghost" type="button" data-go="fremgang">Fremgang</button></div></div>`;
   h += loadPanelHTML();
+  h += gmTrendHTML();
   h += planCardHTML();
   if (planOn()) h += statusHTML();
   h += statusMoreHTML();
@@ -5098,6 +5104,136 @@ document.addEventListener('input', e => {
   else if (e.target.id === 'bpQ') { bpQ = e.target.value; bpShown = 30; renderPickList(); }
 });
 
+/* ===== Garmin-ur =====
+   GitHub Action'en .github/workflows/garmin.yml henter søvn, Body Battery, hvilepuls, stress, skridt og aktiviteter
+   fra Garmin Connect to gange i døgnet og gemmer dem krypteret i garmin/data.json i repoet (scripts/garmin_sync.py).
+   Appen henter filen direkte fra GitHub og låser den op med din adgangskode (PBKDF2 + AES-GCM).
+   Adgangskode og data gemmes kun på denne enhed under sin egen nøgle og kommer ikke med i backup-filen. */
+const GKEY = 'gk8-garmin-v1';
+let GM = { pass: '', repo: '', data: null, fetched: 0, err: '' };
+function gmLoad() { try { const v = JSON.parse(localStorage.getItem(GKEY) || 'null'); if (isObj(v)) GM = { ...GM, ...v }; } catch (e) { } }
+function gmSave() { try { localStorage.setItem(GKEY, JSON.stringify(GM)); } catch (e) { } }
+/* Repoet udledes af adressen (bruger.github.io/repo), men kan rettes i Mere › Garmin-ur */
+function gmRepo() {
+  if (GM.repo) return GM.repo;
+  const h = location.hostname.match(/^([\w-]+)\.github\.io$/i), seg = location.pathname.split('/').filter(Boolean)[0];
+  return h ? `${h[1]}/${seg && !/\.html?$/.test(seg) ? seg : h[1] + '.github.io'}` : '';
+}
+const gmURL = () => `https://raw.githubusercontent.com/${gmRepo()}/main/garmin/data.json`;
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function gmDecrypt(env, pass) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: unb64(env.salt), iterations: env.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(env.iv) }, key, unb64(env.ct))));
+}
+async function gmFetch(force) {
+  if (!GM.pass || !gmRepo() || !window.crypto || !crypto.subtle) return false;
+  if (!force && Date.now() - GM.fetched < 30 * 60e3) return false; // højst hver halve time
+  try {
+    const r = await fetch(`${gmURL()}?t=${Date.now()}`, { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status === 404 ? 'Ingen Garmin-data endnu. Er GitHub Action\'en "Garmin" kørt?' : `Kunne ikke hente data (${r.status})`);
+    const env = await r.json();
+    let data; try { data = await gmDecrypt(env, GM.pass); } catch (e) { throw new Error('Forkert adgangskode til Garmin-data'); }
+    GM = { ...GM, data, fetched: Date.now(), err: '' }; gmSave(); gmApply();
+    return true;
+  } catch (e) {
+    GM.err = e.message || 'Fejl ved hentning'; GM.fetched = Date.now(); gmSave(); renderGarminCard(); renderGarminPanel();
+    return false;
+  }
+}
+const gmDays = () => (GM.data && Array.isArray(GM.data.days) ? GM.data.days : []).filter(d => isObj(d) && isISO(d.date));
+const gmDay = iso => gmDays().find(d => d.date === iso) || null;
+const gmNum = v => typeof v === 'number' && v > 0 ? v : null; // Garmin bruger -1/0 for "ingen måling"
+/* Hvilepuls: gennemsnit af de sidste 3 dage mod medianen af dagene før. +5 slag eller mere er et tegn på træthed eller sygdom. */
+function gmRhr() {
+  const v = gmDays().map(d => ({ date: d.date, r: gmNum(d.rhr) })).filter(d => d.r);
+  if (v.length < 6) return null;
+  const recent = v.slice(-3), base = v.slice(0, -3).map(d => d.r).sort((a, b) => a - b);
+  const med = base[Math.floor(base.length / 2)], now = recent.reduce((s, d) => s + d.r, 0) / recent.length;
+  return { now: Math.round(now), base: med, diff: Math.round(now - med), high: now - med >= 5 };
+}
+/* Forslag til dagens tjek: søvn ud fra søvnscoren, energi ud fra Body Battery om morgenen */
+const scoreTo5 = (v, cuts) => v == null ? null : 1 + cuts.filter(c => v >= c).length;
+function gmCheckSuggest() {
+  const d = gmDay(todayISO()); if (!d) return null;
+  const ss = gmNum(d.sleepScore), bb = gmNum(d.bbWake) || gmNum(d.bbHigh);
+  const vals = {}; if (ss) vals.sleep = scoreTo5(ss, [50, 60, 75, 85]); if (bb) vals.energy = scoreTo5(bb, [25, 45, 65, 80]);
+  if (!Object.keys(vals).length) return null;
+  return { vals, txt: [ss && `søvnscore ${ss}`, bb && `Body Battery ${bb}`].filter(Boolean).join(' · ') };
+}
+/* Aktiviteter fra uret bliver til belastning (min × RPE). RPE skønnes ud fra gennemsnitspulsen i % af maks. */
+function gmHrMax() {
+  const age = typeof ageNow === 'function' ? ageNow() : null, est = age ? Math.round(208 - .7 * age) : 195;
+  const seen = Math.max(0, ...((GM.data && GM.data.acts) || []).map(a => gmNum(a.maxHr) || 0));
+  return Math.max(est, seen);
+}
+const gmRpe = (avg, max) => avg ? Math.max(1, Math.min(10, Math.round((avg / max - .5) * 20))) : 5;
+const GM_SKIP = /walk|sleep|breath|meditation|yoga/;
+function gmApply() {
+  const acts = (GM.data && Array.isArray(GM.data.acts) ? GM.data.acts : []).filter(a => isObj(a) && isISO(a.date) && a.id);
+  const max = gmHrMax(), have = new Set(ST.loads.filter(l => l.gid).map(l => l.gid));
+  let added = 0;
+  acts.forEach(a => {
+    const gid = String(a.id), min = Math.round(a.min || 0), type = String(a.type || '');
+    if (have.has(gid) || min < 10 || GM_SKIP.test(type)) return;
+    const src = /soccer|football/.test(type) || /fodbold|soccer|football|kamp/i.test(a.name || '') ? 'fod' : 'andet';
+    if (src === 'fod' && ST.matches.some(m => m.date === a.date)) return; // kampen er allerede registreret
+    if (ST.loads.some(l => !l.gid && l.date === a.date && (l.src === src || l.src === 'pas') && Math.abs(l.min - min) <= 20)) return; // allerede tastet ind
+    ST.loads.push({ id: Date.now() * 1000 + (logSeq++ % 1000), date: a.date, min: Math.min(300, min), rpe: gmRpe(gmNum(a.avgHr), max), src, gid });
+    added++;
+  });
+  if (added) { ST.loads = ST.loads.slice(-400); save(); updateStatus(); if (planOn()) rebuildWeeks(); }
+  if (!todayCheck() && (!chkDraft || chkDraft.fromG || !Object.keys(chkDraft).length)) chkDraft = null; // nyt forslag, hvis du ikke selv har trykket
+  renderToday(); renderGarminPanel(); if (curPage === 'coach') renderCoach();
+  return added;
+}
+const fmtHM = m => m ? `${Math.floor(m / 60)} t ${String(m % 60).padStart(2, '0')}` : '–';
+function renderGarminCard() {
+  const el = $('garminCard'); if (!el) return;
+  if (!GM.pass) { el.innerHTML = ''; return; }
+  const d = gmDay(todayISO()), y = gmDay(localISO(new Date(Date.now() - 864e5))), rh = gmRhr();
+  if (!d && !GM.err) { el.innerHTML = ''; return; }
+  const cell = (k, v, sub) => `<div><small>${k}</small><b>${v}</b>${sub ? `<em>${sub}</em>` : ''}</div>`;
+  const upd = GM.data && GM.data.updated ? new Date(GM.data.updated) : null;
+  el.innerHTML = `<div class="panel gm-card"><div class="gm-head"><h3>${ICON.watch || ICON.pulse}Fra dit ur</h3><small>${upd ? 'Opdateret ' + upd.toLocaleString('da-DK', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</small></div>
+    ${d ? `<div class="gm-stats">${cell('Søvn', gmNum(d.sleepScore) || '–', fmtHM(gmNum(d.sleepMin)))}${cell('Body Battery', gmNum(d.bbWake) || gmNum(d.bbHigh) || '–', gmNum(d.bbWake) ? 'ved opvågning' : 'dagens højeste')}${cell('Hvilepuls', gmNum(d.rhr) || '–', rh ? `${rh.diff > 0 ? '+' : ''}${rh.diff} mod normalt` : '')}${cell('Skridt', gmNum(d.steps) ? d.steps.toLocaleString('da-DK') : '–', y && gmNum(y.steps) ? `i går ${y.steps.toLocaleString('da-DK')}` : '')}</div>` : ''}
+    ${rh && rh.high ? `<p class="notice warn">Hvilepulsen er ${rh.diff} slag over dit normale de sidste dage. Det kan være træthed eller begyndende sygdom: tag dagens pas let, eller hold fri.</p>` : ''}
+    ${GM.err ? `<p class="gm-err">${esc(GM.err)} <button class="link-btn" type="button" data-go="mere">Garmin-indstillinger</button></p>` : ''}</div>`;
+}
+/* Min form: de sidste 7 dage som små søjler */
+function gmTrendHTML() {
+  const ds = gmDays().slice(-7); if (!GM.pass || ds.length < 2) return '';
+  const row = (t, key, max, fmt) => { const vals = ds.map(d => gmNum(d[key])); const top = Math.max(max, ...vals.map(v => v || 0));
+    return `<div class="gm-row"><span class="gm-lbl">${t}</span><div class="gm-bars">${ds.map((d, i) => `<span title="${esc(daDate(d.date))}: ${vals[i] == null ? '–' : fmt(vals[i])}"><i style="height:${vals[i] ? Math.max(8, Math.round(vals[i] / top * 100)) : 0}%"></i><small>${DAY_SHORT[(new Date(d.date + 'T12:00').getDay() + 6) % 7].slice(0, 2)}</small></span>`).join('')}</div><b>${vals[vals.length - 1] == null ? '–' : fmt(vals[vals.length - 1])}</b></div>`; };
+  return `<div class="panel gm-trend"><h3>Søvn, hvilepuls og skridt</h3><p class="muted">De sidste 7 dage fra dit Garmin-ur.</p>
+    ${row('Søvnscore', 'sleepScore', 100, v => v)}${row('Hvilepuls', 'rhr', 40, v => v)}${row('Skridt', 'steps', 8000, v => fmtNum(Math.round(v / 100) / 10) + 'k')}${row('Body Battery', 'bbHigh', 100, v => v)}</div>`;
+}
+function renderGarminPanel() {
+  const el = $('garminPanel'); if (!el) return;
+  const imp = ST.loads.filter(l => l.gid).length, upd = GM.data && GM.data.updated ? new Date(GM.data.updated) : null;
+  el.innerHTML = GM.pass ? `<p><b>Forbundet</b> · ${esc(gmRepo())}</p>
+      <p class="muted">${upd ? `Data fra uret: ${upd.toLocaleString('da-DK', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · ${gmDays().length} dage · ${imp} ${imp === 1 ? 'aktivitet' : 'aktiviteter'} lagt i belastningen.` : 'Ingen data hentet endnu.'}</p>
+      ${GM.err ? `<p class="gm-err">${esc(GM.err)}</p>` : ''}
+      <div class="foot-actions"><button class="btn btn-sm" type="button" data-gm="fetch">Hent nu</button><button class="btn btn-ghost btn-sm" type="button" data-gm="forget">Glem forbindelsen</button></div>`
+    : `<p class="muted">Henter søvn, Body Battery, hvilepuls, skridt og aktiviteter fra dit Garmin-ur via GitHub. Opsætningen står i README.md under "Garmin-ur".</p>
+      <label class="field">Adgangskode til Garmin-data<input id="gmPass" type="password" autocomplete="off" placeholder="Samme som GARMIN_PASSPHRASE"></label>
+      <label class="field">GitHub-repo<input id="gmRepo" autocomplete="off" autocapitalize="none" placeholder="bruger/repo" value="${esc(gmRepo())}"></label>
+      <button class="btn btn-lime btn-block" type="button" data-gm="connect">Forbind</button>`;
+}
+async function gmAction(a) {
+  if (a === 'connect') {
+    const pass = $('gmPass').value, repo = $('gmRepo').value.trim().replace(/^https?:\/\/github\.com\//, '').replace(/\/$/, '');
+    if (!pass || !/^[\w.-]+\/[\w.-]+$/.test(repo)) { toast('Udfyld adgangskode og repo (bruger/repo)'); return; }
+    GM = { ...GM, pass, repo, err: '' }; gmSave(); renderGarminPanel();
+    const ok = await gmFetch(true);
+    if (ok) toast('Garmin forbundet'); else { const e = GM.err; GM = { ...GM, pass: '' }; gmSave(); renderGarminPanel(); toast(e); }
+  } else if (a === 'fetch') { toast('Henter …'); if (await gmFetch(true)) toast('Garmin-data opdateret'); else toast(GM.err); }
+  else if (a === 'forget') {
+    if (!confirm('Glem forbindelsen til Garmin? Belastning, der allerede er hentet, bliver liggende.')) return;
+    GM = { pass: '', repo: '', data: null, fetched: 0, err: '' }; gmSave(); renderGarminPanel(); renderToday();
+  }
+}
+
 /* ===== Start ===== */
 function renderAll() {
   applyTheme();
@@ -5108,12 +5244,14 @@ function renderAll() {
   $('tgSound').setAttribute('aria-pressed', ST.settings.sound); $('tgVib').setAttribute('aria-pressed', ST.settings.vib);
   initVibrationToggle(); buildSteppers(); renderCurrent(); updateBackupNote();
   updateTrainButton();
-  renderPlanBanner(); renderCoach(); renderCoachCard(); renderWeekSummary();
+  renderPlanBanner(); renderCoach(); renderCoachCard(); renderWeekSummary(); renderGarminPanel();
 }
+gmLoad();
 fillIcons();
 renderAll();
 loadPreset('p1');
 go(hashName());
+gmFetch();
 
 /* PWA: cacher appen, så den virker offline. Kræver hosting over HTTPS —
    registreres ikke, hvis filen åbnes direkte fra disk (file://) eller

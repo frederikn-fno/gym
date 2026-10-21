@@ -67,6 +67,7 @@ try { var t = ((JSON.parse(localStorage.getItem('gk8-goalkeeper-v1')) || {}).set
       <div class="today-card" id="todayCard"></div>
       <div id="seasonCard"></div>
       <div id="checkCard"></div>
+      <div id="garminCard"></div>
       <div id="matchCard"></div>
       <div id="weekSummary"></div>
       <div id="coachCard"></div>
@@ -281,6 +282,8 @@ try { var t = ((JSON.parse(localStorage.getItem('gk8-goalkeeper-v1')) || {}).set
         <a class="list-row" href="#/byg"><span class="lr-ic" data-icon="edit"></span><span class="lr-t"><b>Byg dit eget program</b><small>Dine øvelser, sæt og gentagelser</small></span><span class="lr-go" data-icon="chev"></span></a>
         <button class="list-row" type="button" data-rpe><span class="lr-ic" data-icon="pulse"></span><span class="lr-t"><b>RPE-guide</b><small>Hvor hårdt skal det føles?</small></span><span class="lr-go" data-icon="chev"></span></button>
       </nav>
+      <div class="block-title"><h2>Garmin-ur</h2></div>
+      <div class="panel gm-panel" id="garminPanel"></div>
       <div class="block-title"><h2>Tema</h2></div>
       <div class="panel theme-panel">
         <div class="seg theme-seg" role="group" aria-label="Tema" id="themeSeg" style="grid-template-columns: repeat(3, 1fr)">

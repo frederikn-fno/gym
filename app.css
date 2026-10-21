@@ -1428,3 +1428,31 @@ details.wp[open] > summary { margin-bottom: 4px; }
 .good-row + .good-row { margin-top: 8px; }
 .lib-bar .lib-body .chip, #exSheet .lib-body .chip { min-height: 38px; font-size: 14.5px; }
 #exSheet .lib-body { margin-top: 8px; }
+
+/* Garmin-ur: kort på I dag, forslag i dagens tjek, 7-dages søjler i Min form og opsætning under Mere */
+.gm-card { display: grid; gap: 12px; }
+.gm-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.gm-head h3 { display: flex; align-items: center; gap: 8px; font-size: 18px; }
+.gm-head h3 svg { width: 20px; height: 20px; color: var(--lime); }
+.gm-head small { color: var(--muted); font-size: 13px; }
+.gm-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.gm-stats > div { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px 8px 10px; min-width: 0; }
+.gm-stats small { display: block; font-size: 13px; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gm-stats b { display: block; font-family: var(--font-d); font-weight: 800; font-size: 26px; line-height: 1.05; }
+.gm-stats em { display: block; font-style: normal; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gm-card .notice { margin: 0; font-size: 14px; }
+.gm-err { font-size: 14px; color: var(--prep); }
+.gm-err .link-btn { min-height: 0; font-size: 14px; }
+.chk-gm { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; color: var(--soft); background: var(--lime-soft); border-radius: var(--r-sm); padding: 8px 10px; margin: 2px 0 6px; }
+.chk-gm svg { flex: none; width: 16px; height: 16px; color: var(--lime); margin-top: 3px; }
+.gm-trend { display: grid; gap: 10px; }
+.gm-row { display: grid; grid-template-columns: 92px minmax(0, 1fr) 46px; align-items: end; gap: 10px; }
+.gm-lbl { font-size: 14px; font-weight: 700; padding-bottom: 18px; }
+.gm-row > b { font-family: var(--font-d); font-weight: 800; font-size: 20px; text-align: right; padding-bottom: 16px; }
+.gm-bars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; height: 64px; }
+.gm-bars span { display: grid; grid-template-rows: 1fr auto; align-items: end; justify-items: center; min-width: 0; height: 100%; }
+.gm-bars i { width: 100%; max-width: 18px; border-radius: 4px 4px 2px 2px; background: var(--line-2); align-self: end; }
+.gm-bars span:last-child i { background: var(--lime); }
+.gm-bars small { font-size: 13px; letter-spacing: 0; color: var(--muted); text-transform: uppercase; }
+.gm-panel { display: grid; gap: 10px; }
+@media (max-width: 560px) { .gm-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
