@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Målmand 8">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="format-detection" content="telephone=no">
-<meta name="description" content="Fitness- og konditionsprogram for målmænd over 8 uger, med timer, øvelsesbibliotek og kamp-tracker.">
+<meta name="description" content="Fodboldstyrke og kondition med fokus på målmænd: færdige programmer, øvelsesbibliotek, timer og kamp-tracker.">
 <title>8 ugers målmandsprogram</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -17,6 +17,8 @@
 <link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
 <link rel="apple-touch-icon" sizes="167x167" href="icon-167.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="preload" href="fonts/BarlowCondensed-800.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/Barlow-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -39,15 +41,11 @@
     <nav class="topnav" aria-label="Sider">
       <a href="#/idag" data-nav="idag">I dag</a>
       <a href="#/program" data-nav="program">Program</a>
-      <a href="#/programmer" data-nav="programmer">Programmer</a>
       <a href="#/coach" data-nav="coach">Min form</a>
-      <a href="#/hjemme" data-nav="hjemme">Hjemme</a>
-      <a href="#/fredag" data-nav="fredag">Fredag</a>
-      <a href="#/timer" data-nav="timer">Timer</a>
-      <a href="#/tracker" data-nav="tracker">Tracker</a>
+      <a href="#/rutiner" data-nav="rutiner">Rutiner</a>
       <a href="#/ovelser" data-nav="ovelser">Øvelser</a>
-      <a href="#/progression" data-nav="progression">Progression</a>
-      <a href="#/rpe" data-nav="rpe">RPE</a>
+      <a href="#/timer" data-nav="timer">Timer</a>
+      <a href="#/tracker" data-nav="tracker">Kampe</a>
     </nav>
     <button class="week-chip" id="weekChip" type="button" aria-label="Åbn programmet">Uge 1</button>
   </div>
@@ -60,45 +58,52 @@
     <div class="wrap page-in">
       <h1 id="heroTitle" class="vh" tabindex="-1">I dag</h1>
       <div id="startCard"></div>
+      <div id="doneCard"></div>
+      <div id="checkCard"></div>
       <div class="today-card" id="todayCard"></div>
+      <div id="matchCard"></div>
       <div id="weekSummary"></div>
       <div id="coachCard"></div>
-      <nav class="tiles" id="tiles" aria-label="Alle sider"></nav>
+      <nav class="tiles" id="tiles" aria-label="Genveje"></nav>
     </div>
   </section>
 
-  <!-- ============ PROGRAM ============ -->
+  <!-- ============ PROGRAM: denne uge og programmer ============ -->
   <section class="page" id="page-program" data-page="program" data-title="Program" aria-labelledby="progTitle" hidden>
     <div class="wrap page-in has-sticky">
-      <div class="page-head">
-        <div>
-          <h2 id="progTitle" tabindex="-1">Program</h2>
-          <p class="sec-lead">Tryk på en øvelse for at se den, markere den klaret eller skifte den ud med en lignende.</p>
-        </div>
-        <a class="link-btn" href="#/rpe">Hvad er RPE?</a>
+      <div class="page-head ph-title-only"><div><h2 id="progTitle" tabindex="-1">Program</h2></div></div>
+      <div class="seg" role="tablist" id="progTabs" aria-label="Program">
+        <button class="seg-btn" type="button" role="tab" data-ptab="uge" aria-selected="true" aria-controls="progViewUge">Denne uge</button>
+        <button class="seg-btn" type="button" role="tab" data-ptab="vaelg" aria-selected="false" aria-controls="progViewVaelg">Programmer</button>
       </div>
-      <div id="planBanner"></div>
-      <nav class="weeknav" aria-label="Vælg uge">
-        <div class="weeknav-scroll" role="tablist" id="weekNav"></div>
-      </nav>
-      <div id="weekView" role="tabpanel" aria-labelledby="progTitle"></div>
+      <div class="stack" id="progViewUge" role="tabpanel">
+        <div id="planBanner"></div>
+        <nav class="weeknav" aria-label="Vælg uge">
+          <div class="weeknav-scroll" role="tablist" id="weekNav"></div>
+        </nav>
+        <div id="weekView" role="tabpanel" aria-labelledby="progTitle"></div>
+      </div>
+      <div class="stack" id="progViewVaelg" role="tabpanel" hidden>
+        <p class="sec-lead">Vælg et færdigt program, eller byg dit eget. Sæt din kampdag, så lægger appen passene på de rigtige dage.</p>
+        <div id="progBody"></div>
+      </div>
     </div>
   </section>
 
-  <!-- ============ PROGRAMMER ============ -->
-  <section class="page" id="page-programmer" data-page="programmer" data-title="Programmer" aria-labelledby="pgTitle" hidden>
+  <!-- ============ BYG SELV ============ -->
+  <section class="page" id="page-byg" data-page="byg" data-title="Byg dit program" aria-labelledby="bygTitle" hidden>
     <div class="wrap page-in">
       <div class="page-head">
         <div>
-          <h2 id="pgTitle" tabindex="-1">Programmer</h2>
-          <p class="sec-lead">Vælg et færdigt program til din sæson og dit fokus. Sæt din kampdag, så lægger appen passene på de rigtige dage.</p>
+          <h2 id="bygTitle" tabindex="-1">Byg dit program</h2>
+          <p class="sec-lead">Vælg dine egne øvelser, sæt og gentagelser. Programmet kører 8 uger med lette uger i uge 4 og 8, og vægtene foreslås ud fra dine loggede sæt.</p>
         </div>
       </div>
-      <div id="progBody"></div>
+      <div id="bygBody"></div>
     </div>
   </section>
 
-  <!-- ============ MIN FORM (COACH) ============ -->
+  <!-- ============ MIN FORM ============ -->
   <section class="page" id="page-coach" data-page="coach" data-title="Min form" aria-labelledby="coachTitle" hidden>
     <div class="wrap page-in">
       <div class="page-head ph-title-only"><div><h2 id="coachTitle" tabindex="-1">Min form</h2></div></div>
@@ -107,64 +112,42 @@
     </div>
   </section>
 
-  <!-- ============ STATUS ============ -->
-  <section class="page" id="page-status" data-page="status" data-title="Status" aria-labelledby="statTitle" hidden>
-    <div class="wrap page-in">
-      <div class="page-head ph-title-only"><div><h2 id="statTitle" tabindex="-1">Status</h2></div></div>
-      <div id="statusBody"></div>
-    </div>
-  </section>
-
-  <!-- ============ FREMGANG ============ -->
-  <section class="page" id="page-fremgang" data-page="fremgang" data-title="Fremgang" aria-labelledby="fremTitle" hidden>
-    <div class="wrap page-in">
-      <div class="page-head ph-title-only"><div><h2 id="fremTitle" tabindex="-1">Fremgang</h2></div></div>
-      <div id="fremBody"></div>
-    </div>
-  </section>
-
   <!-- ============ TRÆNING (TRÆNINGSTILSTAND) ============ -->
   <section class="page" id="page-pas" data-page="pas" data-title="Træning" aria-label="Træning" hidden>
     <div class="wrap page-in sess" id="sessBody"></div>
   </section>
 
-  <!-- ============ HJEMME ============ -->
-  <section class="page" id="page-hjemme" data-page="hjemme" data-title="Hjemme" aria-labelledby="homeTitle" hidden>
+  <!-- ============ RUTINER: før træning og før kamp ============ -->
+  <section class="page" id="page-rutiner" data-page="rutiner" data-title="Rutiner" aria-labelledby="rutTitle" hidden>
     <div class="wrap page-in">
-      <div class="page-head">
-        <div>
-          <h2 id="homeTitle" tabindex="-1">Hjemme · før træning</h2>
-          <p class="sec-lead">Ingen vægte, ingen maskiner. Ca. 12 minutter mandag, tirsdag og torsdag, inden du tager til fodbold.</p>
+      <div class="page-head ph-title-only"><div><h2 id="rutTitle" tabindex="-1">Rutiner</h2></div></div>
+      <div class="seg" role="tablist" id="rutTabs" aria-label="Rutiner">
+        <button class="seg-btn" type="button" role="tab" data-rtab="home" aria-selected="true" aria-controls="rutHome">Før træning</button>
+        <button class="seg-btn" type="button" role="tab" data-rtab="fri" aria-selected="false" aria-controls="rutFri">Før kamp</button>
+      </div>
+      <div class="stack" id="rutHome" role="tabpanel">
+        <p class="sec-lead" id="homeLead">Ingen vægte, ingen maskiner. Ca. 12 minutter, inden du tager til fodbold.</p>
+        <div class="home-top">
+          <div class="not-training home-rule"><span data-icon="focus"></span><div><strong>Varm og skarp, ikke træt.</strong><br>Stop 2–3 gentagelser før det bliver hårdt. Træningen på banen er det vigtigste.</div></div>
+          <div class="home-week" id="homeWeek"></div>
+          <p class="t-sub" style="margin:14px 0 8px">Sværhedsgrad</p>
+          <div class="chips" id="homeLevels" role="group" aria-label="Vælg niveau"></div>
         </div>
+        <button class="btn btn-block btn-lime" id="homeStart" type="button"><span data-icon="play"></span>Start rutinen</button>
+        <div class="blocks" id="homeBlocks"></div>
+        <button class="btn btn-block btn-lime wk-done-btn" id="homeDone" type="button" aria-pressed="false">Markér rutinen klaret</button>
       </div>
-      <div class="home-top">
-        <div class="not-training home-rule"><span data-icon="focus"></span><div><strong>Varm og skarp, ikke træt.</strong><br>Stop 2–3 gentagelser før det bliver hårdt. Træningen på banen er det vigtigste.</div></div>
-        <div class="home-week" id="homeWeek"></div>
-        <p class="t-sub" style="margin:14px 0 8px">Sværhedsgrad</p>
-        <div class="chips" id="homeLevels" role="group" aria-label="Vælg niveau"></div>
-      </div>
-      <button class="btn btn-block btn-lime" id="homeStart" type="button">Start rutinen</button>
-      <div class="blocks" id="homeBlocks"></div>
-      <button class="btn btn-block btn-lime wk-done-btn" id="homeDone" type="button" aria-pressed="false">Markér dagens rutine som klaret</button>
-    </div>
-  </section>
-
-  <!-- ============ FREDAG ============ -->
-  <section class="page" id="page-fredag" data-page="fredag" data-title="Fredag" aria-labelledby="friTitle" hidden>
-    <div class="wrap page-in">
-      <div class="page-head ph-title-only">
-        <div>
-          <h2 id="friTitle" tabindex="-1">Fredag · klar til kamp</h2>
-        </div>
-      </div>
-      <div class="fri-card">
-        <div class="not-training"><span data-icon="bolt"></span><div><strong>Dette er IKKE træning.</strong><br>Du skal føle dig frisk bagefter.</div></div>
-        <div class="tags" style="margin-bottom:14px"><span class="tag lime">2 runder</span><span class="tag">Ca. 10 min</span><span class="tag">Lav intensitet, høj kvalitet</span></div>
-        <button class="btn btn-block btn-lime" id="friStart" type="button" style="margin-bottom:12px">Start aktiveringen</button>
-        <ul class="items" id="friItems"></ul>
-        <div class="block-actions">
-          <button class="btn btn-lime" id="friTimer" type="button"><span data-icon="play"></span>Start aktivering</button>
-          <button class="btn btn-ghost" id="friReset" type="button"><span data-icon="reset"></span>Nulstil fredag</button>
+      <div class="stack" id="rutFri" role="tabpanel" hidden>
+        <p class="sec-lead" id="friWhen"></p>
+        <div class="fri-card">
+          <div class="not-training"><span data-icon="bolt"></span><div><strong>Dette er IKKE træning.</strong><br>Du skal føle dig frisk bagefter.</div></div>
+          <div class="tags" style="margin-bottom:14px"><span class="tag lime">2 runder</span><span class="tag">Ca. 10 min</span><span class="tag">Lav intensitet, høj kvalitet</span></div>
+          <button class="btn btn-block btn-lime" id="friStart" type="button" style="margin-bottom:12px"><span data-icon="play"></span>Start aktiveringen</button>
+          <ul class="items" id="friItems"></ul>
+          <div class="block-actions">
+            <button class="btn" id="friTimer" type="button"><span data-icon="timer"></span>Guidet timer</button>
+            <button class="btn btn-ghost" id="friReset" type="button"><span data-icon="reset"></span>Nulstil aktiveringen</button>
+          </div>
         </div>
       </div>
     </div>
@@ -210,16 +193,16 @@
     </div>
   </section>
 
-  <!-- ============ TRACKER ============ -->
-  <section class="page" id="page-tracker" data-page="tracker" data-title="Kamp-tracker" aria-labelledby="trackTitle" hidden>
+  <!-- ============ KAMPE (TRACKER) ============ -->
+  <section class="page" id="page-tracker" data-page="tracker" data-title="Kampe" aria-labelledby="trackTitle" hidden>
     <div class="wrap page-in">
       <div class="page-head">
         <div>
-          <h2 id="trackTitle" tabindex="-1">Kamp-tracker</h2>
+          <h2 id="trackTitle" tabindex="-1">Kampe</h2>
           <p class="sec-lead">Udfyld efter hver kamp. Det tager 30 sekunder.</p>
         </div>
       </div>
-      <div class="seg" role="tablist" aria-label="Kamp-tracker">
+      <div class="seg" role="tablist" aria-label="Kampe">
         <button class="seg-btn" type="button" role="tab" id="seg-new" data-seg="new" aria-selected="true" aria-controls="matchForm">Ny kamp</button>
         <button class="seg-btn" type="button" role="tab" id="seg-dev" data-seg="dev" aria-selected="false" aria-controls="trackDev">Udvikling</button>
       </div>
@@ -230,6 +213,10 @@
             <label class="field">Dato<input type="date" id="mDate" required></label>
             <label class="field">Programuge<select id="mWeek"></select></label>
           </div>
+          <div class="form-row form-row-even">
+            <label class="field">Minutter spillet<input type="number" id="mMin" inputmode="numeric" min="0" max="150" value="90"></label>
+            <label class="field">Hvor hårdt (RPE)<select id="mRpe"></select></label>
+          </div>
           <div id="rates"></div>
           <label class="field" style="margin-top:12px">Kommentar<textarea id="mNote" rows="2" enterkeyhint="done" autocapitalize="sentences" placeholder="Fx: Tunge ben efter 70 min. God på indlæg."></textarea></label>
           <div class="form-actions"><button class="btn btn-lime btn-block" type="submit" id="mSubmit">Gem kamp</button><button class="btn btn-ghost btn-block" type="button" id="mCancel" hidden style="margin-top:8px">Annullér redigering</button></div>
@@ -238,6 +225,7 @@
           <h3>Udvikling uge 1–8</h3>
           <div class="chips" id="metricChips" role="group" aria-label="Vælg måling"></div>
           <div class="chart-wrap" id="chart"></div>
+          <div id="matchInsight"></div>
           <h3 style="margin-top:22px">Dine kampe</h3>
           <ul class="history" id="history"></ul>
         </div>
@@ -273,55 +261,24 @@
     </div>
   </section>
 
-  <!-- ============ PROGRESSION ============ -->
-  <section class="page" id="page-progression" data-page="progression" data-title="Progression" aria-labelledby="progrTitle" hidden>
-    <div class="wrap page-in">
-      <div class="page-head">
-        <div>
-          <h2 id="progrTitle" tabindex="-1">Progression</h2>
-          <p class="sec-lead">Tryk på en uge for at markere den som gennemført.</p>
-        </div>
-      </div>
-      <div class="start-row">
-        <label class="field">Programstart<input type="date" id="startDate"></label>
-        <p class="sec-lead" id="curWeekNote"></p>
-      </div>
-      <div class="progress-card progress-big" id="progBig"></div>
-      <div class="prog-tiles" id="progTiles"></div>
-    </div>
-  </section>
-
-  <!-- ============ RPE ============ -->
-  <section class="page" id="page-rpe" data-page="rpe" data-title="RPE" aria-labelledby="rpeTitle" hidden>
-    <div class="wrap page-in">
-      <div class="page-head ph-title-only"><div><h2 id="rpeTitle" tabindex="-1">RPE · hvor hårdt?</h2></div></div>
-      <div class="panel">
-        <div class="rpe" id="rpeMeter" role="list"></div>
-        <p class="rpe-explain">RPE er din oplevelse af, hvor hårdt arbejdet føles.</p>
-      </div>
-    </div>
-  </section>
-
   <!-- ============ MERE ============ -->
   <section class="page" id="page-mere" data-page="mere" data-title="Mere" aria-labelledby="moreTitle" hidden>
     <div class="wrap page-in">
       <div class="page-head ph-title-only"><div><h2 id="moreTitle" tabindex="-1">Mere</h2></div></div>
       <nav class="list" aria-label="Flere sider">
-        <a class="list-row" href="#/programmer"><span class="lr-ic" data-icon="calendar"></span><span class="lr-t"><b>Programmer</b><small>Færdige programmer, kampdag og træningsdage</small></span><span class="lr-go" data-icon="chev"></span></a>
-        <a class="list-row" href="#/ovelser"><span class="lr-ic" data-icon="grid"></span><span class="lr-t"><b>Øvelser</b><small>Bibliotek med figurer og "godt til"</small></span><span class="lr-go" data-icon="chev"></span></a>
+        <a class="list-row" href="#/ovelser"><span class="lr-ic" data-icon="grid"></span><span class="lr-t"><b>Øvelser</b><small>Bibliotek med figurer, "godt til" og sæson</small></span><span class="lr-go" data-icon="chev"></span></a>
+        <a class="list-row" href="#/rutiner"><span class="lr-ic" data-icon="house"></span><span class="lr-t"><b>Rutiner</b><small>Før træning (12 min hjemme) og dagen før kamp</small></span><span class="lr-go" data-icon="chev"></span></a>
+        <a class="list-row" href="#/tracker"><span class="lr-ic" data-icon="chart"></span><span class="lr-t"><b>Kampe</b><small>Registrér kampe og se udviklingen</small></span><span class="lr-go" data-icon="chev"></span></a>
         <a class="list-row" href="#/timer"><span class="lr-ic" data-icon="timer"></span><span class="lr-t"><b>Intervaltimer</b><small>Egne og færdige intervaller</small></span><span class="lr-go" data-icon="chev"></span></a>
-        <a class="list-row" href="#/status"><span class="lr-ic" data-icon="pulse"></span><span class="lr-t"><b>Status og profil</b><small>Går det godt eller dårligt? Det appen har lært om dig</small></span><span class="lr-go" data-icon="chev"></span></a>
-        <a class="list-row" href="#/fremgang"><span class="lr-ic" data-icon="chart"></span><span class="lr-t"><b>Fremgang</b><small>Løft, rekorder og volumen</small></span><span class="lr-go" data-icon="chev"></span></a>
-        <a class="list-row" href="#/hjemme"><span class="lr-ic" data-icon="house"></span><span class="lr-t"><b>Hjemme · før træning</b><small>12 min uden udstyr</small></span><span class="lr-go" data-icon="chev"></span></a>
-        <a class="list-row" href="#/fredag"><span class="lr-ic" data-icon="bolt"></span><span class="lr-t"><b>Fredag · klar til kamp</b><small>Let aktivering</small></span><span class="lr-go" data-icon="chev"></span></a>
-        <a class="list-row" href="#/tracker"><span class="lr-ic" data-icon="chart"></span><span class="lr-t"><b>Kamp-tracker</b><small>Registrér og følg udviklingen</small></span><span class="lr-go" data-icon="chev"></span></a>
-        <a class="list-row" href="#/progression"><span class="lr-ic" data-icon="flame"></span><span class="lr-t"><b>Progression</b><small>Gennemførte uger og startdato</small></span><span class="lr-go" data-icon="chev"></span></a>
-        <a class="list-row" href="#/rpe"><span class="lr-ic" data-icon="pulse"></span><span class="lr-t"><b>RPE-guide</b><small>Hvor hårdt skal det føles?</small></span><span class="lr-go" data-icon="chev"></span></a>
+        <a class="list-row" href="#/programmer"><span class="lr-ic" data-icon="calendar"></span><span class="lr-t"><b>Programmer og din uge</b><small>Skift program, kampdag og træningsdage</small></span><span class="lr-go" data-icon="chev"></span></a>
+        <a class="list-row" href="#/byg"><span class="lr-ic" data-icon="edit"></span><span class="lr-t"><b>Byg dit eget program</b><small>Dine øvelser, sæt og gentagelser</small></span><span class="lr-go" data-icon="chev"></span></a>
+        <button class="list-row" type="button" data-rpe><span class="lr-ic" data-icon="pulse"></span><span class="lr-t"><b>RPE-guide</b><small>Hvor hårdt skal det føles?</small></span><span class="lr-go" data-icon="chev"></span></button>
       </nav>
       <div class="block-title"><h2>Data og backup</h2></div>
       <div class="panel foot">
         <p>Alt gemmes lokalt på din telefon. Ingen konto, ingen server.</p>
         <p id="backupNote"></p>
+        <p class="muted" id="installNote"></p>
         <div class="foot-actions">
           <button class="btn btn-ghost btn-sm" id="exportData" type="button">Eksportér data</button>
           <button class="btn btn-ghost btn-sm" id="importData" type="button">Importér data</button>

@@ -29,7 +29,7 @@ const PROGRAMS = [
     sessions: {
       A: { t: 'Ben og afsæt', md: 3, blocks: ['warm', ['str', ['frontsquat:main', 'rdl:acc', 'bulgarian:acc', 'slcalf:acc']], ['prev', ['nordic', 'copenhagen']], ['core', ['pallof', 'deadbug', 'sideplank']]] },
       B: { t: 'Overkrop og kast', md: 2, blocks: ['warm', ['str', ['dbbench:main', 'pullup:main', 'dbpress:acc', 'dbrow:acc', 'facepull:acc']], ['pwr', ['medthrow', 'medrot']], ['core', ['suitcase', 'hollow', 'birddog']]] },
-      C: { t: 'Målmandskraft og kondition', md: 2, blocks: ['warm', ['str', ['trapbar:main', 'hipthrust:acc', 'landminepress:acc']], ['gk', ['gkshuffledive', 'getup', 'gkhighcatch']], ['cond', 'int']] }
+      C: { t: 'Målmandskraft og kondition', md: 2, blocks: ['warm', ['str', ['trapbar:main', 'hipthrust:acc', 'landminepress:acc']], ['gk', ['gkshuffledive', 'gkhighcatch', 'gkthrow', 'gkbarrier']], ['cond', 'int']] }
     }
   },
   {
@@ -38,7 +38,7 @@ const PROGRAMS = [
     desc: 'Gør off-season-styrken eksplosiv før sæsonen: spring, kast, hurtige første skridt og dyk. Korte, hårde intervaller giver overskud til gentagne aktioner.',
     sessions: {
       A: { t: 'Kraft og afsæt', md: 3, blocks: ['warm', ['pwr', ['depthjump', 'lateralstick', 'medrot']], ['str', ['backsquat:main', 'rdl:main', 'slcalf:acc']], ['prev', ['nordic', 'copenhagen']]] },
-      B: { t: 'Fart og reaktion', md: 2, blocks: ['warmfield', ['speed', [['wallaccel', 3, '5 skift'], ['sprint5', 4, '10 m'], ['cod505', 2, '2/side']]], ['gk', ['gkshuffledive', 'gkcollapse', 'getup']], ['cond', 'short']] }
+      B: { t: 'Fart og reaktion', md: 2, blocks: ['warmfield', ['speed', [['wallaccel', 3, '5 skift'], ['sprint5', 4, '10 m'], ['cod505', 2, '2/side']]], ['gk', ['gkset', 'gkshuffledive', 'gkcollapse', 'gkdropstep']], ['cond', 'short']] }
     }
   },
   {
@@ -47,7 +47,7 @@ const PROGRAMS = [
     desc: 'Hold styrken og eksplosiviteten gennem sæsonen med få, tunge sæt. Det tunge pas ligger tidligt i ugen og det hurtige pas tættere på kamp, så du er frisk lørdag.',
     sessions: {
       A: { t: 'Styrke', md: 3, blocks: ['warm', ['str', ['frontsquat:main', 'rdl:main', 'pullup:acc']], ['prev', ['nordic', 'copenhagen', 'spanish']]] },
-      B: { t: 'Hurtig og klar', md: 2, blocks: ['warmfield', ['speed', [['wallaccel', 2, '5 skift'], ['sprint5', 3, '10 m']]], ['pwr', ['pogo', 'lateralstick', 'medthrow']], ['core', ['pallof', 'sideplank', 'deadbug']]] }
+      B: { t: 'Hurtig og klar', md: 2, blocks: ['warmfield', ['speed', [['wallaccel', 2, '5 skift'], ['sprint5', 3, '10 m']]], ['gk', ['gkset', 'gkcollapse', 'gkstar']], ['pwr', ['pogo', 'lateralstick', 'gkthrow']], ['core', ['pallof', 'sideplank', 'deadbug']]] }
     }
   },
   {

@@ -650,7 +650,7 @@ dialog.sheet[open] { animation: sheetUp .28s cubic-bezier(.2, .8, .2, 1); }
 .pg-ses span { color: var(--muted); line-height: 1.4; }
 .pg-actions { display: flex; gap: 8px; }
 .pg-actions .btn { flex: 1; }
-.start-row { margin-bottom: 12px; text-decoration: none; border-color: rgba(200, 240, 60, .45); background: var(--lime-soft); }
+.start-cta { margin-bottom: 12px; text-decoration: none; border-color: rgba(200, 240, 60, .45); background: var(--lime-soft); }
 @media (min-width: 760px) { .prog-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .item-txt .nt.good { color: var(--soft); font-weight: 600; }
 .item-txt .nt.swapped { color: var(--prep); font-weight: 600; }
@@ -1015,3 +1015,139 @@ em.down { color: var(--danger); font-style: normal; font-weight: 700; font-size:
 .doc { margin: 0; padding: 12px; border-radius: var(--r-sm); background: var(--bg-2); border: 1px solid var(--line); font-size: 12px; line-height: 1.45; overflow: auto; max-height: 340px; white-space: pre-wrap; word-break: break-word; -webkit-user-select: text; user-select: text; color: var(--soft); }
 
 .day.home svg { color: var(--lime); }
+
+/* =========================================================
+   ENSRETNING · mobil først
+   Faste mål, så knapper, felter og kort følger samme rammer overalt:
+   - Knapper: 52 px (standard), 44 px (vælgere og små knapper), 64 px (store handlinger i træning og timer)
+   - Knapper i samme række er lige brede, og teksten står på én linje
+   - Kort: 16 px indre afstand og 22 px hjørner. Afstand mellem knapper: 8 px
+   ========================================================= */
+:root { --h-btn: 52px; --h-sm: 44px; --h-lg: 64px; --gap: 8px; --pad: 16px; }
+
+/* Knapper */
+.btn { min-height: var(--h-btn); padding: 0 14px; font-size: 18px; letter-spacing: .03em; line-height: 1.1; white-space: nowrap; min-width: 0; }
+.btn-sm { min-height: var(--h-sm); font-size: 16px; padding: 0 14px; }
+.s-main, .t-controls .btn, .t-next-btn { min-height: var(--h-lg); font-size: 22px; }
+.m-actions .btn, .log-form .btn, .fc-actions .btn, .foot-actions .btn { min-height: var(--h-btn); }
+.fc-actions .btn, .foot-actions .btn, .m-actions .btn { font-size: 16px; gap: 6px; padding: 0 10px; }
+
+/* Knaprækker: lige brede knapper */
+.today-actions, .fc-actions, .pg-actions, .s-sec, .m-actions, .t-controls, .block-actions, .foot-actions {
+  display: grid; gap: var(--gap); grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+}
+.today-actions, .block-actions { grid-auto-flow: row; } /* lange tekster: én knap pr. linje i fuld bredde */
+.foot-actions { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.foot-actions .btn:last-child { grid-column: 1 / -1; }
+.block-actions .btn { flex: none; }
+@media (min-width: 560px) { .block-actions { grid-auto-flow: column; } }
+
+/* Vælgere og små knapper: samme trykflade */
+.chip, .toggle, .seg-btn, .week-chip, .link-btn { min-height: var(--h-sm); }
+.chip { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }
+.seg-btn { font-size: 17px; padding: 0 4px; white-space: nowrap; }
+.icon-btn, .sheet-close { width: var(--h-sm); height: var(--h-sm); }
+.plan-banner { min-height: 56px; }
+.plan-banner button { min-height: var(--h-sm); }
+.hw-pill { height: var(--h-sm); }
+.field input, .field select, .field textarea { min-height: var(--h-btn); }
+
+/* Kort: samme rammer */
+.panel, .block, .prog-card, .fri-card, .home-top, .today-card, .wk-hero, .progress-card { padding: var(--pad); border-radius: var(--r-lg); }
+.today-card { gap: 12px; }
+
+/* Øvelsesrækker: mere plads til navn og dosis */
+.thumb { width: 92px; }
+.item-txt .ds { font-size: 21px; }
+
+/* Øvelsesdialog: dosis på egen linje, så den ikke brækker */
+.m-dose { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+.m-dose div:first-child { grid-column: 1 / -1; }
+.m-dose b { font-size: 26px; }
+
+/* Statistik: 2 × 2 på mobil, så overskrifterne kan stå på én linje */
+.stat-row.s4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 560px) { .stat-row.s4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* Små rettelser */
+.page-head .link-btn { flex: none; white-space: nowrap; }
+.cr-t .sbar, #coachCard .sbar { margin: 8px 0 0; }
+.home-top .chips { flex-wrap: wrap; overflow: visible; }
+/* ---------- Samlet menu: faner med indhold, sammenfoldede felter ---------- */
+.stack > * + * { margin-top: 14px; }
+.stack > .sec-lead:first-child { margin-top: 0; }
+.sub-h { font-size: 22px; text-transform: uppercase; color: var(--soft); margin-top: 8px; }
+.st-h { font-family: var(--font-d); font-weight: 800; font-size: 26px; text-transform: uppercase; line-height: 1; }
+.fold { padding: 0; }
+.fold > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; padding: 0 var(--pad); }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary::after { content: ""; flex: none; width: 10px; height: 10px; border-right: 2.5px solid var(--muted); border-bottom: 2.5px solid var(--muted); transform: rotate(45deg) translate(-2px, -2px); transition: transform .2s; }
+.fold[open] > summary::after { transform: rotate(-135deg) translate(-2px, -2px); }
+.fold > summary h3 { margin: 0; font-size: 22px; }
+.fold-body { padding: 0 var(--pad) var(--pad); }
+.match-row { border-color: rgba(200, 240, 60, .45); }
+#doneCard:empty, #checkCard:empty, #matchCard:empty, #startCard:empty { display: none; }
+button.list-row { width: 100%; text-align: left; }
+
+/* ---------- Dagligt tjek ---------- */
+.checkin .check-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.checkin .check-head h3 { margin: 0; }
+.checkin .check-head small { color: var(--muted); font-weight: 600; font-size: 13px; }
+.chk-row { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.chk-row:last-of-type { border-bottom: 0; margin-bottom: 8px; }
+.chk-q { font-weight: 700; margin-bottom: 8px; }
+.chk-scale { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.chk-btn { min-height: var(--h-sm); border-radius: var(--r-sm); background: var(--bg-2); border: 1px solid var(--line-2); font-family: var(--font-d); font-weight: 800; font-size: 20px; color: var(--soft); }
+.chk-btn[aria-pressed="true"] { background: var(--lime); border-color: var(--lime); color: var(--lime-ink); }
+.chk-ends { display: flex; justify-content: space-between; margin-top: 4px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.check-done { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 14px; border-radius: var(--r-lg); background: var(--card); border: 1px solid var(--line-2); }
+.check-done .btn { flex: none; }
+.cd-score { flex: none; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-d); font-weight: 800; font-size: 22px; background: var(--card-2); border: 2px solid var(--line-2); }
+.check-done.low { border-color: rgba(255, 216, 74, .5); } .check-done.low .cd-score { border-color: var(--prep); color: var(--prep); }
+.check-done.high { border-color: rgba(200, 240, 60, .5); } .check-done.high .cd-score { border-color: var(--lime); color: var(--lime); }
+.check-done.ok .cd-score { color: var(--text); }
+.pain-row { margin-top: 8px; }
+.warn-tag { background: rgba(255, 216, 74, .14); border-color: rgba(255, 216, 74, .5); color: var(--prep); }
+
+/* ---------- Programmet er slut ---------- */
+.done-card { border-color: rgba(200, 240, 60, .55); display: grid; gap: 12px; }
+.done-card h3 { margin: 0; }
+.done-card .eyebrow { margin: 0; }
+.done-card .stat-row { margin: 0; }
+.done-next { color: var(--soft); }
+.done-actions { display: grid; gap: var(--gap); }
+.done-card > .link-btn { justify-self: center; }
+/* ---------- Belastning ---------- */
+.form-row-even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.load-card { display: grid; gap: 12px; }
+.load-card .st-top, .load-card .stat-row { margin: 0; }
+.load-card.z-risk { border-color: rgba(255, 107, 91, .55); }
+.load-card.z-high { border-color: rgba(255, 216, 74, .5); }
+.sub-fold { border-top: 1px solid var(--line); padding-top: 4px; }
+.sub-fold > summary { min-height: var(--h-sm); display: flex; align-items: center; font-weight: 700; color: var(--lime); cursor: pointer; }
+.sub-fold > .chips { padding: 6px 0 12px; }
+.sub-fold .btn { margin-top: 10px; }
+.chk-10 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.s-load { text-align: left; margin-top: 4px; }
+.s-load .t-sub { margin-bottom: 8px; }
+.insight { margin-top: 14px; padding: 12px 14px; border-radius: var(--r-md); background: var(--bg-2); border: 1px solid var(--line); border-left: 4px solid var(--lime); }
+.insight b { font-family: var(--font-d); font-weight: 800; font-size: 18px; text-transform: uppercase; }
+.insight p { color: var(--soft); font-size: 15px; margin-top: 4px; }
+
+/* ---------- Byg selv ---------- */
+.b-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
+.b-item { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px; border-radius: var(--r-md); background: var(--bg-2); border: 1px solid var(--line); }
+.b-item .thumb { width: 72px; }
+.b-main { min-width: 0; display: grid; gap: 6px; }
+.b-main > b { font-weight: 700; line-height: 1.2; }
+.b-steps { display: flex; flex-wrap: wrap; gap: 6px; }
+.b-step { display: inline-flex; align-items: center; border: 1px solid var(--line-2); border-radius: 12px; background: var(--card); }
+.b-step button { width: 36px; height: 36px; font-family: var(--font-d); font-weight: 800; font-size: 22px; color: var(--lime); }
+.b-step span { min-width: 56px; text-align: center; font-size: 13px; color: var(--muted); font-weight: 600; }
+.b-step span b { font-family: var(--font-d); font-size: 19px; color: var(--text); margin-right: 2px; }
+.b-tools { display: grid; gap: 2px; }
+.b-tools .icon-btn { width: 36px; height: 36px; font-size: 12px; }
+.b-tools .icon-btn:disabled { opacity: .25; }
+#bygBody > * + * { margin-top: 14px; }
+#bygBody > .chips { padding-bottom: 0; }
+.wk-hero .wk-rpe { position: relative; margin-top: 4px; min-height: 40px; font-size: 15px; }

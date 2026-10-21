@@ -569,15 +569,35 @@ A('fifa11', 'FIFA 11+ løbedel', 'Bevægelse', ['Skadesforebyggelse', 'Mobilitet
 A('gkcollapse', 'Faldredning', 'Bevægelse', ['Hurtighed', 'Eksplosivitet'], 'Bold', 'agility',
   'Hurtigt ned til siden efter lave bolde tæt på kroppen.',
   ['Stå i klarposition med en makker eller en bold foran dig.', 'Træk det nærmeste ben væk under dig, og fald til siden med hænderne mod bolden.', 'Land på siden af kroppen med bolden låst, og kom hurtigt op.'],
-  '5/side', '30 sek', ['Blødt underlag: græs eller måtte.', 'Hænderne mod bolden, ikke ned i jorden for at tage faldet.'], { illu: 'diveget' });
+  '5/side', '30 sek', ['Blødt underlag: græs eller måtte.', 'Hænderne mod bolden, ikke ned i jorden for at tage faldet.']);
 A('gkshuffledive', 'Sidestep og dyk', 'Eksplosiv', ['Eksplosivitet', 'Hurtighed'], 'Andet', 'agility',
   'Sidestep ind på bolden, og dyk eksplosivt fra det rigtige ben.',
   ['Stå i målmandsstilling ved en kegle.', 'Lav 2–3 hurtige sidesteps, og sæt af fra benet nærmest bolden.', 'Dyk med strakte arme, land på siden, og kom op i klarposition.'],
-  '4/side', '60 sek', ['Sæt af fra benet nærmest bolden.', 'Kvalitet før mængde. Stop, når afsættet bliver langsomt.'], { illu: 'diveget', hard: true });
+  '4/side', '60 sek', ['Sæt af fra benet nærmest bolden.', 'Kvalitet før mængde. Stop, når afsættet bliver langsomt.'], { hard: true });
 A('gkhighcatch', 'Spring og grib høj bold', 'Eksplosiv', ['Eksplosivitet', 'Balance'], 'Bold', 'plyo',
   'Afsæt fra ét ben, og grib i højeste punkt, som ved et indlæg.',
   ['En makker kaster bolden højt, eller du kaster den selv op.', 'Tag 1–2 tilløbsskridt, sæt af på ét ben, og løft det andet knæ som beskyttelse.', 'Grib bolden i højeste punkt, og land stabilt på begge ben.'],
-  '6/side', '45 sek', ['Grib med hænderne foran ansigtet, så du kan se bolden.', 'Skift afsætsben.'], { illu: 'squatjump' });
+  '6/side', '45 sek', ['Grib med hænderne foran ansigtet, så du kan se bolden.', 'Skift afsætsben.']);
+A('gkset', 'Set-position på skuddet', 'Bevægelse', ['Hurtighed', 'Fokus', 'Balance'], 'Bold', 'agility',
+  'Stå stille og i balance i det øjeblik, bolden bliver skudt, så du kan gå begge veje.',
+  ['Stå 4–6 meter fra en makker med bolden. Tag små, hurtige skridt frem mod bolden.', 'Lige før makkeren skyder, tager du et lille hop ned i klarposition: fødderne i skulderbredde og vægten på forfoden.', 'Stå helt stille med hænderne klar, og redd skuddet.'],
+  '8 gentagelser', '30 sek', ['Timing er alt: landet i klarposition, når foden rammer bolden.', 'Ingen kan redde i bevægelse. Stå stille i skudøjeblikket.'], { home: true });
+A('gkdropstep', 'Drop-step og krydsløb bagud', 'Bevægelse', ['Hurtighed', 'Balance'], 'Ingen udstyr', 'agility',
+  'Kom hurtigt tilbage mod mål, når bolden bliver lobbet over dig.',
+  ['Stå i klarposition med front mod banen.', 'Åbn hoften, og sæt det ene ben skråt bagud (drop-step). Løb med krydsskridt bagud mod stolpen.', 'Spring op fra det bagerste ben, og ræk armen mod bolden over hovedet.'],
+  '4/side', '30 sek', ['Hold blikket på bolden hele vejen.', 'Krydsskridt er hurtigere end at løbe baglæns.']);
+A('gkbarrier', 'Knæ-barriere', 'Bevægelse', ['Hurtighed', 'Balance', 'Mobilitet'], 'Bold', 'agility',
+  'Luk hullet mellem benene ved lave, hårde skud, der kommer lige på dig.',
+  ['Stå i klarposition, mens en makker triller eller skyder bolden lavt mod dig.', 'Flyt dig ind bag bolden, og sæt det ene knæ ned ved den anden fods hæl, så benene danner en barriere.', 'Saml bolden op med begge hænder, og før den ind til brystet.'],
+  '6/side', '30 sek', ['Knæet og foden lukker hullet sammen.', 'Øv begge sider: begge knæ skal kunne gå ned.'], { home: true });
+A('gkthrow', 'Udkast med medicinbold', 'Eksplosiv', ['Eksplosivitet', 'Styrke', 'Core'], 'Medicinbold', 'plyo',
+  'Kraft til lange, præcise udkast, der starter et hurtigt angreb.',
+  ['Stå i skridtstilling med en let medicinbold (1–3 kg) i én hånd bag hovedet.', 'Træk armen langt bagud, og drej overkroppen væk fra kastretningen.', 'Kast fremad med hele kroppen: ben, hofte, overkrop og til sidst armen.'],
+  '6/arm', '60 sek', ['Brug en let bold. Det er fart, ikke styrke.', 'Kast mod en væg eller langt frem på græs.']);
+A('gkstar', 'Spredning 1 mod 1', 'Eksplosiv', ['Eksplosivitet', 'Hurtighed'], 'Ingen udstyr', 'plyo',
+  'Dæk mest muligt af målet, når en angriber kommer alene mod dig.',
+  ['Stå lavt i klarposition, som når en angriber er helt tæt på.', 'På signal: spring frem og spred arme og ben ud som en stjerne.', 'Land kontrolleret, og kom straks tilbage i klarposition.'],
+  '6 reps', '45 sek', ['Hold blikket på bolden, også mens du spreder dig.', 'Hænderne er åbne og strakte, som en stor mur.']);
 
 /* --- Fodbold: styrke og skadeforebyggelse --- */
 A('backsquat', 'Squat med stang', 'Styrke', ['Styrke'], 'Stang', 'squat',
@@ -700,6 +720,7 @@ const SEASON = {
   diveget: [1, 3, 3, 2], getup: [2, 3, 3, 1], latbandwalk: [2, 2, 3, 0], latlunge: [2, 2, 2, 1],
   wallaccel: [2, 3, 3, 1], askip: [2, 3, 3, 0], flysprint: [1, 3, 3, 2], decel: [2, 3, 3, 1], cod505: [1, 3, 2, 2], mirror: [2, 3, 3, 1],
   fifa11: [2, 3, 3, 0], gkcollapse: [1, 3, 3, 1], gkshuffledive: [1, 3, 3, 2],
+  gkset: [2, 3, 3, 0], gkdropstep: [2, 3, 3, 1], gkbarrier: [1, 3, 3, 1], gkthrow: [2, 3, 3, 1], gkstar: [2, 3, 3, 1],
   /* Mobilitet */
   cossack: [3, 2, 2, 1], hips9090: [2, 2, 3, 0], wgs: [2, 2, 3, 0], catcow: [2, 2, 3, 0], openbook: [2, 2, 3, 0], hipflexor: [2, 2, 3, 0],
   anklemob: [2, 2, 3, 0], deepsquat: [2, 2, 3, 0], shoulderband: [2, 2, 3, 0], hipairplane: [2, 2, 3, 0], foamroll: [2, 2, 3, 0],
