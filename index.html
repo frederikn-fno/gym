@@ -65,8 +65,8 @@ try { var t = ((JSON.parse(localStorage.getItem('gk8-goalkeeper-v1')) || {}).set
       <div id="startCard"></div>
       <div id="doneCard"></div>
       <div id="seasonCard"></div>
-      <div id="checkCard"></div>
       <div class="today-card" id="todayCard"></div>
+      <div id="checkCard"></div>
       <div id="matchCard"></div>
       <div id="weekSummary"></div>
       <div id="coachCard"></div>
@@ -177,9 +177,9 @@ try { var t = ((JSON.parse(localStorage.getItem('gk8-goalkeeper-v1')) || {}).set
           <div class="t-body">
             <button class="btn btn-lime btn-block t-next-btn" id="tRepsBtn" type="button" hidden>Færdig, næste</button>
             <div class="t-controls">
-              <button class="btn btn-lime" id="tStart" type="button">START</button>
-              <button class="btn" id="tPause" type="button">PAUSE</button>
-              <button class="btn" id="tReset" type="button">RESET</button>
+              <button class="btn btn-lime" id="tStart" type="button">Start</button>
+              <button class="btn" id="tPause" type="button">Pause</button>
+              <button class="btn" id="tReset" type="button">Nulstil</button>
             </div>
             <button class="btn btn-ghost btn-sm t-back" id="tBack" type="button" hidden><span data-icon="back"></span>Tilbage til øvelserne</button>
           </div>
@@ -245,7 +245,7 @@ try { var t = ((JSON.parse(localStorage.getItem('gk8-goalkeeper-v1')) || {}).set
       <div class="page-head">
         <div>
           <h2 id="libTitle" tabindex="-1">Øvelses&shy;bibliotek</h2>
-          <p class="sec-lead">Hver øvelse viser, hvad den er <b>godt til</b>, og hvor godt den passer i <b>off-season, opbygning og in-season</b>. Vil du bytte en øvelse i programmet? Åbn den, og tryk "Skift øvelse".</p>
+          <p class="sec-lead">Tryk på en øvelse for at se den. Stjernen gemmer den som favorit, og de tre søjler viser, hvor godt den passer i off-season, opbygning og in-season.</p>
         </div>
       </div>
       <div class="lib-bar">
@@ -253,13 +253,13 @@ try { var t = ((JSON.parse(localStorage.getItem('gk8-goalkeeper-v1')) || {}).set
         <div class="chips" id="libChips" role="group" aria-label="Godt til"></div>
         <label class="lib-search"><span class="sr-only">Søg</span><input type="search" id="libSearch" placeholder="Søg øvelse, fx squat eller core" autocomplete="off" autocapitalize="none" enterkeyhint="search"></label>
       </div>
-      <details class="legend"><summary>Hvad betyder tagsene?</summary><dl id="libLegend"></dl></details>
-      <details class="legend"><summary>Hvad betyder sæson og "tæt på kamp"?</summary><dl id="libSeasonLegend"></dl></details>
-      <details class="legend"><summary>Flere filtre: udstyr og type</summary>
+      <details class="legend lib-more-info"><summary>Flere filtre og forklaringer</summary>
         <div class="lib-tools">
           <label class="field">Udstyr<select id="libEquip"></select></label>
           <label class="field">Type<select id="libCat"></select></label>
         </div>
+        <p class="t-sub">Godt til</p><dl id="libLegend"></dl>
+        <p class="t-sub">Sæson og tæt på kamp</p><dl id="libSeasonLegend"></dl>
       </details>
       <p class="lib-count" id="libCount" aria-live="polite"></p>
       <div class="lib" id="lib"></div>

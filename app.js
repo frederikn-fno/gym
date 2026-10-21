@@ -1255,6 +1255,15 @@ function illustration(id, cls = '') {
   if (!_illuCache.has(k)) _illuCache.set(k, buildIllustration(id, cls));
   return _illuCache.get(k);
 }
+/* Miniature: kun slutpositionen (højre felt), så figuren er stor nok til at kunne ses i en liste */
+const _thumbCache = new Map();
+function thumbIllu(id) {
+  if (!_thumbCache.has(id)) {
+    const svg = illustration(id), fb = svg.includes('illu-fb');
+    _thumbCache.set(id, svg.replace('viewBox="0 0 360 212"', `viewBox="${fb ? 95 : 190} 0 170 212"`).replace('class="illu', 'class="illu illu-thumb'));
+  }
+  return _thumbCache.get(id);
+}
 const CAT_ICON = { Kondition: 'pulse', Bevægelse: 'glove', Eksplosiv: 'bolt', Styrke: 'dumbbell', Core: 'core', Mobilitet: 'repeat', Fokus: 'focus' };
 /* Øvelser uden tegnet figur får et ikonkort med udstyr og "godt til" */
 function fallbackIllustration(id, cls) {
@@ -1899,7 +1908,7 @@ function renderWeekNav() {
   if (curPage !== 'program') return; // tegnes af renderProgView, når Program åbnes
   $('weekNav').innerHTML = WEEKS.map(W => {
     const sel = W.n === ST.week, done = ST.weeksDone.includes(W.n);
-    return `<button class="wk" role="tab" type="button" id="tab-${W.n}" data-week="${W.n}" aria-selected="${sel}" aria-controls="weekView" tabindex="${sel ? 0 : -1}">UGE ${W.n}${done ? `<span class="ck" aria-label="gennemført">${ICON.check}</span>` : ''}</button>`;
+    return `<button class="wk" role="tab" type="button" id="tab-${W.n}" data-week="${W.n}" aria-selected="${sel}" aria-controls="weekView" tabindex="${sel ? 0 : -1}">Uge ${W.n}${done ? `<span class="ck" aria-label="gennemført">${ICON.check}</span>` : ''}</button>`;
   }).join('');
   centerWeekTab();
 }
@@ -1930,8 +1939,8 @@ function itemHTML(it0, ctx) {
   const e = EX[it.ex], name = it.name || e.name, done = isDone(ctx);
   return `<li class="item ${done ? 'is-done' : ''}">
     <button class="item-open" type="button" data-open="${ctx}" aria-label="Åbn ${esc(name)}: ${esc(it.dose)}">
-      <span class="thumb" aria-hidden="true">${illustration(it.ex)}</span>
-      <span class="item-txt"><span class="nm">${name}</span><span class="ds">${it.dose}</span>${it.note ? `<span class="nt">${it.note}</span>` : ''}${it.prog ? `<span class="nt prog">${esc(it.prog)}</span>` : ''}<span class="nt good">${esc(e.good.slice(0, 3).join(' · '))}</span>${it.swapped ? `<span class="nt swapped">↻ Byttet fra ${esc(it.orig.name || EX[it.orig.ex].name)}</span>` : ''}</span>
+      <span class="thumb" aria-hidden="true">${thumbIllu(it.ex)}</span>
+      <span class="item-txt"><span class="nm">${name}</span><span class="ds">${it.dose}</span>${it.note ? `<span class="nt">${it.note}</span>` : ''}${it.prog ? `<span class="nt prog">${esc(it.prog)}</span>` : ''}${it.swapped ? `<span class="nt swapped">↻ Byttet fra ${esc(it.orig.name || EX[it.orig.ex].name)}</span>` : ''}</span>
     </button>
     <button class="check" type="button" data-check="${ctx}" aria-pressed="${done}" aria-label="Markér ${esc(name)} som færdig"><span>${ICON.check}</span></button></li>`;
 }
@@ -1957,7 +1966,7 @@ function testFormHTML(n) {
     <p class="saved-note" id="tfNote">${esc(testNote(n))}</p></div>`;
 }
 function blockHTML(b, n) {
-  const timerBtn = b.timer ? `<button class="btn btn-lime" type="button" data-timer="${n}|${b.id}">${ICON.play}${b.timer.segs.length === 1 ? 'Start timer · ' + fmt(b.timer.segs[0].secs) : 'Start guidet timer'}</button>` : '';
+  const timerBtn = b.timer ? `<button class="btn" type="button" data-timer="${n}|${b.id}">${ICON.play}${b.timer.segs.length === 1 ? 'Start timer · ' + fmt(b.timer.segs[0].secs) : 'Start guidet timer'}</button>` : '';
   const restBtn = b.restTimer ? `<button class="btn" type="button" data-rest="${b.restTimer}" data-src="blk-${n}-${b.id}">${ICON.timer}Pausetimer ${b.restTimer} sek</button>` : '';
   return `<article class="block" id="blk-${n}-${b.id}">
     <header class="block-head"><span class="block-ic" aria-hidden="true">${ICON[b.icon]}</span><div><h4>${b.title}</h4><div class="tags">${b.tags.map((t, i) => `<span class="tag ${i === 0 ? 'lime' : ''}">${t}</span>`).join('')}</div></div></header>
@@ -1988,6 +1997,7 @@ function renderWeek() {
 }
 function toggleDone(ctx) {
   const p = ctx.split('|');
+  if (!isDone(ctx)) vib(12); // lille bekræftelse, når en øvelse krydses af
   if (p[0] === 'fri') { ST.fri.done[p[1]] = !ST.fri.done[p[1]]; if (!ST.fri.done[p[1]]) delete ST.fri.done[p[1]]; save(); withFocus(renderFriday); return; }
   if (p[0] === 'home') {
     if (ST.home.done[ctx]) { delete ST.home.done[ctx]; delete ST.run[ctx]; } else ST.home.done[ctx] = true;
@@ -2039,7 +2049,7 @@ function renderHome(force) {
   $('homeBlocks').innerHTML = lv.blocks.map(b => {
     const its = b.items.map((it, i) => itemHTML(it, `home|${L}|${b.id}|${i}`)).join('');
     return `<article class="block" id="home-${b.id}"><header class="block-head"><span class="block-ic" aria-hidden="true">${ICON[b.icon]}</span><div><h4>${b.title}</h4><div class="tags">${b.tags.map((t, i) => `<span class="tag ${i === 0 ? 'lime' : ''}">${t}</span>`).join('')}</div></div></header>
-      <ul class="items">${its}</ul><div class="block-actions"><button class="btn btn-lime" type="button" data-hometimer="${L}|${b.id}">${ICON.play}Start guidet timer</button></div></article>`;
+      <ul class="items">${its}</ul><div class="block-actions"><button class="btn" type="button" data-hometimer="${L}|${b.id}">${ICON.play}Start guidet timer</button></div></article>`;
   }).join('');
   const done = ST.homeLog.includes(todayISO());
   const btn = $('homeDone'); btn.setAttribute('aria-pressed', done); btn.className = `btn btn-block wk-done-btn ${done ? '' : 'btn-lime'}`;
@@ -2053,8 +2063,8 @@ function toggleHomeDone() {
 }
 
 /* ===== Øvelsesbibliotek ===== */
-let libQ = '', libShown = 18;
-const LIB_PAGE = 18;
+let libQ = '', libShown = 30;
+const LIB_PAGE = 30;
 /* Med en valgt sæson vises kun øvelser, der er gode i perioden (2+), med kerneøvelserne først */
 function libFiltered() {
   const g = ST.settings.lib, eq = ST.settings.libEquip, c = ST.settings.libCat, sn = ST.settings.libSeason, q = libQ.trim().toLowerCase();
@@ -2116,13 +2126,15 @@ function toggleFav(id) {
   toast(on ? `${EX[id].name} er en favorit` : 'Fjernet fra favoritter');
   if (ST.settings.lib === 'Fav' && curPage === 'ovelser') renderLibList();
 }
+/* Biblioteket er en kompakt liste: miniature, navn, "godt til", udstyr og sæson. Alt det øvrige står i dialogen. */
 function libCardHTML(id, e) {
-  return `<article class="ex-card">
-      <button class="ex-illu" type="button" data-open="lib|${id}" aria-label="Vis ${esc(e.name)} i stor visning">${illustration(id)}</button>
-      <div class="ex-body"><div class="ex-head"><h3>${e.name}</h3>${favBtn(id)}</div>${goodTagsHTML(e)}<p class="ex-meta">${esc(e.cat)}${isHomeEx(e) ? ' · kan laves hjemme' : ''}</p>${seasonRowHTML(e)}<p class="ex-goal">${e.goal}</p>
-        <ol class="ex-steps">${['Start', 'Bevægelse', 'Slut'].map((l, i) => `<li><b>${l}</b><span>${e.how[i]}</span></li>`).join('')}</ol>
-        <dl class="ex-dose"><div><dt>Reps/tid</dt><dd>${e.dose}</dd></div><div><dt>Pause</dt><dd>${e.rest}</dd></div></dl>
-        <ul class="ex-tips">${e.tips.map(t => `<li>${ICON.tip}<span>${t}</span></li>`).join('')}</ul></div></article>`;
+  const sn = ST.settings.libSeason, fit = SEASONS.map(s => `<i class="lv${e.season[s.k]}${s.k === sn ? ' sel' : ''}" title="${s.t}: ${SEASON_FIT[e.season[s.k]].toLowerCase()}"></i>`).join('');
+  return `<article class="lib-row">
+      <button class="lib-open" type="button" data-open="lib|${id}" aria-label="${esc(e.name)}: ${esc(e.good.join(', '))}. Åbn øvelsen">
+        <span class="thumb" aria-hidden="true">${thumbIllu(id)}</span>
+        <span class="lib-txt"><b>${esc(e.name)}</b><span class="lib-good">${esc(e.good.slice(0, 3).join(' · '))}</span>
+          <span class="lib-meta">${esc(e.equip)}<span class="lib-fit" aria-hidden="true">${fit}</span></span></span>
+      </button>${favBtn(id)}</article>`;
 }
 function renderLibList() {
   const list = libFiltered(), shown = list.slice(0, libShown), sn = ST.settings.libSeason;
@@ -2158,13 +2170,18 @@ function openRpeSheet() {
     <div class="rpe" role="list">${RPE.map(r => `<div class="rpe-row" role="listitem"><span class="rpe-n">${r.n}</span><span class="rpe-cell"><span class="rpe-bar" style="--c:${r.c};--w:${r.w}%">${r.t}</span><span class="rpe-cue">${r.cue}</span></span></div>`).join('')}</div>
     <div class="m-actions" style="grid-template-columns:1fr"><button class="btn" type="button" data-sheet-close>Luk</button></div></div>`;
   d._ctx = null;
-  if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
+  showSheet(d);
   d.scrollTop = 0;
 }
 
 /* ===== Øvelsesdialog ===== */
 let sheetCtx = null;
 let mDateTouched = false, editMatchId = null;
+/* Åbner dialogen og sætter fokus på titlen, så første knap (fx stjernen) ikke får en fokusring */
+function showSheet(d) {
+  if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
+  const h = d.querySelector('#sheetTitle'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
+}
 function openSheet(ctx) {
   sheetCtx = ctx;
   const p = ctx.split('|');
@@ -2208,7 +2225,7 @@ function openSheet(ctx) {
     <div class="m-actions">${timerBtn || ''}${doneBtn}</div></div>`;
   if (!timerBtn) d.querySelector('.m-actions').style.gridTemplateColumns = '1fr';
   d._ctx = { exId, item, block, name, secs, perSide, src, segs, base, origEx: origItem && origItem.ex };
-  if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
+  showSheet(d);
   d.scrollTop = 0;
 }
 function goodTagsHTML(e) {
@@ -2218,7 +2235,7 @@ function openSwap() {
   const d = $('exSheet'), c = d._ctx, o = EX[c.origEx];
   const opts = swapOptions(sheetCtx, c.origEx);
   const li = ([id, e]) => `<li class="item ${id === c.exId ? 'is-done' : ''}"><button class="item-open" type="button" data-swap-pick="${id}" aria-label="Vælg ${esc(e.name)}">
-      <span class="thumb" aria-hidden="true">${illustration(id)}</span>
+      <span class="thumb" aria-hidden="true">${thumbIllu(id)}</span>
       <span class="item-txt"><span class="nm">${e.name}${id === c.exId ? ' · valgt' : ''}</span><span class="ds">${esc(e.dose)}</span><span class="nt good">${esc(e.good.join(' · '))}</span><span class="nt">${esc(e.equip)}</span></span></button></li>`;
   d.innerHTML = `<div class="sheet-in"><div class="grab" aria-hidden="true"></div>
     <div class="sheet-top"><div><p class="today-small">Skift øvelse</p><h3 id="sheetTitle">${o.name}</h3></div><button class="sheet-close" type="button" data-sheet-close aria-label="Luk">${ICON.close}</button></div>
@@ -3585,11 +3602,13 @@ function progAction(ds) {
 /* ===== Dagligt tjek: søvn, ømhed og energi =====
    Parathed = gennemsnit af søvn, energi og (6 − ømhed) på 1–5. Lav parathed gør dagens pas lettere,
    og tre lave dage i træk giver en markering i statussen. */
+/* Alle tre spørgsmål vises, så 5 er bedst. Ømhed gemmes som før (1 = ingen), men vises som "Krop" (5 = frisk). */
 const CHK_Q = [
-  { k: 'sleep', t: 'Søvn i nat', lo: 'Dårlig', hi: 'God' },
-  { k: 'sore', t: 'Ømhed i kroppen', lo: 'Ingen', hi: 'Meget øm' },
+  { k: 'sleep', t: 'Søvn', lo: 'Dårlig', hi: 'God' },
+  { k: 'sore', t: 'Krop', lo: 'Øm', hi: 'Frisk', inv: true },
   { k: 'energy', t: 'Energi', lo: 'Lav', hi: 'Høj' }
 ];
+const chkShown = (q, d) => d[q.k] == null ? null : q.inv ? 6 - d[q.k] : d[q.k];
 const READY_TXT = { low: 'Let dag', ok: 'Normal dag', high: 'Klar til at give den gas' };
 let chkDraft = null, chkEdit = false;
 const todayCheck = () => ST.checkins.find(c => c.date === todayISO()) || null;
@@ -3611,14 +3630,14 @@ function renderCheckCard() {
   }
   const d = chkDraft || (c ? { ...c } : {});
   chkDraft = d;
-  el.innerHTML = `<div class="panel checkin"><div class="check-head"><h3>Dagens tjek</h3><small>10 sekunder · tilpasser dagens pas</small></div>
-    ${CHK_Q.map(q => `<div class="chk-row"><p class="chk-q">${q.t}</p><div class="chk-scale" role="group" aria-label="${q.t}">${[1, 2, 3, 4, 5].map(v => `<button class="chk-btn" type="button" data-chk="${q.k}|${v}" aria-pressed="${d[q.k] === v}">${v}</button>`).join('')}</div><div class="chk-ends" aria-hidden="true"><span>${q.lo}</span><span>${q.hi}</span></div></div>`).join('')}
-    <button class="btn btn-block btn-lime" type="button" data-chk-save>Gem</button></div>`;
+  el.innerHTML = `<div class="panel checkin"><div class="check-head"><h3>Hvordan har du det i dag?</h3><small>1 = dårligt · 5 = godt</small></div>
+    ${CHK_Q.map(q => `<div class="chk-row"><p class="chk-q">${q.t}<small>${q.lo} – ${q.hi}</small></p><div class="chk-scale" role="group" aria-label="${q.t}: 1 ${q.lo.toLowerCase()}, 5 ${q.hi.toLowerCase()}">${[1, 2, 3, 4, 5].map(v => `<button class="chk-btn" type="button" data-chk="${q.k}|${v}" aria-pressed="${chkShown(q, d) === v}">${v}</button>`).join('')}</div></div>`).join('')}
+    <button class="btn btn-block" type="button" data-chk-save>Gem dagens tjek</button><p class="chk-why">Tilpasser dagens pas, hvis du er træt eller øm.</p></div>`;
 }
 function checkAction(ds) {
   if ('chkEdit' in ds) { chkEdit = true; chkDraft = { ...todayCheck() }; renderCheckCard(); return; }
   if (ds.chk) {
-    const [k, v] = ds.chk.split('|'); chkDraft = chkDraft || {}; chkDraft[k] = +v;
+    const [k, v] = ds.chk.split('|'), q = CHK_Q.find(x => x.k === k); chkDraft = chkDraft || {}; chkDraft[k] = q && q.inv ? 6 - +v : +v;
     document.querySelectorAll(`[data-chk^="${k}|"]`).forEach(b => b.setAttribute('aria-pressed', b.dataset.chk === ds.chk));
     return;
   }
@@ -3965,7 +3984,7 @@ function setStepHTML(st) {
     <div class="s-sec"><button class="btn btn-ghost" type="button" data-ses="skip">Spring over</button><button class="btn btn-ghost" type="button" data-open="${st.ctx}">Se øvelsen</button></div></div>`;
 }
 function blockStepHTML(st) {
-  const b = st.b, rows = b.items.map((it0, i) => { if (!it0.ex) return ''; const it = resolveItem(it0, st.ictx(i)); return `<li class="s-row"><span class="thumb" aria-hidden="true">${illustration(it.ex)}</span><span><b>${it.name || EX[it.ex].name}</b><small>${esc(it.dose)}</small></span></li>`; }).join('');
+  const b = st.b, rows = b.items.map((it0, i) => { if (!it0.ex) return ''; const it = resolveItem(it0, st.ictx(i)); return `<li class="s-row"><span class="thumb" aria-hidden="true">${thumbIllu(it.ex)}</span><span><b>${it.name || EX[it.ex].name}</b><small>${esc(it.dose)}</small></span></li>`; }).join('');
   return `<div class="s-block"><span class="block-ic" aria-hidden="true">${ICON[b.icon] || ICON.pulse}</span><h3 class="s-name">${b.title}</h3><div class="tags">${(b.tags || []).map((t, i) => `<span class="tag ${i === 0 ? 'lime' : ''}">${t}</span>`).join('')}</div></div>
     ${b.callout ? `<p class="callout">${ICON.talk}<span>${b.callout}</span></p>` : ''}
     <ul class="s-rows">${rows}</ul>
@@ -3976,7 +3995,7 @@ function blockStepHTML(st) {
 function restHTML() {
   const nx = SES.steps[SES.i];
   let next = '';
-  if (nx && nx.type === 'set') { const it = resolveItem(nx.b.items[nx.i], nx.ctx); next = `<div class="s-next"><span class="thumb" aria-hidden="true">${illustration(it.ex)}</span><span><small>Næste</small><b>${it.name || EX[it.ex].name}</b><small>Sæt ${nx.set} af ${nx.sets} · ${esc(it.dose)}</small></span></div>`; }
+  if (nx && nx.type === 'set') { const it = resolveItem(nx.b.items[nx.i], nx.ctx); next = `<div class="s-next"><span class="thumb" aria-hidden="true">${thumbIllu(it.ex)}</span><span><small>Næste</small><b>${it.name || EX[it.ex].name}</b><small>Sæt ${nx.set} af ${nx.sets} · ${esc(it.dose)}</small></span></div>`; }
   else if (nx) next = `<div class="s-next"><span class="block-ic" aria-hidden="true">${ICON[nx.b.icon] || ICON.pulse}</span><span><small>Næste</small><b>${nx.b.title}</b></span></div>`;
   return `<div class="s-rest"><p>Hvile</p><b id="sRestTime">${fmt(Math.ceil(TM.left))}</b><div class="s-rbar"><i id="sRestBar" style="width:0"></i></div></div>${next}
     <div class="s-dock"><button class="btn btn-lime btn-block s-main" type="button" data-ses="skiprest">Klar til næste sæt</button>
@@ -4648,7 +4667,7 @@ function openAddTo(exId) {
     ${groups.join('') || '<p class="muted">Du har ingen egne programmer endnu.</p>'}
     <div class="done-actions"><button class="btn btn-lime" type="button" data-addnew="${exId}">${ICON.plus}Nyt program med ${esc(e.name)}</button>${back ? `<button class="btn btn-ghost" type="button" data-addback="${esc(back)}">Tilbage</button>` : ''}</div></div>`;
   d._ctx = null;
-  if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
+  showSheet(d);
   d.scrollTop = 0;
 }
 function addToAction(ds) {
@@ -4691,7 +4710,7 @@ function renderBuilder() {
   if (!bDraft) bDraft = newDraft();
   const d = bDraft; bSes = Math.min(bSes, d.sessions.length - 1); const s = d.sessions[bSes], editing = ST.custom.some(c => c.id === d.id);
   const row = (it, i) => { const e = EX[it.ex], unit = it.secs ? 'sek' : 'gent.';
-    return `<li class="b-item" data-idx="${i}"><button class="b-grip" type="button" data-bdrag="${i}" aria-label="Træk for at flytte ${esc(e.name)}">${ICON.grip}</button><span class="thumb" aria-hidden="true">${illustration(it.ex)}</span><div class="b-main"><b>${esc(e.name)}</b>
+    return `<li class="b-item" data-idx="${i}"><button class="b-grip" type="button" data-bdrag="${i}" aria-label="Træk for at flytte ${esc(e.name)}">${ICON.grip}</button><span class="thumb" aria-hidden="true">${thumbIllu(it.ex)}</span><div class="b-main"><b>${esc(e.name)}</b>
       <div class="b-steps"><div class="b-step"><button type="button" data-bstep="${i}|sets|-1" aria-label="Færre sæt">−</button><span><b>${it.sets}</b> sæt</span><button type="button" data-bstep="${i}|sets|1" aria-label="Flere sæt">+</button></div>
       <div class="b-step"><button type="button" data-bstep="${i}|${it.secs ? 'secs' : 'reps'}|-1" aria-label="Færre">−</button><span><b>${it.secs || it.reps}</b> ${unit}</span><button type="button" data-bstep="${i}|${it.secs ? 'secs' : 'reps'}|1" aria-label="Flere">+</button></div></div></div>
       <div class="b-tools"><button class="icon-btn" type="button" data-bmove="${i}|-1" aria-label="Flyt op" ${i ? '' : 'disabled'}>▲</button><button class="icon-btn" type="button" data-bmove="${i}|1" aria-label="Flyt ned" ${i < s.items.length - 1 ? '' : 'disabled'}>▼</button><button class="icon-btn" type="button" data-bdelitem="${i}" aria-label="Fjern ${esc(e.name)}">${ICON.trash}</button></div></li>`; };
@@ -4712,14 +4731,14 @@ function openPicker() {
     <div class="chips" role="group" aria-label="Godt til">${['Alle', 'Fav', ...BENEFITS.map(b => b.k)].map(c => `<button class="chip" type="button" data-bpgood="${c}" aria-pressed="${c === bpGood}">${c === 'Fav' ? '★ Favoritter' : c}</button>`).join('')}</div>
     <ul class="items" id="bpList"></ul></div>`;
   renderPickList();
-  if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
+  showSheet(d);
   d.scrollTop = 0;
 }
 function renderPickList() {
   const q = bpQ.trim().toLowerCase(), have = new Set(bDraft.sessions[bSes].items.map(i => i.ex));
   const all = Object.entries(EX).filter(([id, e]) => (bpGood === 'Alle' || (bpGood === 'Fav' ? ST.favs.includes(id) : e.good.includes(bpGood))) && (!q || `${e.name} ${e.good.join(' ')} ${e.equip}`.toLowerCase().includes(q)))
     .sort((a, b) => ST.favs.includes(b[0]) - ST.favs.includes(a[0])), list = all.slice(0, bpShown); // favoritter først
-  $('bpList').innerHTML = (list.map(([id, e]) => `<li class="item${have.has(id) ? ' is-done' : ''}"><button class="item-open" type="button" data-bpick="${id}"><span class="thumb" aria-hidden="true">${illustration(id)}</span><span class="item-txt"><span class="nm">${esc(e.name)}${have.has(id) ? ' · tilføjet' : ''}</span><span class="nt good">${esc(e.good.slice(0, 3).join(' · '))}</span><span class="nt">${esc(e.equip)}</span></span></button></li>`).join('') || '<li class="empty">Ingen øvelser matcher.</li>')
+  $('bpList').innerHTML = (list.map(([id, e]) => `<li class="item${have.has(id) ? ' is-done' : ''}"><button class="item-open" type="button" data-bpick="${id}"><span class="thumb" aria-hidden="true">${thumbIllu(id)}</span><span class="item-txt"><span class="nm">${esc(e.name)}${have.has(id) ? ' · tilføjet' : ''}</span><span class="nt good">${esc(e.good.slice(0, 3).join(' · '))}</span><span class="nt">${esc(e.equip)}</span></span></button></li>`).join('') || '<li class="empty">Ingen øvelser matcher.</li>')
     + (all.length > list.length ? `<li><button class="btn btn-block" type="button" data-bpmore>Vis flere (${all.length - list.length} mere)</button></li>` : '');
 }
 function builderAction(ds) {

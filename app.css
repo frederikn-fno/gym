@@ -1239,3 +1239,130 @@ button.list-row { width: 100%; text-align: left; }
 [data-theme="light"] [style*="color:#FFD84A"] { color: #8A6A00 !important; }
 [data-theme="light"] [style*="color:#FF9A3D"] { color: #A84B00 !important; }
 [data-theme="light"] [style*="color:#FF6B5B"] { color: #B3261E !important; }
+/* =========================================================
+   DESIGN 2 · professionelt og roligt
+   Regler:
+   - Limegrøn (accent) bruges kun til den vigtigste handling på en skærm, til fremskridt og til "færdig".
+     Valgte faner er neutrale; valgte chips er en svag grøn tone.
+   - Barlow Condensed (versaler) kun til sidetitler, dagens kort, ugen, pastitler og tal.
+     Knapper, faner, chips og overskrifter bruger Barlow i almindelig skrivemåde.
+   - Flade lister med skillelinjer i stedet for kort inde i kort.
+   ========================================================= */
+:root { --seg-track: #0F1713; --seg-sel: #2A3931; --sel-shadow: 0 1px 2px rgba(0, 0, 0, .45); }
+:root[data-theme="light"] { --seg-track: #E1E8DE; --seg-sel: #FFFFFF; --sel-shadow: 0 1px 3px rgba(20, 40, 20, .2); }
+
+/* Knapper: fed brødtekst, ikke versaler */
+.btn { font-family: var(--font-b); font-weight: 700; font-size: 16px; letter-spacing: .005em; text-transform: none; }
+.btn-sm { font-size: 15px; }
+.fc-actions .btn, .foot-actions .btn, .m-actions .btn { font-size: 15px; }
+.s-main, .t-controls .btn, .t-next-btn { font-size: 18px; }
+.plan-banner button { font-family: var(--font-b); font-weight: 700; font-size: 14px; letter-spacing: 0; text-transform: none; }
+.btn-ghost { border-color: var(--line-2); }
+
+/* Segmenteret vælger (faner): neutral, iOS-agtig */
+.seg { background: var(--seg-track); border: 0; padding: 3px; gap: 2px; border-radius: 14px; }
+.seg-btn { min-height: 40px; border-radius: 11px; font-family: var(--font-b); font-weight: 600; font-size: 15px; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.seg-btn[aria-selected="true"], .seg-btn[aria-pressed="true"] { background: var(--seg-sel); color: var(--text); box-shadow: var(--sel-shadow); }
+.lib-season .seg-btn { font-size: 14px; }
+
+/* Chips: valgt = svag grøn tone */
+.chip { font-family: var(--font-b); font-weight: 600; font-size: 15px; background: var(--card); color: var(--soft); }
+.chip[aria-pressed="true"] { background: var(--lime-soft); border-color: var(--lime); color: var(--lime); }
+
+/* Ugefaner */
+.wk { height: 44px; min-width: 74px; border-radius: 12px; font-family: var(--font-b); font-weight: 700; font-size: 15px; letter-spacing: 0; background: var(--card); color: var(--soft); }
+.wk[aria-selected="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+.wk[aria-selected="true"] .ck { background: var(--lime); color: var(--lime-ink); }
+
+/* Tags: neutrale, kun den første må være grøn */
+.tag { font-size: 13px; font-weight: 600; padding: 3px 10px; background: var(--card-2); border-color: transparent; color: var(--soft); }
+.tag.lime { background: var(--lime-soft); border-color: transparent; color: var(--lime); }
+.tag.eq { background: transparent; border: 1px dashed var(--line-2); color: var(--muted); }
+
+/* Kort: rolige, uden skygge */
+.panel, .block, .prog-card { box-shadow: none; }
+.block { padding: 16px 16px 8px; }
+.block-head { margin-bottom: 4px; }
+.block-ic { width: 40px; height: 40px; border-radius: 12px; }
+.block-ic svg { width: 22px; height: 22px; }
+.block .block-actions { margin: 4px 0 8px; }
+
+/* Øvelsesrækker: flad liste med skillelinjer og tydelig miniature */
+.items { gap: 0; }
+.item { background: transparent; border: 0; border-radius: 0; border-top: 1px solid var(--line); align-items: center; }
+.item:first-child { border-top: 0; }
+.item-open { padding: 10px 2px; gap: 12px; border-radius: 0; }
+.thumb { width: 56px; border-radius: 12px; overflow: hidden; }
+.thumb .illu { display: block; width: 100%; height: auto; }
+.item-txt { gap: 1px; }
+.item-txt .nm { font-size: 16px; font-weight: 700; }
+.item-txt .ds { font-size: 19px; color: var(--text); margin-top: 2px; }
+.item-txt .nt { font-size: 13.5px; }
+.item.is-done .item-open { opacity: .45; }
+.item.is-done .nm { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.check { padding: 0 2px 0 8px; }
+.check span { width: 30px; height: 30px; }
+.rest-row { border-top: 1px solid var(--line); padding: 10px 2px; }
+
+/* Biblioteket: kompakt liste */
+.lib { gap: 0; }
+.lib-row { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--line); min-width: 0; }
+.lib-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 10px 0; text-align: left; }
+.lib-row .thumb { width: 60px; }
+.lib-txt { min-width: 0; display: grid; gap: 1px; }
+.lib-txt b { font-size: 16px; font-weight: 700; line-height: 1.25; }
+.lib-good { font-size: 14px; color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lib-meta { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+.lib-fit { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
+.lib-fit i { width: 5px; border-radius: 2px; background: var(--line-2); }
+.lib-fit i.lv0 { height: 3px; } .lib-fit i.lv1 { height: 6px; } .lib-fit i.lv2 { height: 9px; background: var(--muted); } .lib-fit i.lv3 { height: 12px; background: var(--lime); }
+.lib-fit i.sel { outline: 1.5px solid var(--text); outline-offset: 1px; }
+@media (min-width: 640px) { .lib { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; } }
+@media (min-width: 1000px) { .lib { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* Forside */
+.today-card { gap: 10px; }
+.today-text { font-size: 16px; }
+.today-card .btn-ghost { background: transparent; }
+.today-card.is-fit .btn-ghost { background: transparent; color: var(--lime-ink); border: 1.5px solid currentColor; opacity: .9; }
+.tile { min-height: 76px; }
+.tile b { font-family: var(--font-b); font-weight: 700; font-size: 15px; letter-spacing: 0; text-transform: none; }
+.ws-pill { padding: 8px 8px 12px; }
+.ws-pill small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Dagligt tjek: kompakt, én linje pr. spørgsmål */
+.checkin .check-head { margin-bottom: 4px; flex-wrap: wrap; }
+.checkin .check-head h3 { font-size: 18px; }
+.chk-row { display: grid; grid-template-columns: 78px minmax(0, 1fr); align-items: center; gap: 10px; padding: 6px 0; border: 0; }
+.chk-row:last-of-type { margin-bottom: 0; }
+.chk-q { margin: 0; font-weight: 700; display: grid; line-height: 1.2; }
+.chk-q small { font-size: 13px; font-weight: 600; color: var(--muted); }
+.chk-btn { min-height: 40px; font-family: var(--font-b); font-weight: 700; font-size: 16px; }
+.chk-btn[aria-pressed="true"] { background: var(--lime-soft); border-color: var(--lime); color: var(--lime); }
+.checkin .btn { margin-top: 10px; }
+.chk-why { margin-top: 8px; font-size: 13px; color: var(--muted); text-align: center; }
+
+/* Sektionsoverskrifter som små etiketter */
+.block-title { margin-top: 24px !important; }
+.block-title h2, .sub-h { font-family: var(--font-b); font-size: 13px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.sub-h { margin-top: 10px; }
+
+/* Rutiner: reglerne er en rolig infoboks, ikke et skrig */
+.not-training, .not-training.home-rule { background: var(--lime-soft); color: var(--text); border: 1px solid rgba(200, 240, 60, .3); font-size: 15px; font-weight: 500; }
+.not-training svg { color: var(--lime); width: 26px; height: 26px; }
+.not-training strong { font-family: var(--font-b); font-size: 16px; font-weight: 700; letter-spacing: 0; }
+#rutFri .not-training { background: rgba(77, 182, 255, .12); border-color: rgba(77, 182, 255, .35); }
+#rutFri .not-training svg { color: var(--rest); }
+[data-theme="light"] .not-training { border-color: rgba(59, 107, 0, .25); }
+
+/* Status og tal */
+.stp.big { min-height: 32px; padding: 0 12px; font-size: 17px; }
+.stat-row > div, .ws-pill { border-color: transparent; }
+.illu-thumb text { display: none; }
+.lib-more-info .t-sub { margin: 14px 0 6px; }
+.lib-more-info .lib-tools { padding-top: 4px; }
+/* Overskrifter, der stadig var kondenserede versaler */
+.goal-chip b { font-family: var(--font-b); font-weight: 700; font-size: 18px; text-transform: none; letter-spacing: 0; }
+.logbox h4 { font-family: var(--font-b); font-weight: 700; font-size: 18px; text-transform: none; }
+.sess-h { color: var(--text); }
+#sheetTitle:focus { outline: none; }
