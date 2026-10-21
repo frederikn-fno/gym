@@ -6,10 +6,10 @@
    - Skrifttyper og ikoner: cache først (ændrer sig aldrig).
    - Eksterne requests går direkte til netværket.
    Bump CACHE-versionen, når filer tilføjes/omdøbes. */
-const CACHE = 'gk8-v12';
+const CACHE = 'gk8-v14';
 const FONTS = ['Barlow-400', 'Barlow-500', 'Barlow-600', 'Barlow-700', 'BarlowCondensed-600', 'BarlowCondensed-700', 'BarlowCondensed-800'].map(f => `./fonts/${f}.woff2`);
 const ASSETS = [
-  './', './index.html', './app.css', './app.js', './manifest.webmanifest',
+  './', './index.html', './app.css', './exercises.js', './programs.js', './app.js', './manifest.webmanifest',
   './icon.svg', './icon-152.png', './icon-167.png', './icon-180.png', './icon-192.png', './icon-512.png', './icon-maskable-512.png',
   ...FONTS
 ];

@@ -39,6 +39,7 @@
     <nav class="topnav" aria-label="Sider">
       <a href="#/idag" data-nav="idag">I dag</a>
       <a href="#/program" data-nav="program">Program</a>
+      <a href="#/programmer" data-nav="programmer">Programmer</a>
       <a href="#/coach" data-nav="coach">Min form</a>
       <a href="#/hjemme" data-nav="hjemme">Hjemme</a>
       <a href="#/fredag" data-nav="fredag">Fredag</a>
@@ -58,6 +59,7 @@
   <section class="page" id="page-idag" data-page="idag" data-title="I dag" aria-labelledby="heroTitle" hidden>
     <div class="wrap page-in">
       <h1 id="heroTitle" class="vh" tabindex="-1">I dag</h1>
+      <div id="startCard"></div>
       <div class="today-card" id="todayCard"></div>
       <div id="weekSummary"></div>
       <div id="coachCard"></div>
@@ -80,6 +82,19 @@
         <div class="weeknav-scroll" role="tablist" id="weekNav"></div>
       </nav>
       <div id="weekView" role="tabpanel" aria-labelledby="progTitle"></div>
+    </div>
+  </section>
+
+  <!-- ============ PROGRAMMER ============ -->
+  <section class="page" id="page-programmer" data-page="programmer" data-title="Programmer" aria-labelledby="pgTitle" hidden>
+    <div class="wrap page-in">
+      <div class="page-head">
+        <div>
+          <h2 id="pgTitle" tabindex="-1">Programmer</h2>
+          <p class="sec-lead">Vælg et færdigt program til din sæson og dit fokus. Sæt din kampdag, så lægger appen passene på de rigtige dage.</p>
+        </div>
+      </div>
+      <div id="progBody"></div>
     </div>
   </section>
 
@@ -236,14 +251,16 @@
       <div class="page-head">
         <div>
           <h2 id="libTitle" tabindex="-1">Øvelses&shy;bibliotek</h2>
-          <p class="sec-lead">Hver øvelse viser, hvad den er <b>godt til</b>. Vil du bytte en øvelse i programmet? Åbn den, og tryk "Skift øvelse".</p>
+          <p class="sec-lead">Hver øvelse viser, hvad den er <b>godt til</b>, og hvor godt den passer i <b>off-season, opbygning og in-season</b>. Vil du bytte en øvelse i programmet? Åbn den, og tryk "Skift øvelse".</p>
         </div>
       </div>
       <div class="lib-bar">
+        <div class="seg seg4 lib-season" id="libSeason" role="group" aria-label="Sæson"></div>
         <div class="chips" id="libChips" role="group" aria-label="Godt til"></div>
         <label class="lib-search"><span class="sr-only">Søg</span><input type="search" id="libSearch" placeholder="Søg øvelse, fx squat eller core" autocomplete="off" autocapitalize="none" enterkeyhint="search"></label>
       </div>
       <details class="legend"><summary>Hvad betyder tagsene?</summary><dl id="libLegend"></dl></details>
+      <details class="legend"><summary>Hvad betyder sæson og "tæt på kamp"?</summary><dl id="libSeasonLegend"></dl></details>
       <details class="legend"><summary>Flere filtre: udstyr og type</summary>
         <div class="lib-tools">
           <label class="field">Udstyr<select id="libEquip"></select></label>
@@ -290,6 +307,7 @@
     <div class="wrap page-in">
       <div class="page-head ph-title-only"><div><h2 id="moreTitle" tabindex="-1">Mere</h2></div></div>
       <nav class="list" aria-label="Flere sider">
+        <a class="list-row" href="#/programmer"><span class="lr-ic" data-icon="calendar"></span><span class="lr-t"><b>Programmer</b><small>Færdige programmer, kampdag og træningsdage</small></span><span class="lr-go" data-icon="chev"></span></a>
         <a class="list-row" href="#/ovelser"><span class="lr-ic" data-icon="grid"></span><span class="lr-t"><b>Øvelser</b><small>Bibliotek med figurer og "godt til"</small></span><span class="lr-go" data-icon="chev"></span></a>
         <a class="list-row" href="#/timer"><span class="lr-ic" data-icon="timer"></span><span class="lr-t"><b>Intervaltimer</b><small>Egne og færdige intervaller</small></span><span class="lr-go" data-icon="chev"></span></a>
         <a class="list-row" href="#/status"><span class="lr-ic" data-icon="pulse"></span><span class="lr-t"><b>Status og profil</b><small>Går det godt eller dårligt? Det appen har lært om dig</small></span><span class="lr-go" data-icon="chev"></span></a>
@@ -336,6 +354,8 @@
 
 <dialog class="sheet" id="exSheet" aria-labelledby="sheetTitle"></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="exercises.js"></script>
+<script src="programs.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

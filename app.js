@@ -1243,543 +1243,12 @@ const ICON = {
   more: SV('<circle cx="5.5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="18.5" cy="12" r="1.8" fill="currentColor"/>'),
   chev: SV('<path d="M9 5l7 7-7 7"/>', ' stroke-width="2.6"'),
   gauge: SV('<path d="M3.5 17.5a8.5 8.5 0 1 1 17 0"/><path d="M12 17.5l4.2-5.6"/><circle cx="12" cy="17.5" r="1.4" fill="currentColor"/>'),
-  test: SV('<path d="M9 3h6M10 3v5.5L5 19a1.5 1.5 0 0 0 1.4 2h11.2A1.5 1.5 0 0 0 19 19l-5-10.5V3"/><path d="M7.5 15h9"/>')
+  test: SV('<path d="M9 3h6M10 3v5.5L5 19a1.5 1.5 0 0 0 1.4 2h11.2A1.5 1.5 0 0 0 19 19l-5-10.5V3"/><path d="M7.5 15h9"/>'),
+  shield: SV('<path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.9-7.5-9.5V6z"/><path d="M9 12l2 2 4-4"/>')
 };
 
-/* ===== Øvelser ===== */
-const CATS = ['Alle', 'Kondition', 'Bevægelse', 'Eksplosiv', 'Styrke', 'Core', 'Mobilitet', 'Fokus'];
-/* "Godt til": hvad en øvelse bruges til. Vises som tags ved alle øvelser. */
-const BENEFITS = [
-  { k: 'Styrke', d: 'Kraft i ben, ryg, bryst og skuldre. Giver stabilitet og kraft i alle aktioner.' },
-  { k: 'Eksplosivitet', d: 'Hurtig kraftudvikling: afsæt til redninger, spring og udkast.' },
-  { k: 'Udholdenhed', d: 'Kondition og evnen til at gentage aktioner hele kampen.' },
-  { k: 'Core', d: 'Stabil krop midt i bevægelsen: overfører kraft og giver færre skader.' },
-  { k: 'Hurtighed', d: 'Hurtige fødder, reaktion og første skridt.' },
-  { k: 'Mobilitet', d: 'Bevægelighed i hofter, ryg, skuldre og ankler.' },
-  { k: 'Balance', d: 'Kontrol på ét ben og i ustabile stillinger.' },
-  { k: 'Skadesforebyggelse', d: 'Styrker led og muskler, der ofte bliver overbelastet.' },
-  { k: 'Fokus', d: 'Ro, koncentration og parathed i hovedet.' }
-];
-const EQUIPS = ['Ingen udstyr', 'Elastik', 'Håndvægte', 'Kettlebell', 'Stang', 'Bænk/kasse', 'Kabel', 'Maskine', 'Medicinbold', 'Bold', 'Andet'];
-const PATTERN_TXT = { cardio: 'konditionsøvelser', squat: 'benstyrke', hinge: 'baglår og baller', push: 'skub (bryst og skuldre)', pull: 'træk (ryg)', core: 'core', carry: 'bæreøvelser', plyo: 'eksplosive spring og kast', calf: 'læg og ankler', agility: 'hurtige fødder', mobility: 'bevægelighed', focus: 'fokus' };
-const isHomeEx = e => !!e.home || e.equip === 'Elastik';
-const EX = {
-  bike: {
-    name: 'Cykel / crosstrainer', cat: 'Kondition',
-    goal: 'Opvarmning og aerob base med lav belastning på leddene.',
-    how: ['Indstil sadlen, så knæet er let bøjet, når pedalen er i bund.', 'Træd i jævnt tempo, og justér modstanden, til du rammer den rigtige RPE.', 'Hold tempoet hele vejen, og træk vejret roligt og dybt.'],
-    dose: '5–30 min', rest: 'Ingen', tips: ['Taletest ved RPE 5–6: du kan sige korte sætninger.', 'Crosstrainer: hold overkroppen rank, og brug også armene.'], secs: 360
-  },
-  assault: {
-    name: 'Assault bike', cat: 'Kondition',
-    goal: 'Korte, hårde ryk med arme og ben, ligesom en eksplosiv aktion i målet.',
-    how: ['Sæt dig med fødderne på pedalerne og hænderne på håndtagene.', 'Skub og træk i håndtagene, mens du træder hårdt. Arme og ben arbejder sammen.', 'Sænk tempoet helt ved signalet, og træk vejret dybt.'],
-    dose: '15–30 sek hårdt', rest: '40–60 sek let', tips: ['Hårdt fra første sekund, ingen langsom opstart.', 'Hold hovedet roligt og blikket frem, som når du følger bolden.'], secs: 20
-  },
-  shuffle: {
-    home: true, name: 'Lateral shuffle', cat: 'Bevægelse',
-    goal: 'Hurtig sideværts bevægelse på stregen.',
-    how: ['Målmandsstilling: bøjede knæ, vægt på forfoden og hænderne klar.', 'Skub fra med det ene ben, og flyt dig sidelæns uden at samle fødderne.', 'Stop kontrolleret, og skift retning.'],
-    dose: '20 sek', rest: '30 sek', tips: ['Hold hofterne i samme højde hele vejen.', 'Fødderne må ikke krydse eller slå sammen.'], secs: 20
-  },
-  squat: {
-    home: true, name: 'Bodyweight squat', cat: 'Styrke',
-    goal: 'Styrke og kontrol i ben og hofter.',
-    how: ['Stå med fødderne i skulderbredde og tæerne let udad.', 'Sæt dig ned og tilbage, til lårene er vandrette. Armene frem.', 'Pres op gennem hele foden, til du står helt oprejst.'],
-    dose: '10 reps', rest: '30 sek', tips: ['Knæene følger tæerne.', 'Brystet op og ryggen lige.']
-  },
-  latlunge: {
-    home: true, name: 'Lateral lunge', cat: 'Bevægelse',
-    goal: 'Styrke og bevægelighed til sideværts aktioner.',
-    how: ['Stå samlet med hænderne foran brystet.', 'Tag et langt skridt til siden, og sæt dig ned på det bøjede ben. Det andet ben er strakt.', 'Skub dig tilbage til start, og skift side.'],
-    dose: '6/side', rest: '30 sek', tips: ['Hælen bliver i gulvet.', 'Sid tilbage i hoften, ikke frem over knæet.']
-  },
-  calf: {
-    home: true, name: 'Calf raise', cat: 'Styrke',
-    goal: 'Stærke læg og ankler til afsæt og landinger.',
-    how: ['Stå oprejst med fødderne i hoftebredde.', 'Pres op på tæerne, så højt du kan.', 'Sænk langsomt ned igen på 2 sekunder.'],
-    dose: '15 reps', rest: '30 sek', tips: ['Hold et kort stop i toppen.', 'Brug en væg til balance, hvis du har brug for det.']
-  },
-  pallof: {
-    log: true, name: 'Pallof press', cat: 'Core',
-    goal: 'Stabil core: modstå rotation, når kroppen bliver trukket.',
-    how: ['Stå sidelæns til kabeltårnet med håndtaget ind mod brystet.', 'Pres håndtaget lige frem, til armene er strakte.', 'Hold 1 sekund uden at dreje, og før håndtaget tilbage.'],
-    dose: '10/side', rest: '30 sek', tips: ['Hofter og skuldre peger frem hele tiden.', 'Spænd maven, som om du skal tage et skud på kroppen.']
-  },
-  deadbug: {
-    home: true, name: 'Dead bug', cat: 'Core',
-    goal: 'Kontrol i core, mens arme og ben bevæger sig.',
-    how: ['Lig på ryggen. Armene lige op, hofter og knæ i 90 grader.', 'Stræk modsat arm og ben langsomt ud mod gulvet.', 'Før dem tilbage, og skift side.'],
-    dose: '8/side', rest: '30 sek', tips: ['Lænden presset ned i måtten hele tiden.', 'Pust langsomt ud, mens du strækker.']
-  },
-  sideplank: {
-    home: true, name: 'Side plank', cat: 'Core',
-    goal: 'Stærke skrå mavemuskler og en stabil hofte.',
-    how: ['Lig på siden med albuen lige under skulderen.', 'Løft hoften, så kroppen er en lige linje fra fødder til hoved.', 'Hold positionen, og skift side.'],
-    dose: '25 sek/side', rest: '30 sek', tips: ['Hoften må ikke synke.', 'Pres albuen ned i gulvet.'], secs: 25, perSide: true
-  },
-  bounds: {
-    home: true, name: 'Lateral bounds', cat: 'Eksplosiv',
-    goal: 'Eksplosiv lateral bevægelse, som afsættet til en redning.',
-    how: ['Stå på ét ben med let bøjet knæ.', 'Spring eksplosivt til siden over på det andet ben.', 'Land blødt og kontrolleret, og hold balancen et øjeblik.'],
-    dose: '5/side', rest: '60 sek', tips: ['Land på forfoden med bøjet knæ.', 'Brug armene i afsættet.']
-  },
-  squatjump: {
-    home: true, name: 'Squat jumps', cat: 'Eksplosiv',
-    goal: 'Eksplosiv kraft lodret op, til de høje bolde.',
-    how: ['Gå ned i en squat med armene bagud.', 'Spring eksplosivt op, og sving armene op.', 'Land blødt i squat, og nulstil før næste hop.'],
-    dose: '5 reps', rest: '60 sek', tips: ['Kvalitet før tempo.', 'Land stille. Lyt efter landingen.']
-  },
-  bulgarian: {
-    log: true, name: 'Bulgarian split squat', cat: 'Styrke',
-    goal: 'Benstyrke på ét ben ad gangen.',
-    how: ['Bageste fod på bænken, forreste fod et stort skridt frem.', 'Sænk dig lige ned, til bageste knæ næsten rører gulvet.', 'Pres op gennem forreste hæl.'],
-    dose: '8/ben', rest: '90 sek', tips: ['Overkroppen må gerne læne lidt frem.', 'Forreste knæ følger tæerne.']
-  },
-  rdl: {
-    log: true, name: 'Romanian deadlift', cat: 'Styrke',
-    goal: 'Stærk bagside af lår, baller og ryg.',
-    how: ['Stå med stangen foran lårene og let bøjede knæ.', 'Skub hofterne bagud, og lad stangen glide ned langs benene.', 'Pres hofterne frem og rejs dig, når du mærker strækket bag lårene.'],
-    dose: '8 reps', rest: '90 sek', tips: ['Ryggen er lige hele tiden.', 'Hold stangen tæt på kroppen.']
-  },
-  latpull: {
-    log: true, name: 'Lat pulldown', cat: 'Styrke',
-    goal: 'Stærk ryg og skuldre til udspark, udkast og høje bolde.',
-    how: ['Sæt dig med lårene under puderne, og tag et bredt greb om stangen.', 'Træk stangen ned til øverste del af brystet.', 'Før stangen kontrolleret op igen.'],
-    dose: '10 reps', rest: '90 sek', tips: ['Træk albuerne ned mod siderne.', 'Læn dig kun lidt tilbage.']
-  },
-  farmer: {
-    log: true, name: 'Farmer’s walk', cat: 'Core',
-    goal: 'Greb, core og holdning under belastning.',
-    how: ['Tag en tung kettlebell eller håndvægt i hver hånd.', 'Gå med korte, rolige skridt og rank ryg.', 'Sæt vægtene kontrolleret ned efter distancen.'],
-    dose: '30–40 m', rest: '60 sek', tips: ['Skuldrene ned og tilbage.', 'Lad ikke vægtene slå mod benene.']
-  },
-  fastfeet: {
-    home: true, name: 'Hurtige fødder', cat: 'Bevægelse',
-    goal: 'Hurtige, lette fødder og parathed til næste aktion.',
-    how: ['Stå i målmandsstilling på forfoden.', 'Lav hurtige, korte trip på stedet.', 'Stop i balance med vægten fremme.'],
-    dose: '10 sek', rest: '30 sek', tips: ['Fødderne lige over gulvet.', 'Overkroppen rolig, hænderne klar.'], secs: 10
-  },
-  glutebridge: {
-    home: true, name: 'Glute bridge', cat: 'Styrke',
-    goal: 'Stærke baller og bagside af lår, som giver kraft i afsættet.',
-    how: ['Lig på ryggen med bøjede knæ og fødderne fladt i gulvet.', 'Pres hælene ned, og løft hoften, til knæ, hofte og skuldre er på linje.', 'Hold 1 sekund i toppen, og sænk roligt.'],
-    dose: '12 reps', rest: '30 sek', tips: ['Spænd ballerne, ikke lænden.', 'Niveau 2: løft det ene ben, og pres op på det andet.']
-  },
-  pushup: {
-    home: true, name: 'Armstrækninger', cat: 'Styrke',
-    goal: 'Styrke i bryst, skuldre og arme til udkast og til at komme hurtigt op fra jorden.',
-    how: ['Hænderne lidt bredere end skuldrene. Kroppen er en lige linje.', 'Sænk brystet mod gulvet med albuerne skråt ud fra kroppen.', 'Pres dig op, til armene er strakte.'],
-    dose: '8–12 reps', rest: '30 sek', tips: ['For hårdt? Lav dem med knæene i gulvet.', 'Hoften må hverken hænge eller stikke op.']
-  },
-  plank: {
-    home: true, name: 'Planke', cat: 'Core',
-    goal: 'En stabil midtersektion, der holder kroppen samlet i dueller og landinger.',
-    how: ['Albuerne under skuldrene og knæene i gulvet.', 'Løft knæene, så kroppen er en lige linje fra hæl til hoved.', 'Hold positionen, og træk vejret roligt.'],
-    dose: '30–45 sek', rest: '30 sek', tips: ['Spænd balder og mave på samme tid.', 'Kig ned i gulvet, så nakken er neutral.'], secs: 30
-  },
-  reverselunge: {
-    home: true, name: 'Bagudlunge', cat: 'Styrke',
-    goal: 'Benstyrke og balance på ét ben ad gangen. Skånsomt for knæene.',
-    how: ['Stå samlet med vægten midt på foden.', 'Tag et langt skridt bagud, og sænk bageste knæ mod gulvet.', 'Pres op gennem forreste hæl, og før benet frem igen.'],
-    dose: '6–8/ben', rest: '30 sek', tips: ['Forreste knæ peger frem over foden, ikke indad.', 'Rank overkrop hele vejen.']
-  },
-  birddog: {
-    home: true, name: 'Bird dog', cat: 'Core',
-    goal: 'Kontrol i ryg og core, mens arme og ben bevæger sig.',
-    how: ['Stå på alle fire: hænder under skuldre, knæ under hofter.', 'Stræk modsat arm og ben ud, til de er i linje med kroppen.', 'Hold 2 sekunder, før dem tilbage, og skift side.'],
-    dose: '6–8/side', rest: '30 sek', tips: ['Hoften må ikke dreje. Forestil dig et glas vand på lænden.', 'Langsomt er sværere end hurtigt.']
-  },
-  getup: {
-    home: true, name: 'Hurtig rejsning', cat: 'Bevægelse',
-    goal: 'Kom hurtigt op fra jorden og klar til næste aktion, som efter en redning.',
-    how: ['Lig på siden som efter en redning, med armene strakt frem.', 'Kom op så hurtigt du kan via knæ og fødder.', 'Land i klarposition: vægt på forfoden og hænderne foran.'],
-    dose: '5–6/side', rest: '30 sek', tips: ['Hold blikket fremme mod bolden hele tiden.', 'Stå stille et øjeblik i klarposition før næste.']
-  },
-  reaction: {
-    home: true, name: 'Reaktionsstart', cat: 'Fokus',
-    goal: 'Fokus og parathed: reagér hurtigt og rigtigt på et signal.',
-    how: ['Stå i klarposition med telefonen foran dig, så du kan se skærmen.', 'VENSTRE og HØJRE: to hurtige sidesteps. OP: spring og ræk armene op. NED: rør gulvet med begge hænder.', 'Kom straks tilbage i klarposition, og vent på næste signal.'],
-    dose: '30 sek', rest: '30 sek', tips: ['Bliv i klarposition mellem signalerne. Ingen gætning.', 'Har du en makker, kan han eller hun råbe signalerne i stedet.']
-  },
-  breath: {
-    home: true, name: 'Fokus-vejrtrækning', cat: 'Fokus',
-    goal: 'Ro i kroppen og skarpt fokus før træning og kamp.',
-    how: ['Stå eller sid med rank ryg og skuldrene nede.', 'Ind på 4 sek, hold 4 sek, ud på 4 sek, hold 4 sek.', 'Gentag 4 gange. Timeren guider dig.'],
-    dose: '4 runder', rest: 'Ingen', tips: ['Træk vejret ind gennem næsen og ned i maven.', 'Brug den også i omklædningsrummet før kamp.']
-  }
-};
-
-
-
-/* ===== Udvidet øvelsesbibliotek =====
-   good    = hvad øvelsen er godt til (vises som tags overalt)
-   equip   = udstyr
-   pattern = bevægelsesmønster: øvelser med samme mønster kan byttes ud med hinanden i programmet */
-const META = {
-  bike: [['Udholdenhed'], 'Maskine', 'cardio'],
-  assault: [['Udholdenhed', 'Eksplosivitet'], 'Maskine', 'cardio'],
-  shuffle: [['Hurtighed', 'Udholdenhed'], 'Ingen udstyr', 'agility'],
-  squat: [['Styrke', 'Mobilitet'], 'Ingen udstyr', 'squat'],
-  latlunge: [['Mobilitet', 'Styrke', 'Skadesforebyggelse'], 'Ingen udstyr', 'mobility'],
-  calf: [['Styrke', 'Skadesforebyggelse'], 'Ingen udstyr', 'calf'],
-  pallof: [['Core', 'Skadesforebyggelse'], 'Kabel', 'core'],
-  deadbug: [['Core'], 'Ingen udstyr', 'core'],
-  sideplank: [['Core', 'Balance'], 'Ingen udstyr', 'core'],
-  bounds: [['Eksplosivitet', 'Balance'], 'Ingen udstyr', 'plyo'],
-  squatjump: [['Eksplosivitet', 'Styrke'], 'Ingen udstyr', 'plyo'],
-  bulgarian: [['Styrke', 'Balance'], 'Bænk/kasse', 'squat'],
-  rdl: [['Styrke', 'Skadesforebyggelse'], 'Stang', 'hinge'],
-  latpull: [['Styrke'], 'Maskine', 'pull'],
-  farmer: [['Core', 'Styrke'], 'Kettlebell', 'carry'],
-  fastfeet: [['Hurtighed', 'Udholdenhed'], 'Ingen udstyr', 'agility'],
-  glutebridge: [['Styrke', 'Skadesforebyggelse'], 'Ingen udstyr', 'hinge'],
-  pushup: [['Styrke'], 'Ingen udstyr', 'push'],
-  plank: [['Core'], 'Ingen udstyr', 'core'],
-  reverselunge: [['Styrke', 'Balance'], 'Ingen udstyr', 'squat'],
-  birddog: [['Core', 'Balance', 'Skadesforebyggelse'], 'Ingen udstyr', 'core'],
-  getup: [['Hurtighed', 'Eksplosivitet'], 'Ingen udstyr', 'agility'],
-  reaction: [['Fokus', 'Hurtighed'], 'Ingen udstyr', 'focus'],
-  breath: [['Fokus'], 'Ingen udstyr', 'focus']
-};
-Object.entries(META).forEach(([id, [good, equip, pattern]]) => Object.assign(EX[id], { good, equip, pattern }));
-
-function A(id, name, cat, good, equip, pattern, goal, how, dose, rest, tips, o = {}) {
-  EX[id] = { name, cat, good, equip, pattern, goal, how, dose, rest, tips, home: equip === 'Ingen udstyr', ...o };
-}
-
-/* --- Kondition --- */
-A('rower', 'Romaskine', 'Kondition', ['Udholdenhed', 'Styrke'], 'Maskine', 'cardio',
-  'Aerob base med hele kroppen og lav belastning på leddene.',
-  ['Sæt fødderne fast, og tag fat i håndtaget med strakte arme.', 'Skub fra med benene først, læn let tilbage, og træk håndtaget ind til brystet.', 'Stræk armene, før kroppen frem, og lad benene bøje, så du er klar til næste træk.'],
-  '5–30 min', 'Ingen', ['Rækkefølge ud: ben, krop, arme. Ind i omvendt rækkefølge.', 'Hold ryggen lang, og træk ikke med ryggen alene.']);
-A('run', 'Løb (let jogging)', 'Kondition', ['Udholdenhed'], 'Ingen udstyr', 'cardio',
-  'Aerob base, der kan laves næsten hvor som helst.',
-  ['Start med at gå et par minutter, og kom op i et roligt tempo.', 'Løb afslappet med korte skridt og let fremadlænet krop.', 'Hold et tempo, hvor du kan tale i korte sætninger.'],
-  '10–30 min', 'Ingen', ['Land under kroppen, ikke langt foran den.', 'Løbebånd: sæt hældningen på 1 % for at ligne løb ude.']);
-A('skierg', 'Ski-erg', 'Kondition', ['Udholdenhed', 'Core'], 'Maskine', 'cardio',
-  'Kondition med fokus på ryg, core og arme, og skånsomt for knæene.',
-  ['Stå med let bøjede knæ, og tag fat i håndtagene over hovedet.', 'Træk begge arme ned og frem, mens du bøjer i hofter og knæ.', 'Lad armene løfte sig igen, og stræk kroppen op til næste træk.'],
-  '5–20 min', 'Ingen', ['Brug core og lats, ikke kun armene.', 'Hold et jævnt tempo på RPE 5–6.']);
-A('jumprope', 'Hoppetov', 'Kondition', ['Udholdenhed', 'Hurtighed', 'Balance'], 'Andet', 'cardio',
-  'Rytme, lette fødder og kondition på kort tid.',
-  ['Stå oprejst med albuerne ind mod kroppen.', 'Sving tovet fra håndleddene, og hop let på forfoden.', 'Hold hoppene små og rytmiske, og land blødt.'],
-  '30–60 sek', '30 sek', ['Hop kun lige så højt, at tovet passerer.', 'Slap af i skuldrene.'], { secs: 30 });
-A('stairs', 'Trappemaskine', 'Kondition', ['Udholdenhed', 'Styrke'], 'Maskine', 'cardio',
-  'Kondition og benstyrke med lav stødbelastning.',
-  ['Stå oprejst, og hold let på rækværket.', 'Træd op i et jævnt tempo, og brug hele foden.', 'Stå rank, og undgå at hænge tungt i håndtagene.'],
-  '10–20 min', 'Ingen', ['Rank overkrop og blikket frem.', 'Sænk tempoet, hvis du begynder at hænge i armene.']);
-
-/* --- Ben: squat-mønster --- */
-A('goblet', 'Goblet squat', 'Styrke', ['Styrke', 'Core'], 'Kettlebell', 'squat',
-  'Squat med vægt foran kroppen, der lærer dig at holde overkroppen rank.',
-  ['Hold en kettlebell ind mod brystet med begge hænder.', 'Sæt dig ned mellem knæene, til lårene er vandrette, og brystet er oppe.', 'Pres op gennem hele foden, til du står rank.'],
-  '10 reps', '60 sek', ['Albuerne peger ned mellem knæene.', 'Hælene bliver i gulvet.'], { log: true });
-A('splitsquat', 'Split squat', 'Styrke', ['Styrke', 'Balance'], 'Ingen udstyr', 'squat',
-  'Benstyrke og balance, uden at skulle bruge en bænk.',
-  ['Stå i skridtstilling med et stort skridt mellem fødderne.', 'Sænk dig lige ned, til bageste knæ næsten rører gulvet.', 'Pres op gennem forreste hæl, uden at fødderne flytter sig.'],
-  '8/ben', '45 sek', ['Overkroppen er lodret og midten spændt.', 'Forreste knæ følger tæerne.']);
-A('walkinglunge', 'Gående udfald', 'Styrke', ['Styrke', 'Balance', 'Udholdenhed'], 'Ingen udstyr', 'squat',
-  'Benstyrke og kontrol i bevægelse.',
-  ['Stå oprejst med hænderne i siden eller foran brystet.', 'Tag et langt skridt frem, og sænk bageste knæ mod gulvet.', 'Pres dig op i næste skridt, og skift ben, mens du går fremad.'],
-  '8/ben', '45 sek', ['Hold overkroppen rank.', 'Tag skridtet langt nok til, at forreste knæ ikke går forbi tæerne.']);
-A('stepup', 'Step-up', 'Styrke', ['Styrke', 'Eksplosivitet', 'Balance'], 'Bænk/kasse', 'squat',
-  'Enbens-styrke, der ligner et afsæt.',
-  ['Stil dig foran en bænk eller kasse i knæhøjde.', 'Sæt det ene ben helt op, og pres dig op, til du står på bænken.', 'Sænk dig kontrolleret ned igen, og skift ben.'],
-  '8/ben', '60 sek', ['Pres med forreste ben, ikke med bagerste.', 'Vil du have det eksplosivt, kan du tage et let hop i toppen.'], { log: true });
-A('sumosquat', 'Sumo squat', 'Styrke', ['Styrke', 'Mobilitet'], 'Ingen udstyr', 'squat',
-  'Styrke og bevægelighed i lysken og hofterne.',
-  ['Stå med fødderne bredt og tæerne ud.', 'Sæt dig lige ned mellem benene, med knæene over tæerne.', 'Pres op gennem hælene, og stram ballerne i toppen.'],
-  '12 reps', '30 sek', ['Knæene bliver ude over tæerne.', 'Hold brystet løftet.']);
-A('wallsit', 'Vægsiddende', 'Styrke', ['Udholdenhed', 'Styrke'], 'Ingen udstyr', 'squat',
-  'Udholdenhed i lårene, som du kan træne alle steder.',
-  ['Læn ryggen mod en væg med fødderne et skridt frem.', 'Glid ned, til knæene er i 90 grader.', 'Hold positionen, og træk vejret roligt.'],
-  '30–45 sek', '45 sek', ['Knæene over anklerne, ikke over tæerne.', 'Pres ryggen mod væggen.'], { secs: 30 });
-A('frontsquat', 'Frontsquat', 'Styrke', ['Styrke', 'Core'], 'Stang', 'squat',
-  'Tung benøvelse, der også udfordrer core og øvre ryg.',
-  ['Hvil stangen på forsiden af skuldrene med albuerne højt.', 'Sæt dig ned, til lårene er vandrette, med oprejst overkrop.', 'Pres op gennem hælene, til du står rank.'],
-  '6 reps', '90 sek', ['Albuerne højt hele vejen.', 'Start let, og lær teknikken først.'], { log: true });
-A('legpress', 'Benpres', 'Styrke', ['Styrke'], 'Maskine', 'squat',
-  'Tung benstyrke, hvor ryggen er støttet.',
-  ['Sid med ryggen fladt mod puden og fødderne i skulderbredde.', 'Sænk vægten, til knæene er i ca. 90 grader.', 'Pres vægten op uden at låse knæene helt.'],
-  '10 reps', '90 sek', ['Lænden må ikke løfte sig fra puden.', 'Knæene følger tæerne.'], { log: true });
-A('singlesquat', 'Enbens squat til bænk', 'Styrke', ['Styrke', 'Balance'], 'Bænk/kasse', 'squat',
-  'Meget stærke ben og balance på ét ben.',
-  ['Stå på ét ben foran en bænk, og hold det andet ben frem.', 'Sæt dig langsomt ned på bænken uden at miste balancen.', 'Rejs dig op på samme ben uden at bruge hænderne.'],
-  '5/ben', '60 sek', ['Langsomt ned, kontrolleret.', 'Brug en højere bænk, hvis det er for hårdt.']);
-
-/* --- Ben: hofte-mønster --- */
-A('hipthrust', 'Hip thrust', 'Styrke', ['Styrke', 'Eksplosivitet'], 'Bænk/kasse', 'hinge',
-  'Stærke baller, der giver kraft i afsæt og sprint.',
-  ['Læn øverste ryg mod en bænk med bøjede knæ og fødderne fladt.', 'Pres hoften op, til krop og lår danner en lige linje.', 'Hold et sekund i toppen, og sænk kontrolleret.'],
-  '10 reps', '60 sek', ['Hagen ind mod brystet, og blikket frem.', 'Pres med hælene, og spænd ballerne.'], { log: true });
-A('slrdl', 'Enbens RDL', 'Styrke', ['Styrke', 'Balance', 'Skadesforebyggelse'], 'Håndvægte', 'hinge',
-  'Stærke baglår og baller, og balance på ét ben.',
-  ['Stå på ét ben med en let vægt i modsatte hånd.', 'Læn overkroppen frem, mens det frie ben løftes bagud.', 'Stram ballen, og rejs dig tilbage til start.'],
-  '6/ben', '60 sek', ['Hoften peger mod gulvet, ikke ud til siden.', 'Fokusér på et punkt foran dig for at holde balancen.'], { log: true });
-A('kbswing', 'Kettlebell swing', 'Eksplosiv', ['Eksplosivitet', 'Styrke', 'Udholdenhed'], 'Kettlebell', 'hinge',
-  'Eksplosiv hofteudstrækning, der træner kraft og kondition på samme tid.',
-  ['Stå med fødderne i skulderbredde og kettlebellen foran dig.', 'Skub hoften bagud, og sving kettlebellen mellem benene.', 'Skub hoften kraftigt frem, så kettlebellen svinger op til brysthøjde.'],
-  '12 reps', '60 sek', ['Kraften kommer fra hofterne, ikke armene.', 'Ryggen er lige hele tiden.'], { log: true });
-A('slbridge', 'Glute bridge på ét ben', 'Styrke', ['Styrke', 'Balance'], 'Ingen udstyr', 'hinge',
-  'Stærke baller og kontrol i hoften, uden udstyr.',
-  ['Lig på ryggen med det ene ben strakt i luften.', 'Pres hælen på standbenet ned, og løft hoften.', 'Hold et sekund, og sænk kontrolleret.'],
-  '8/ben', '30 sek', ['Hoften forbliver vandret.', 'Spænd ballen, ikke lænden.']);
-A('nordic', 'Nordic hamstring curl', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Ingen udstyr', 'hinge',
-  'Stærke baglår, der beskytter mod forstrækninger i spurt og udspark.',
-  ['Knæl på en blød måtte, og få en makker eller et fast anker til at holde dine ankler.', 'Sænk overkroppen langsomt fremad med lige linje fra knæ til hoved.', 'Grib gulvet med hænderne, og skub dig tilbage til start.'],
-  '4–6 reps', '90 sek', ['Det vigtigste er den langsomme nedadgående del.', 'Start med få gentagelser. Det giver ømme baglår.'], { hard: true, home: false });
-A('hamwalk', 'Baglårs-walkout', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Andet', 'hinge',
-  'Skånsom baglårsøvelse på gulvet med glidere eller et håndklæde.',
-  ['Lig på ryggen med hælene på glidere eller håndklæder, og løft hoften.', 'Glid fødderne langsomt ud, mens hoften holdes oppe.', 'Træk hælene tilbage mod ballerne.'],
-  '8 reps', '45 sek', ['Hoften må ikke synke.', 'Tag kortere skridt, hvis det er for hårdt.']);
-A('dbrdl', 'RDL med håndvægte', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Håndvægte', 'hinge',
-  'Stærk bagside af lår, baller og ryg, hvis der ikke er en stang.',
-  ['Stå med en håndvægt i hver hånd foran lårene.', 'Skub hoften bagud, og lad vægtene glide langs benene.', 'Pres hoften frem, og rejs dig.'],
-  '10 reps', '60 sek', ['Ryggen er lige hele tiden.', 'Hold vægtene tæt på kroppen.'], { log: true });
-
-/* --- Skub --- */
-A('kneepushup', 'Armstrækninger på knæ', 'Styrke', ['Styrke'], 'Ingen udstyr', 'push',
-  'Lettere version af armstrækninger, når du skal bygge op.',
-  ['Knæene i gulvet, hænderne lidt bredere end skuldrene.', 'Sænk brystet mod gulvet med albuerne skråt ud.', 'Pres dig op, til armene er strakte.'],
-  '10 reps', '30 sek', ['Kroppen er en lige linje fra knæ til hoved.', 'Gå videre til almindelige, når du kan lave 12.']);
-A('diamondpush', 'Diamant-armstrækninger', 'Styrke', ['Styrke'], 'Ingen udstyr', 'push',
-  'Armstrækninger med fokus på triceps.',
-  ['Placér hænderne tæt sammen under brystet, så tommel og pegefinger danner en diamant.', 'Sænk brystet mod hænderne med albuerne tæt ind.', 'Pres dig op.'],
-  '8 reps', '45 sek', ['Fokus på triceps.', 'Lav dem på knæ, hvis det er for tungt.']);
-A('dbpress', 'Skulderpres med håndvægte', 'Styrke', ['Styrke'], 'Håndvægte', 'push',
-  'Stærke skuldre til udkast og høje bolde.',
-  ['Sid eller stå med håndvægte i skulderhøjde.', 'Pres vægtene lige op over hovedet, til armene er strakte.', 'Sænk kontrolleret tilbage til skuldrene.'],
-  '8 reps', '75 sek', ['Spænd mave og baller, så lænden ikke svajer.', 'Albuerne er lidt foran kroppen.'], { log: true });
-A('dbbench', 'Bænkpres med håndvægte', 'Styrke', ['Styrke'], 'Håndvægte', 'push',
-  'Stærkt bryst, skuldre og arme.',
-  ['Lig på en bænk med en håndvægt i hver hånd over brystet.', 'Sænk vægtene ned langs siden af brystet, til albuerne er i 90 grader.', 'Pres vægtene op, til armene er strakte.'],
-  '8 reps', '90 sek', ['Skulderbladene er samlet og ned i bænken.', 'Albuerne ca. 45 grader ud fra kroppen.'], { log: true });
-A('pikepush', 'Pike push-up', 'Styrke', ['Styrke'], 'Ingen udstyr', 'push',
-  'Skulderstyrke uden udstyr.',
-  ['Kom op i en omvendt V-stilling med hoften højt.', 'Sænk hovedet mod gulvet mellem hænderne.', 'Pres dig op, til armene er strakte.'],
-  '6–8 reps', '45 sek', ['Jo højere hofte, jo mere skulder.', 'Hold hovedet mellem armene.']);
-A('clappush', 'Eksplosive armstrækninger', 'Eksplosiv', ['Eksplosivitet', 'Styrke'], 'Ingen udstyr', 'push',
-  'Hurtig kraft i bryst og arme, som ved et hurtigt udkast.',
-  ['Start i armstrækningsposition med spændt core.', 'Sænk kontrolleret, og pres eksplosivt op, så hænderne forlader gulvet.', 'Land blødt med let bøjede albuer.'],
-  '5 reps', '60 sek', ['Gør det kun, hvis almindelige armstrækninger er lette.', 'Kvalitet frem for antal.'], { hard: true });
-
-/* --- Træk --- */
-A('dbrow', 'Håndvægtsroning', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Håndvægte', 'pull',
-  'Stærk ryg og stabile skuldre.',
-  ['Støt den ene hånd og det ene knæ på en bænk, og hold en håndvægt i den anden hånd.', 'Træk håndvægten op mod hoften, med albuen tæt på kroppen.', 'Sænk kontrolleret, og skift side.'],
-  '8/side', '60 sek', ['Ryggen er vandret og ret.', 'Træk albuen mod loftet.'], { log: true });
-A('invrow', 'Inverteret roning', 'Styrke', ['Styrke'], 'Stang', 'pull',
-  'Stærk ryg, hvor du bruger din egen kropsvægt.',
-  ['Lig under en stang i hoftehøjde, og grib den med strakte arme.', 'Træk brystet op mod stangen, med kroppen som en lige planke.', 'Sænk dig kontrolleret ned.'],
-  '8 reps', '60 sek', ['Bøj knæene for at gøre det lettere.', 'Skulderbladene samles øverst.']);
-A('pullup', 'Pull-ups', 'Styrke', ['Styrke'], 'Stang', 'pull',
-  'Stærk ryg og stærke arme, som er vigtige til at gribe og trække.',
-  ['Hæng i en stang med et greb lidt bredere end skuldrene.', 'Træk dig op, til hagen er over stangen.', 'Sænk kontrolleret til strakte arme.'],
-  '4–6 reps', '90 sek', ['Start med at trække skulderbladene ned.', 'Brug elastik eller maskine til hjælp, hvis du ikke kan endnu.'], { log: true });
-A('bandpull', 'Pull-apart med elastik', 'Styrke', ['Skadesforebyggelse', 'Styrke'], 'Elastik', 'pull',
-  'Aktiverer skuldre og øvre ryg, som ofte bliver stive.',
-  ['Hold en elastik foran dig i skulderhøjde med strakte arme.', 'Træk elastikken fra hinanden, til den rører brystet.', 'Før langsomt tilbage.'],
-  '15 reps', '30 sek', ['Skuldrene ned, ikke op mod ørerne.', 'Tag en tykkere elastik, hvis det er for let.']);
-A('cablerow', 'Siddende kabelroning', 'Styrke', ['Styrke'], 'Kabel', 'pull',
-  'Stærk ryg og skulderblade.',
-  ['Sid med let bøjede knæ, og tag fat i håndtaget.', 'Træk håndtaget ind mod maven, og saml skulderbladene.', 'Før kontrolleret tilbage med strakte arme.'],
-  '10 reps', '75 sek', ['Overkroppen er ret og stille.', 'Albuerne tæt på kroppen.'], { log: true });
-A('facepull', 'Face pull', 'Styrke', ['Skadesforebyggelse', 'Styrke'], 'Kabel', 'pull',
-  'Sunde skuldre, når du kaster og griber meget.',
-  ['Stil kablet i ansigtshøjde med et rebhåndtag.', 'Træk rebet mod ansigtet, med albuerne højt og udad.', 'Før langsomt tilbage.'],
-  '12 reps', '45 sek', ['Brug en let vægt.', 'Træk håndtaget helt ind til ansigtet.'], { log: true });
-A('superman', 'Superman', 'Core', ['Core', 'Styrke', 'Skadesforebyggelse'], 'Ingen udstyr', 'pull',
-  'Stærk nedre ryg og baller.',
-  ['Lig på maven med armene strakt frem.', 'Løft arme og ben samtidig få centimeter fra gulvet.', 'Hold et sekund, og sænk roligt.'],
-  '10 reps', '30 sek', ['Kig ned i gulvet, så nakken er neutral.', 'Spænd ballerne.']);
-
-/* --- Core --- */
-A('hollow', 'Hollow hold', 'Core', ['Core'], 'Ingen udstyr', 'core',
-  'Stærk, stram mave og kontrol i hele kroppen.',
-  ['Lig på ryggen med armene strakt over hovedet.', 'Løft skuldre og ben få centimeter fra gulvet, og pres lænden ned.', 'Hold positionen, og træk vejret roligt.'],
-  '20 sek', '30 sek', ['Lænden skal være presset ned i gulvet.', 'Bøj knæene, hvis det er for hårdt.'], { secs: 20 });
-A('mtnclimber', 'Mountain climbers', 'Core', ['Core', 'Udholdenhed', 'Hurtighed'], 'Ingen udstyr', 'core',
-  'Stram core og høj puls på samme tid.',
-  ['Start i armstrækningsposition med strakte arme.', 'Træk knæene skiftevis hurtigt op mod brystet.', 'Hold hoften nede og kroppen stram.'],
-  '20 sek', '30 sek', ['Hænderne er direkte under skuldrene.', 'Hold et jævnt tempo.'], { secs: 20, hard: true });
-A('russiantwist', 'Russian twist', 'Core', ['Core'], 'Ingen udstyr', 'core',
-  'Stærke skrå mavemuskler og rotation.',
-  ['Sid med bøjede knæ, og læn overkroppen let tilbage.', 'Drej overkroppen fra side til side, og rør gulvet ved hver side.', 'Hold brystet oppe og ryggen ret.'],
-  '10/side', '30 sek', ['Drej fra brystkassen, ikke kun armene.', 'Løft fødderne for at gøre det sværere.']);
-A('legraise', 'Liggende benløft', 'Core', ['Core'], 'Ingen udstyr', 'core',
-  'Stærk nedre mave.',
-  ['Lig på ryggen med benene strakte og hænderne under ballerne.', 'Løft benene til lodret, uden at lænden løfter sig.', 'Sænk langsomt, uden at fødderne rører gulvet.'],
-  '8 reps', '30 sek', ['Bøj knæene let, hvis lænden løfter sig.', 'Langsomt ned er det vigtigste.']);
-A('bicycle', 'Cykelcrunch', 'Core', ['Core'], 'Ingen udstyr', 'core',
-  'Mave og skrå mavemuskler i en kontrolleret bevægelse.',
-  ['Lig på ryggen med hænderne ved tindingerne.', 'Træk modsat albue og knæ mod hinanden, mens det andet ben strækkes ud.', 'Skift side i et roligt, kontrolleret tempo.'],
-  '10/side', '30 sek', ['Træk ikke i nakken.', 'Roligt og kontrolleret, ikke hurtigt.']);
-A('abwheel', 'Mavehjul', 'Core', ['Core', 'Styrke'], 'Andet', 'core',
-  'Meget stærk core, som modstår at svaje i lænden.',
-  ['Knæl med mavehjulet foran dig, og hold ryggen let rundet.', 'Rul langsomt frem, så langt du kan kontrollere.', 'Træk dig tilbage med maven.'],
-  '6 reps', '60 sek', ['Start med korte stræk.', 'Stop, hvis lænden svajer.'], { hard: true });
-A('copenhagen', 'Copenhagen plank', 'Core', ['Core', 'Skadesforebyggelse'], 'Bænk/kasse', 'core',
-  'Stærke adduktorer og hofte, som beskytter lysken ved sidebevægelser.',
-  ['Lig på siden med øverste ben på en bænk og albuen under skulderen.', 'Løft hoften, så kroppen er en lige linje.', 'Hold positionen, og skift side.'],
-  '20 sek/side', '45 sek', ['Start med knæet på bænken, hvis det er for hårdt.', 'Hoften må ikke synke.'], { secs: 20, perSide: true, hard: true });
-A('bandpallof', 'Pallof press med elastik', 'Core', ['Core', 'Skadesforebyggelse'], 'Elastik', 'core',
-  'Samme øvelse som Pallof press, bare med elastik.',
-  ['Fastgør elastikken i sidehøjde, og stå sidelæns med håndtaget ind mod brystet.', 'Pres armene lige frem, til de er strakte.', 'Hold 1 sekund uden at dreje, og før tilbage.'],
-  '10/side', '30 sek', ['Hofter og skuldre peger frem.', 'Træd længere væk for mere modstand.']);
-A('woodchop', 'Kabel-woodchop', 'Core', ['Core', 'Eksplosivitet'], 'Kabel', 'core',
-  'Kraft i rotation, som i et kast eller en udsparkning.',
-  ['Stå sidelæns til kablet i højeste position med begge hænder på håndtaget.', 'Træk håndtaget diagonalt ned over kroppen, mens du drejer.', 'Før kontrolleret tilbage.'],
-  '10/side', '45 sek', ['Drej fra hofte og krop, ikke kun armene.', 'Fødderne drejer med.'], { log: true });
-A('plankreach', 'Planke med skuldertryk', 'Core', ['Core', 'Balance'], 'Ingen udstyr', 'core',
-  'Stabil core, mens kroppen bevæger sig.',
-  ['Start i armstrækningsposition med fødderne lidt bredere end hoften.', 'Rør skiftevis modsat skulder med en hånd.', 'Hold hoften helt stille.'],
-  '10/side', '30 sek', ['Bred fodstilling gør det lettere.', 'Hoften må ikke vippe.']);
-
-/* --- Bæreøvelser --- */
-A('suitcase', 'Suitcase carry', 'Core', ['Core', 'Styrke', 'Balance'], 'Kettlebell', 'carry',
-  'Stabil overkrop under ensidig belastning.',
-  ['Tag en tung vægt i én hånd ved siden af kroppen.', 'Gå rank med korte, rolige skridt uden at læne dig mod siden.', 'Sæt vægten ned, og skift hånd.'],
-  '30 m/side', '60 sek', ['Skuldrene er i samme højde.', 'Spænd maven, som om nogen skulle slå dig.'], { log: true });
-A('ohcarry', 'Overhead carry', 'Core', ['Core', 'Styrke', 'Balance'], 'Kettlebell', 'carry',
-  'Stabile skuldre og core med en vægt over hovedet.',
-  ['Pres en kettlebell eller håndvægt lige op over hovedet med strakt arm.', 'Gå rank med korte skridt, mens armen holdes lodret.', 'Sæt vægten kontrolleret ned, og skift arm.'],
-  '20 m/side', '60 sek', ['Håndled og albue er i en lige linje.', 'Ribbenene ned.'], { log: true });
-A('bearcrawl', 'Bear crawl', 'Core', ['Core', 'Udholdenhed', 'Hurtighed'], 'Ingen udstyr', 'carry',
-  'Core, skuldre og kondition i en bevægelse.',
-  ['Kom på alle fire med knæene let over gulvet.', 'Kryb frem med modsat hånd og fod.', 'Hold ryggen vandret og hoften lav.'],
-  '10 m', '45 sek', ['Hold knæene så lave som muligt.', 'Små skridt og rolig kontrol.'], { hard: true });
-
-/* --- Eksplosive spring og kast --- */
-A('skater', 'Skater hop', 'Eksplosiv', ['Eksplosivitet', 'Balance', 'Hurtighed'], 'Ingen udstyr', 'plyo',
-  'Eksplosiv sidebevægelse med kontrol i landingen.',
-  ['Stå på ét ben med let bøjet knæ.', 'Hop sidelæns til det andet ben, og sving armene med.', 'Land blødt, og hold balancen et øjeblik.'],
-  '6/side', '45 sek', ['Land på forfoden.', 'Knæet følger tæerne.']);
-A('boxjump', 'Box jump', 'Eksplosiv', ['Eksplosivitet', 'Styrke'], 'Bænk/kasse', 'plyo',
-  'Lodret kraft til høje bolde.',
-  ['Stå foran en stabil kasse med fødderne i hoftebredde.', 'Sæt dig let ned, og hop eksplosivt op på kassen.', 'Land blødt med bøjede knæ, og stig ned i stedet for at hoppe ned.'],
-  '5 reps', '60 sek', ['Vælg en højde, du kan lande sikkert på.', 'Gå ned i stedet for at hoppe ned.']);
-A('broadjump', 'Længdespring', 'Eksplosiv', ['Eksplosivitet', 'Styrke'], 'Ingen udstyr', 'plyo',
-  'Eksplosiv kraft fremad, som i et dyk.',
-  ['Stå med fødderne i hoftebredde og armene bag kroppen.', 'Sving armene frem, og hop så langt som muligt.', 'Land blødt i en squat, og stå stille et øjeblik.'],
-  '5 reps', '60 sek', ['Lav en lille pause mellem hvert hop.', 'Land med hoften bagud.']);
-A('tuckjump', 'Tuck jumps', 'Eksplosiv', ['Eksplosivitet', 'Udholdenhed'], 'Ingen udstyr', 'plyo',
-  'Eksplosive spring, der også hæver pulsen.',
-  ['Stå med fødderne i hoftebredde.', 'Hop eksplosivt op, og træk knæene op mod brystet.', 'Land blødt, og hop igen.'],
-  '5 reps', '60 sek', ['Fokus på højde, ikke tempo.', 'Land stille.'], { hard: true });
-A('pogo', 'Pogo-hop', 'Eksplosiv', ['Eksplosivitet', 'Skadesforebyggelse', 'Hurtighed'], 'Ingen udstyr', 'plyo',
-  'Stive, stærke ankler og læg til hurtige afsæt.',
-  ['Stå oprejst med let bøjede knæ.', 'Hop op og ned på forfoden med næsten strakte ben og kort kontakttid.', 'Hold kroppen stram og rolig.'],
-  '15 sek', '45 sek', ['Tænk: som en fjeder.', 'Hælene rører ikke gulvet.'], { secs: 15 });
-A('medslam', 'Medicinbold-slam', 'Eksplosiv', ['Eksplosivitet', 'Core', 'Udholdenhed'], 'Medicinbold', 'plyo',
-  'Eksplosiv kraft fra hele kroppen.',
-  ['Hold en medicinbold over hovedet med strakte arme.', 'Smid bolden hårdt i gulvet foran dig, mens du bøjer i hoften.', 'Saml bolden op, og gentag.'],
-  '8 reps', '60 sek', ['Brug hele kroppen.', 'Brug en blød bold, der ikke preller.']);
-A('medthrow', 'Medicinbold-kast mod væg', 'Eksplosiv', ['Eksplosivitet', 'Styrke', 'Hurtighed'], 'Medicinbold', 'plyo',
-  'Hurtig kraft i bryst og arme, som i et udkast.',
-  ['Stå foran en væg, og hold bolden ved brystet.', 'Kast bolden eksplosivt mod væggen, og grib den igen.', 'Gentag hurtigt og uden at miste kontrollen.'],
-  '8 reps', '60 sek', ['Pres fra hele kroppen.', 'Kast med begge hænder samtidig.']);
-A('burpee', 'Burpees', 'Kondition', ['Udholdenhed', 'Eksplosivitet'], 'Ingen udstyr', 'plyo',
-  'Høj puls og eksplosiv kraft i en øvelse.',
-  ['Stå oprejst, og sæt hænderne i gulvet.', 'Hop fødderne tilbage til planke, lav en armstrækning, og hop fødderne ind igen.', 'Hop eksplosivt op med armene over hovedet.'],
-  '6 reps', '60 sek', ['Hold et jævnt tempo.', 'Spring armstrækningen over, hvis det er for hårdt.'], { hard: true });
-A('slhop', 'Enbens-hop frem', 'Eksplosiv', ['Eksplosivitet', 'Balance'], 'Ingen udstyr', 'plyo',
-  'Eksplosiv enbens-kraft med kontrol i landingen.',
-  ['Stå på ét ben med let bøjet knæ.', 'Hop frem på samme ben, og land blødt.', 'Hold balancen i et sekund, og gentag.'],
-  '5/ben', '45 sek', ['Knæet følger tæerne.', 'Start med korte hop.']);
-
-/* --- Læg og ankler --- */
-A('slcalf', 'Calf raise på ét ben', 'Styrke', ['Styrke', 'Balance', 'Skadesforebyggelse'], 'Ingen udstyr', 'calf',
-  'Stærke læg og ankler, ét ben ad gangen.',
-  ['Stå på ét ben med let støtte mod en væg.', 'Pres op på tæerne, så højt du kan.', 'Sænk langsomt på 2 sekunder.'],
-  '10/ben', '30 sek', ['Hold et kort stop i toppen.', 'Rolig bevægelse, ingen vippen.']);
-A('tibraise', 'Tibialis raise', 'Styrke', ['Skadesforebyggelse', 'Styrke'], 'Ingen udstyr', 'calf',
-  'Stærke skinneben, der beskytter mod stød og forkert landing.',
-  ['Stå med ryggen mod en væg og fødderne et skridt frem.', 'Løft forfoden og tæerne op mod skinnebenet.', 'Sænk langsomt tilbage.'],
-  '15 reps', '30 sek', ['Hælene bliver i gulvet.', 'Langsomt og kontrolleret.']);
-A('stepcalf', 'Calf raise på trin', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Bænk/kasse', 'calf',
-  'Stærke læg med fuldt bevægeudslag.',
-  ['Stå med forfoden på kanten af et trin og hælene frit.', 'Pres op på tæerne, så højt du kan.', 'Sænk hælene under trinnet, og stræk læggen.'],
-  '12 reps', '45 sek', ['Fuldt bevægeudslag giver stærkere ankler.', 'Hold let fast i noget.']);
-
-/* --- Hurtige fødder og bevægelse --- */
-A('carioca', 'Carioca', 'Bevægelse', ['Hurtighed', 'Mobilitet', 'Balance'], 'Ingen udstyr', 'agility',
-  'Koordination og hurtige sidestep.',
-  ['Stå sidelæns med let bøjede knæ.', 'Kryds det bagerste ben foran og bag det forreste i et hurtigt tempo.', 'Hold overkroppen fremad og hofterne drejende.'],
-  '20 sek', '30 sek', ['Skift retning efter halvdelen af tiden.', 'Find rytmen, før du sætter tempoet op.'], { secs: 20 });
-A('ladder', 'Stigeøvelse: ind-ud', 'Bevægelse', ['Hurtighed', 'Balance'], 'Andet', 'agility',
-  'Hurtige, lette fødder.',
-  ['Stil en koordinationsstige ud, eller tegn felter på jorden.', 'Løb frem med to fødder i hvert felt og ud på siden.', 'Hold korte, lette skridt med blikket op.'],
-  '20 sek', '30 sek', ['Fødderne rører næsten ikke gulvet.', 'Blikket er frem, ikke ned.'], { secs: 20 });
-A('tdrill', 'T-drill', 'Bevægelse', ['Hurtighed', 'Udholdenhed'], 'Andet', 'agility',
-  'Skift af retning med hurtige fødder.',
-  ['Sæt fire kegler i et T-mønster, 5 m frem og 2,5 m til siderne.', 'Sprint frem, sidestep til siden, tilbage over midten og til den anden side.', 'Gå roligt tilbage til start.'],
-  '3 gange', '60 sek', ['Hold lav stilling i vendingerne.', 'Sidestep uden at krydse benene.']);
-A('sprint5', 'Korte sprint-starter', 'Eksplosiv', ['Hurtighed', 'Eksplosivitet'], 'Ingen udstyr', 'agility',
-  'Hurtigt første skridt, som i en udrykning.',
-  ['Stå i klarposition med let bøjede knæ.', 'Sprint 5–10 meter så hurtigt du kan.', 'Gå roligt tilbage.'],
-  '5 gange', '45 sek', ['Første skridt er det vigtigste.', 'Skub fra med forfoden.']);
-A('diveget', 'Dyk og rejs dig', 'Bevægelse', ['Eksplosivitet', 'Hurtighed'], 'Andet', 'agility',
-  'Tæt på en rigtig redning: dyk til siden og kom hurtigt op.',
-  ['Stå i klarposition på en blød måtte eller blødt underlag.', 'Dyk til siden med strakte arme, og land på siden af kroppen.', 'Kom op så hurtigt du kan, og vend tilbage til klarposition.'],
-  '4/side', '45 sek', ['Land på siden af kroppen, ikke på albuen.', 'Brug blødt underlag som græs eller en måtte.']);
-A('latbandwalk', 'Sidegang med elastik', 'Styrke', ['Skadesforebyggelse', 'Styrke', 'Balance'], 'Elastik', 'agility',
-  'Stærke hofter og balder, der holder knæene stabile.',
-  ['Sæt en elastik om anklerne eller over knæene.', 'Gå sidelæns i en let squat, og hold spænding i elastikken.', 'Tag 10 skridt til hver side.'],
-  '10 skridt/side', '30 sek', ['Knæene presses ud, ikke ind.', 'Fødderne er ikke tættere end hoftebredde.']);
-
-/* --- Mobilitet --- */
-A('cossack', 'Cossack squat', 'Mobilitet', ['Mobilitet', 'Styrke', 'Balance'], 'Ingen udstyr', 'mobility',
-  'Bevægelighed i lysken og hofterne, og styrke på ét ben ad gangen.',
-  ['Stå med fødderne bredt og tæerne let udad.', 'Skub hoften til den ene side, og sænk dig ned på det bøjede ben, mens det andet ben er strakt.', 'Pres tilbage til midten, og skift side.'],
-  '5/side', '30 sek', ['Hælen på det bøjede ben bliver i gulvet.', 'Lav en mindre bevægelse, hvis det spænder.']);
-A('hips9090', '90/90 hofterotation', 'Mobilitet', ['Mobilitet', 'Skadesforebyggelse'], 'Ingen udstyr', 'mobility',
-  'Bedre rotation i hofterne.',
-  ['Sid på gulvet med begge ben bøjet 90 grader, det ene foran og det andet bag.', 'Hold ryggen ret, og læn dig frem over forreste ben.', 'Skift side ved at rotere begge knæ over.'],
-  '30 sek/side', 'Ingen', ['Sid på en pude, hvis det er for stramt.', 'Træk vejret roligt og ud i strækket.'], { secs: 30, perSide: true });
-A('wgs', 'Verdens bedste udstrækning', 'Mobilitet', ['Mobilitet'], 'Ingen udstyr', 'mobility',
-  'Åbner hofter, baglår og ryg i én flydende bevægelse.',
-  ['Tag et langt skridt frem i udfald, med hænderne i gulvet.', 'Drej overkroppen op mod forreste ben, og løft armen mod loftet.', 'Før hånden ned, og skift ben.'],
-  '5/side', 'Ingen', ['Hold bageste knæ løftet.', 'Følg hånden med øjnene.']);
-A('catcow', 'Kat-ko', 'Mobilitet', ['Mobilitet', 'Skadesforebyggelse'], 'Ingen udstyr', 'mobility',
-  'Mobil og afslappet ryg.',
-  ['Kom på alle fire med hænder under skuldre og knæ under hofter.', 'Rund ryggen mod loftet, og træk maven ind.', 'Svaj ryggen, og løft brystet.'],
-  '8 reps', 'Ingen', ['Bevæg dig i takt med vejrtrækningen.', 'Langsomt og jævnt.']);
-A('openbook', 'Åben bog (brystryg)', 'Mobilitet', ['Mobilitet'], 'Ingen udstyr', 'mobility',
-  'Bevægelighed i brystryggen, som giver bedre kast og dyk.',
-  ['Lig på siden med knæene bøjet og armene strakt frem.', 'Åbn øverste arm i en bue bagud, og følg den med blikket.', 'Før armen tilbage, og skift side.'],
-  '8/side', 'Ingen', ['Knæene bliver sammen.', 'Pust ud, mens du åbner.']);
-A('hipflexor', 'Hoftebøjer-udstrækning', 'Mobilitet', ['Mobilitet', 'Skadesforebyggelse'], 'Ingen udstyr', 'mobility',
-  'Løsner stramme hoftebøjere efter lange dage og kampe.',
-  ['Knæl på det ene knæ med det andet ben fremme, og vægten fremad.', 'Stram ballen på bageste side, og skub hoften let frem.', 'Hold, og træk vejret roligt. Skift så side.'],
-  '30 sek/side', 'Ingen', ['Ryggen er lige, ikke svajet.', 'Stram ballen for at få mere stræk.'], { secs: 30, perSide: true });
-A('anklemob', 'Ankel-mobilitet', 'Mobilitet', ['Mobilitet', 'Skadesforebyggelse'], 'Ingen udstyr', 'mobility',
-  'Bedre bevægelighed i anklerne, så du kan komme dybere.',
-  ['Stå i skridtstilling foran en væg med forreste fod få centimeter fra væggen.', 'Skub knæet frem mod væggen, uden at hælen løfter sig.', 'Før knæet tilbage, og gentag.'],
-  '10/side', 'Ingen', ['Hælen bliver i gulvet.', 'Flyt foden længere væk, når det bliver let.']);
-A('deepsquat', 'Dyb squat-hold', 'Mobilitet', ['Mobilitet'], 'Ingen udstyr', 'mobility',
-  'Åbner hofter og ankler.',
-  ['Stå med fødderne lidt bredere end skuldrene og tæerne ud.', 'Sæt dig helt ned med hænderne foran brystet.', 'Hold, og skub knæene ud med albuerne.'],
-  '30 sek', 'Ingen', ['Hold fast i en dørkarm, hvis det er svært.', 'Brystet er oppe.'], { secs: 30 });
-A('shoulderband', 'Skulder-dislocates', 'Mobilitet', ['Mobilitet', 'Skadesforebyggelse'], 'Elastik', 'mobility',
-  'Åbner skuldrene efter udkast og dyk.',
-  ['Hold en elastik eller kæp foran lårene med bredt greb.', 'Før armene i en bue over hovedet og ned bag ryggen.', 'Før tilbage på samme måde.'],
-  '10 reps', 'Ingen', ['Grib bredere, hvis det spænder.', 'Hold armene strakte.']);
-
-/* --- Fokus --- */
-A('wallball', 'Bold mod væg (hånd-øje)', 'Fokus', ['Fokus', 'Hurtighed'], 'Bold', 'focus',
-  'Hånd-øje-koordination og skarpt blik.',
-  ['Stå to meter fra en væg med en tennisbold.', 'Kast bolden mod væggen, og grib den med den modsatte hånd.', 'Skift hånd og tempo, og hold blikket på bolden.'],
-  '30 sek', '30 sek', ['Gør kastene mere uforudsigelige.', 'Hold hovedet roligt.'], { secs: 30 });
-A('dropcatch', 'Reaktionsbold (drop)', 'Fokus', ['Fokus', 'Hurtighed', 'Eksplosivitet'], 'Bold', 'focus',
-  'Hurtig reaktion på noget uventet.',
-  ['En makker holder en bold i skulderhøjde og slipper den uden varsel.', 'Reagér og grib bolden, før den rammer jorden to gange.', 'Gentag, og skift hånd.'],
-  '10 forsøg', '30 sek', ['Start i klarposition.', 'Grib bolden med begge hænder.']);
-A('visual', 'Visualisering', 'Fokus', ['Fokus'], 'Ingen udstyr', 'focus',
-  'Mental forberedelse til kampen.',
-  ['Sæt dig roligt, og luk øjnene.', 'Se dig selv klare typiske situationer: indlæg, 1-mod-1 og udspark.', 'Mærk roen og selvtilliden, og åbn øjnene.'],
-  '60 sek', 'Ingen', ['Brug den inden kamp.', 'Se, hør og mærk situationen.'], { secs: 60 });
-
+/* ===== Øvelser =====
+   EX, CATS, BENEFITS, EQUIPS, SEASONS m.fl. ligger i exercises.js, som indlæses før denne fil. */
 
 /* ===== Timer-byggesten ===== */
 /* Det valgfri sidste argument "it" er indekset på den øvelse i blokken, som segmentet hører til.
@@ -2045,9 +1514,10 @@ const AREA_OF = { squat: ['knæ', 'hofte'], hinge: ['ryg', 'baglår', 'hofte'], 
 const KEY = 'gk8-goalkeeper-v1';
 const DEF = () => ({
   week: 1, start: '', done: {}, weeksDone: [], matches: [], tests: {}, logs: [], swaps: {}, run: {}, runDate: '', coach: DEF_COACH(),
+  prog: { id: '', match: 5, days: [], ball: [0, 1, 3] }, // aktivt færdigt program ('' = Målmand 8), kampdag (−1 = ingen), træningsdage og fodbolddage (0 = mandag)
   fri: { wk: '', done: {} },
   home: { date: '', done: {} }, homeLog: [], lastExport: '',
-  settings: { sound: true, vib: true, custom: { work: 30, rest: 60, rounds: 10 }, metric: 'avg', lib: 'Alle', libEquip: 'Alle', libCat: 'Alle', homeLevel: null }
+  settings: { sound: true, vib: true, custom: { work: 30, rest: 60, rounds: 10 }, metric: 'avg', lib: 'Alle', libEquip: 'Alle', libCat: 'Alle', libSeason: 'Alle', homeLevel: null }
 });
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const clampNum = (v, lo, hi, d) => { v = +v; return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
@@ -2080,6 +1550,9 @@ function mergeState(d) {
     kg: clampNum(l.kg, 0, 1000, 0), reps: clampNum(l.reps, 0, 1000, 0), rpe: Math.round(clampNum(l.rpe, 0, 10, 0)), ...(l.pr ? { pr: 1 } : {})
   }));
   out.coach = cleanCoach(d.coach);
+  const pg = isObj(d.prog) ? d.prog : {}, dayList = v => Array.isArray(v) ? [...new Set(v.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6))].sort((a, b) => a - b) : null;
+  out.prog = { id: PROG_BY_ID[pg.id] && !PROG_BY_ID[pg.id].base ? pg.id : '', match: Math.round(clampNum(pg.match, -1, 6, 5)), days: dayList(pg.days) || [], ball: dayList(pg.ball) || [0, 1, 3] };
+  if (out.prog.id) out.coach.active = false; // kun ét aktivt program ad gangen
   out.run = {}; if (isObj(d.run)) Object.keys(d.run).slice(0, 200).forEach(k => { if (/^(week|home|fri)\|[\w|-]+$/.test(k)) out.run[k] = Math.round(clampNum(d.run[k], 0, 20, 0)); });
   out.runDate = isISO(d.runDate) ? d.runDate : '';
   out.swaps = {};
@@ -2096,6 +1569,7 @@ function mergeState(d) {
     lib: ['Alle', ...BENEFITS.map(b => b.k)].includes(s.lib) ? s.lib : 'Alle',
     libEquip: ['Alle', 'home', ...EQUIPS].includes(s.libEquip) ? s.libEquip : 'Alle',
     libCat: CATS.includes(s.libCat) ? s.libCat : 'Alle',
+    libSeason: SEASONS.some(x => x.k === s.libSeason) ? s.libSeason : 'Alle',
     homeLevel: s.homeLevel === 1 || s.homeLevel === 2 ? s.homeLevel : null
   };
   return out;
@@ -2309,7 +1783,7 @@ function centerWeekTab() {
 }
 function selectWeek(n) {
   ST.week = Math.min(8, Math.max(1, n)); save();
-  if (ST.coach.active) rebuildWeeks();
+  if (planOn()) rebuildWeeks();
   renderWeekNav(); renderWeek();
 }
 /* Alt der afhænger af den nuværende (ikke den viste) uge */
@@ -2447,32 +1921,48 @@ function toggleHomeDone() {
 /* ===== Øvelsesbibliotek ===== */
 let libQ = '', libShown = 18;
 const LIB_PAGE = 18;
+/* Med en valgt sæson vises kun øvelser, der er gode i perioden (2+), med kerneøvelserne først */
 function libFiltered() {
-  const g = ST.settings.lib, eq = ST.settings.libEquip, c = ST.settings.libCat, q = libQ.trim().toLowerCase();
-  return Object.entries(EX).filter(([, e]) =>
+  const g = ST.settings.lib, eq = ST.settings.libEquip, c = ST.settings.libCat, sn = ST.settings.libSeason, q = libQ.trim().toLowerCase();
+  const list = Object.entries(EX).filter(([, e]) =>
     (g === 'Alle' || e.good.includes(g)) &&
     (c === 'Alle' || e.cat === c) &&
     (eq === 'Alle' || (eq === 'home' ? isHomeEx(e) : e.equip === eq)) &&
+    (sn === 'Alle' || e.season[sn] >= 2) &&
     (!q || `${e.name} ${e.goal} ${e.good.join(' ')} ${e.equip} ${e.cat}`.toLowerCase().includes(q)));
+  return sn === 'Alle' ? list : list.sort((a, b) => b[1].season[sn] - a[1].season[sn]);
+}
+/* Sæson-vurdering: tre små søjler pr. periode og hvor tæt på kamp øvelsen kan ligge */
+function seasonRowHTML(e) {
+  const sn = ST.settings.libSeason;
+  return `<div class="season-row">${SEASONS.map(s => { const v = e.season[s.k];
+    return `<div class="sn${s.k === sn ? ' is-sel' : ''}" role="img" aria-label="${s.t}: ${SEASON_FIT[v].toLowerCase()}"><small>${s.t}</small><span class="sn-bars" aria-hidden="true">${[1, 2, 3].map(i => `<i${i <= v ? ' class="on"' : ''}></i>`).join('')}</span><b>${SEASON_FIT[v]}</b></div>`; }).join('')}</div>
+    ${e.season.in > 0 ? `<p class="md-line">${ICON.calendar}<span>In-season: ${MD_TXT[e.md].toLowerCase()}</span></p>` : ''}`;
 }
 function libCardHTML(id, e) {
   return `<article class="ex-card">
       <button class="ex-illu" type="button" data-open="lib|${id}" aria-label="Vis ${esc(e.name)} i stor visning">${illustration(id)}</button>
-      <div class="ex-body"><h3>${e.name}</h3>${goodTagsHTML(e)}<p class="ex-meta">${esc(e.cat)}${isHomeEx(e) ? ' · kan laves hjemme' : ''}</p><p class="ex-goal">${e.goal}</p>
+      <div class="ex-body"><h3>${e.name}</h3>${goodTagsHTML(e)}<p class="ex-meta">${esc(e.cat)}${isHomeEx(e) ? ' · kan laves hjemme' : ''}</p>${seasonRowHTML(e)}<p class="ex-goal">${e.goal}</p>
         <ol class="ex-steps">${['Start', 'Bevægelse', 'Slut'].map((l, i) => `<li><b>${l}</b><span>${e.how[i]}</span></li>`).join('')}</ol>
         <dl class="ex-dose"><div><dt>Reps/tid</dt><dd>${e.dose}</dd></div><div><dt>Pause</dt><dd>${e.rest}</dd></div></dl>
         <ul class="ex-tips">${e.tips.map(t => `<li>${ICON.tip}<span>${t}</span></li>`).join('')}</ul></div></article>`;
 }
 function renderLibList() {
-  const list = libFiltered(), shown = list.slice(0, libShown);
-  $('libCount').textContent = `${list.length} af ${Object.keys(EX).length} øvelser`;
-  $('lib').innerHTML = shown.length ? shown.map(([id, e]) => libCardHTML(id, e)).join('')
+  const list = libFiltered(), shown = list.slice(0, libShown), sn = ST.settings.libSeason;
+  const st = SEASONS.find(s => s.k === sn), core = st ? list.filter(([, e]) => e.season[sn] === 3).length : 0;
+  $('libCount').textContent = `${list.length} af ${Object.keys(EX).length} øvelser` + (st ? ` · ${core} kerneøvelser i ${st.t.toLowerCase()}` : '');
+  /* Med en valgt sæson deles listen i kerneøvelser og øvrige gode øvelser */
+  const head = (i, e) => !st ? '' : i === 0 && e.season[sn] === 3 ? `<h3 class="lib-group">Kerneøvelser · ${st.t}</h3>`
+    : e.season[sn] === 2 && (i === 0 || shown[i - 1][1].season[sn] === 3) ? `<h3 class="lib-group">Også gode · ${st.t}</h3>` : '';
+  $('lib').innerHTML = shown.length ? shown.map(([id, e], i) => head(i, e) + libCardHTML(id, e)).join('')
     : '<p class="empty">Ingen øvelser matcher dine filtre. <button class="link-btn" type="button" id="libReset">Nulstil filtre</button></p>';
   $('libMore').hidden = list.length <= libShown;
   $('libMore').textContent = `Vis flere (${list.length - libShown} mere)`;
 }
 function renderLibrary() {
-  const g = ST.settings.lib;
+  const g = ST.settings.lib, sn = ST.settings.libSeason;
+  $('libSeason').innerHTML = [{ k: 'Alle', t: 'Alle' }, ...SEASONS].map(s => `<button class="seg-btn" type="button" data-lseason="${s.k}" aria-pressed="${s.k === sn}">${s.t}</button>`).join('');
+  $('libSeasonLegend').innerHTML = SEASONS.map(s => `<dt>${s.t}</dt><dd>${s.d}</dd>`).join('') + `<dt>Søjlerne</dt><dd>${SEASON_FIT.slice(1).map((t, i) => `${i + 1} = ${t.toLowerCase()}`).join(', ')}. Vælger du en sæson, vises kerneøvelserne først.</dd><dt>Tæt på kamp</dt><dd>Hvor tæt på kampen øvelsen kan ligge i en normal dosis. Tunge løft og hårde spring giver ømhed, så de skal ligge tidligt i ugen.</dd>`;
   $('libChips').innerHTML = ['Alle', ...BENEFITS.map(b => b.k)].map(c => `<button class="chip" type="button" data-good="${c}" aria-pressed="${c === g}">${c}</button>`).join('');
   $('libEquip').innerHTML = [['Alle', 'Alt udstyr'], ['home', 'Kan laves hjemme'], ...EQUIPS.map(x => [x, x])].map(([v, t]) => `<option value="${v}" ${v === ST.settings.libEquip ? 'selected' : ''}>${t}</option>`).join('');
   $('libCat').innerHTML = CATS.map(c => `<option value="${c}" ${c === ST.settings.libCat ? 'selected' : ''}>${c === 'Alle' ? 'Alle typer' : c}</option>`).join('');
@@ -2520,6 +2010,7 @@ function openSheet(ctx) {
     <div class="m-dose">${tiles.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>
     ${item && item.prog ? `<p class="prog-line">${esc(item.prog)}</p>` : ''}
     ${goodTagsHTML(e)}
+    ${seasonRowHTML(e)}
     <p class="ex-goal">${e.goal}</p>
     <ol class="ex-steps">${['Start', 'Bevægelse', 'Slut'].map((l, i) => `<li><b>${l}</b><span>${e.how[i]}</span></li>`).join('')}</ol>
     <ul class="ex-tips">${e.tips.map(t => `<li>${ICON.tip}<span>${t}</span></li>`).join('')}</ul>
@@ -2859,6 +2350,7 @@ document.addEventListener('click', e => {
   if (ds.ses) { sesAction(ds.ses, ds); return; }
   if (ds.sact) { statusAction(ds.sact, ds); return; }
   if (ds.cact) { coachAction(ds.cact, ds); return; }
+  if (ds.pstart || ds.pseason || ds.pfocus || ds.pmatch != null || ds.pball != null || ds.pday != null) { progAction(ds); return; }
   if (ds.ctab) { setCoachTab(ds.ctab); if (ds.go) go(ds.go); return; }
   if (ds.go) { if (ds.go === 'program') selectWeek(curWeek()); go(ds.go); return; }
   if (ds.seg) { setTrackerTab(ds.seg); $('page-tracker').scrollTop = 0; return; }
@@ -2879,6 +2371,7 @@ document.addEventListener('click', e => {
     return;
   }
   if (ds.good) { ST.settings.lib = ds.good; save(); libShown = LIB_PAGE; renderLibrary(); return; }
+  if (ds.lseason) { ST.settings.libSeason = ds.lseason; save(); libShown = LIB_PAGE; renderLibrary(); return; }
   if ('swapOpen' in ds) { openSwap(); return; }
   if ('swapBack' in ds) { openSheet(sheetCtx); return; }
   if (ds.swapPick) { pickSwap(ds.swapPick); return; }
@@ -2912,7 +2405,7 @@ document.addEventListener('click', e => {
       const el = $(TM.src); if (el) el.scrollIntoView({ block: 'start' });
     } break;
     case 'libMore': libShown += LIB_PAGE; renderLibList(); break;
-    case 'libReset': ST.settings.lib = 'Alle'; ST.settings.libEquip = 'Alle'; ST.settings.libCat = 'Alle'; libQ = ''; $('libSearch').value = ''; save(); libShown = LIB_PAGE; renderLibrary(); break;
+    case 'libReset': ST.settings.lib = 'Alle'; ST.settings.libEquip = 'Alle'; ST.settings.libCat = 'Alle'; ST.settings.libSeason = 'Alle'; libQ = ''; $('libSearch').value = ''; save(); libShown = LIB_PAGE; renderLibrary(); break;
     case 'homeStart': startSession('home|' + homeLevel()); break;
     case 'friStart': startSession('fri'); break;
     case 'navTrain': trainNow(); break;
@@ -2990,8 +2483,8 @@ document.addEventListener('visibilitychange', () => {
 
 /* ===== Sider =====
    Hver side er en <section class="page">. Kun én vises ad gangen. Adresse: #/side, så tilbage-knappen virker. */
-const PAGES = ['idag', 'program', 'coach', 'status', 'fremgang', 'pas', 'hjemme', 'fredag', 'timer', 'tracker', 'ovelser', 'progression', 'rpe', 'mere'];
-const NAV_OF = { idag: 'idag', program: 'program', coach: 'coach', fremgang: 'coach', status: 'coach' }; // øvrige sider hører under "Mere"
+const PAGES = ['idag', 'program', 'programmer', 'coach', 'status', 'fremgang', 'pas', 'hjemme', 'fredag', 'timer', 'tracker', 'ovelser', 'progression', 'rpe', 'mere'];
+const NAV_OF = { idag: 'idag', program: 'program', programmer: 'program', coach: 'coach', fremgang: 'coach', status: 'coach' }; // øvrige sider hører under "Mere"
 let curPage = null, suppressHash = false;
 const pageScroll = {};
 const routeFromHash = () => { const m = location.hash.match(/^#\/(\w+)/); return m && PAGES.includes(m[1]) && !(m[1] === 'pas' && !SES) ? m[1] : 'idag'; };
@@ -3016,7 +2509,8 @@ function showPage(p) {
     if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   });
   timerInView = p === 'timer'; tRender();
-  if (p === 'program') { if (ST.coach.active) { rebuildWeeks(); renderWeek(); } requestAnimationFrame(centerWeekTab); }
+  if (p === 'program') { if (planOn()) { rebuildWeeks(); renderWeek(); } requestAnimationFrame(centerWeekTab); }
+  if (p === 'programmer') renderProgrammer();
   if (p === 'coach') renderCoach();
   $('app').classList.toggle('in-session', p === 'pas');
   if (p === 'pas') renderSession();
@@ -3208,14 +2702,19 @@ function logSet(exId, kg, reps, rpe, week) {
 
 
 function strItem(slot, role, g, n, ad) {
-  const main = role === 'main', ex = main ? liftFor(slot) : prefAlt(liftFor(slot)), S0 = SCH[g][n - 1], light = n % 4 === 0, pm = painMult(ex), pn = pm < 1 ? painNote(ex) : '';
+  const main = role === 'main', ex = main ? liftFor(slot) : prefAlt(liftFor(slot));
+  return liftItem(ex, main, SCH[g][n - 1], g === 'bodyfat' ? 12 : g === 'offseason' ? 10 : 8, n, ad);
+}
+/* Ét styrkeløft med sæt, gentagelser og vægt. S0 = [sæt, gentagelser, % af maks] for hovedløft, accR = gentagelser for assistance */
+function liftItem(ex, main, S0, accR, n, ad) {
+  const light = n % 4 === 0, pm = painMult(ex), pn = pm < 1 ? painNote(ex) : '';
   let rx;
   if (ex === 'pullup') {
     const pr = (lastTest() && lastTest().r.pullup ? lastTest().r.pullup.reps : 5) || 5, base = Math.max(3, Math.round(pr * (main ? .7 : .6))), ls = lastSession('pullup');
     const lo = light || !ls ? base : Math.max(3, Math.min(ls.minReps + 1, 25));
     rx = { sets: main ? Math.max(2, S0[0] + ad.sets) : 3, reps: lo, hi: lo + 2, bw: true, light };
   } else if (main) { const r = S0[1]; rx = { sets: Math.max(2, S0[0] + ad.sets), reps: r, hi: light ? r : r + (r >= 6 ? 2 : 1), pct: Math.round(S0[2] * ad.load * pm * 10) / 10, light }; }
-  else { const r = g === 'bodyfat' ? 12 : g === 'offseason' ? 10 : 8; rx = { sets: 3, reps: r, hi: light ? r : r + 2, pct: Math.round(62 * ad.load * pm * 10) / 10, light }; }
+  else { const r = accR; rx = { sets: 3, reps: r, hi: light ? r : r + 2, pct: Math.round(62 * ad.load * pm * 10) / 10, light }; }
   return { ex, dose: rxDose(ex, rx), note: (main ? (light ? 'Let uge · RPE 6' : 'RPE 7–8') : 'RPE 7–8 · vælg vægten selv') + (pn ? ` · skån ${pn}` : ''), prog: progText(ex), rx };
 }
 
@@ -3224,7 +2723,9 @@ const SCH = { // [sæt, gentagelser, % af maks] pr. uge 1–8 (uge 4 og 8 er let
   offseason: [[4, 10, 67.5], [4, 8, 72.5], [4, 8, 75], [3, 8, 62.5], [4, 8, 75], [4, 6, 80], [5, 5, 82.5], [3, 6, 65]],
   explosive: [[5, 5, 75], [5, 4, 80], [5, 3, 85], [3, 4, 70], [5, 3, 82.5], [4, 3, 87.5], [5, 2, 90], [3, 3, 70]],
   leanfast: [[3, 6, 75], [3, 5, 80], [3, 5, 82.5], [2, 5, 70], [3, 5, 82.5], [3, 4, 85], [3, 3, 87.5], [2, 5, 70]],
-  bodyfat: [[3, 12, 60], [3, 12, 62.5], [3, 10, 67.5], [2, 10, 55], [3, 10, 67.5], [3, 10, 70], [4, 8, 72.5], [2, 10, 55]]
+  bodyfat: [[3, 12, 60], [3, 12, 62.5], [3, 10, 67.5], [2, 10, 55], [3, 10, 67.5], [3, 10, 70], [4, 8, 72.5], [2, 10, 55]],
+  maint: [[2, 5, 80], [3, 5, 80], [3, 4, 82.5], [2, 5, 70], [3, 4, 82.5], [3, 3, 85], [3, 3, 87.5], [2, 4, 70]], // in-season: få, tunge sæt
+  ramp: [[2, 10, 55], [3, 10, 60], [3, 8, 65], [2, 8, 60], [3, 8, 70], [3, 6, 75], [4, 6, 77.5], [3, 6, 70]] // comeback og hjemme: rolig opbygning
 };
 const THEMES = ['OPBYGNING', 'FLERE SÆT', 'HÅRDERE', 'LET UGE', 'NY BLOK', 'HÅRDERE', 'TOPUGE', 'TEST OG LET UGE'];
 const SESS = {
@@ -3325,6 +2826,100 @@ function genPlanWeek(n, ad) {
   const note = ad.msg ? ` ${ad.msg}` : '';
   return { n, phase: phaseOf(n), title: `UGE ${n} · ${THEMES[n - 1]}`, desc: `${G.short}. ${gymSessions().length} pas om ugen.${note}`, blocks, plan: true };
 }
+/* ---------- Færdige programmer (programs.js) ---------- */
+const P_ROUNDS = { offseason: [2, 2, 3, 2, 3, 3, 3, 2], explosive: [3, 3, 4, 2, 4, 4, 5, 2], maint: [2, 2, 3, 2, 3, 3, 3, 2], ramp: [2, 2, 2, 2, 3, 3, 3, 2] };
+const P_ACCR = { offseason: 10, explosive: 6, maint: 6, ramp: 10 }; // gentagelser på assistanceløft
+const P_ADD = [0, 0, 1, -1, 1, 1, 2, -1]; // ekstra sæt i fart-blokke pr. uge (uge 4 og 8 er lette)
+const progActive = () => { const p = PROG_BY_ID[ST.prog.id]; return p && !p.base ? p : null; };
+/* Kører der et program med pas (færdigt program eller tilpasset coach-program)? */
+const planOn = () => !!progActive() || (ST.coach.active && !!GOALS[ST.coach.goal]);
+function progCond(kind, id, n) {
+  const k = n - 1; let b;
+  if (kind === 'cont' || kind === 'runcont') {
+    b = CONT([20, 22, 24, 18, 24, 26, 28, 18][k], 'RPE 5–6', 'Kondition', true);
+    if (kind === 'runcont') b.items = [{ ...b.items[0], ex: 'run', note: 'RPE 5–6 · roligt løb' }];
+  } else if (kind === 'int') b = INTERVALS([6, 7, 8, 5, 8, 9, 10, 5][k], 30, 60, 'RPE 8');
+  else if (kind === 'short') b = INTERVALS([6, 7, 8, 5, 8, 9, 10, 5][k], 15, 75, 'RPE 9');
+  else if (kind === 'tempo') {
+    const r = [8, 9, 10, 7, 10, 11, 12, 7][k];
+    b = { icon: 'pulse', title: 'Tempoløb', tags: [`${r} løb`, 'Gå tilbage'], callout: 'Hurtigt, men afslappet (RPE 7). Hold samme tid på alle løb.',
+      items: [{ ex: 'tempo', dose: `${r} løb`, note: 'Straffesparksfelt til straffesparksfelt' }],
+      timer: { name: `Tempoløb · ${r} løb`, segs: rounds(r, [S('work', 15, 'Tempoløb · RPE 7', 0), S('rest', 45, 'Gå tilbage')]) } };
+  } else if (kind === 'rsa') {
+    const sets = [2, 2, 3, 2, 3, 3, 3, 2][k], segs = [];
+    for (let s = 1; s <= sets; s++) {
+      segs.push(...rounds(6, [S('work', 5, `Sprint · sæt ${s}`, 0), S('rest', 25, 'Jog tilbage')]));
+      if (s < sets) segs.push({ ...S('rest', 180, 'Pause mellem sæt'), round: 6, rounds: 6 });
+    }
+    b = { icon: 'bolt', title: 'Gentagne sprint', tags: [`${sets} × 6 sprint`, '3 min mellem sæt'], callout: 'Sprint hårdt, og jog roligt tilbage. Stop, hvis farten falder meget.',
+      items: [{ ex: 'rsa', dose: `${sets} × 6 sprint`, note: '20–30 m · 25 sek jog tilbage' }], timer: { name: 'Gentagne sprint', segs } };
+  } else b = BLOCKS5([3, 3, 4, 2, 4, 4, 5, 3][k], 'RPE 6', 'RPE 8');
+  b.id = id;
+  return b;
+}
+function progBlock(spec, id, p, n, ad) {
+  const [type, arg] = Array.isArray(spec) ? spec : [spec], sch = p.scheme, rnd = P_ROUNDS[sch][n - 1], few = Math.min(3, rnd);
+  const safe = ids => ids.map(prefAlt).filter(painSafe); // risikable øvelser udelades ved smerte
+  switch (type) {
+    case 'warm': { const w = WARM(6); w.id = id; return w; }
+    case 'warmfield': return { id, icon: 'flame', title: 'Opvarmning · FIFA 11+', tags: ['8 min', 'RPE 3–5'], items: [{ ex: 'fifa11', dose: '8 min', note: 'Løbedelen af FIFA 11+', secs: 480 }], timer: { name: 'Opvarmning · FIFA 11+', segs: single(480, 'FIFA 11+ · løbedel') } };
+    case 'str': {
+      const items = arg.map(sp => { const [ex, role] = sp.split(':'), main = role === 'main'; return liftItem(main ? ex : prefAlt(ex), main, SCH[sch][n - 1], P_ACCR[sch], n, ad); });
+      return { id, icon: 'dumbbell', title: 'Styrke', tags: [`${items[0].rx.sets} sæt`, `Pause ${p.rest} sek`], items, restTimer: p.rest };
+    }
+    case 'speed': {
+      const items = arg.map(([ex, sets, rep]) => ({ ex, dose: `${Math.max(2, sets + P_ADD[n - 1])} × ${rep}`, note: 'Fuld fart · rolig pause' }));
+      return { id, icon: 'bolt', title: 'Fart', tags: [`${items.length} øvelser`, 'Pause 75 sek'], callout: 'Kvalitet før mængde: hver gentagelse skal være hurtig. Stop, hvis farten falder.', items, restTimer: 75 };
+    }
+    case 'pwr': { const ids = safe(arg); return ids.length ? circuit(id, 'bolt', 'Power', ids, Math.max(2, rnd), 75) : null; }
+    case 'gk': { const ids = safe(arg); return ids.length ? circuit(id, 'glove', 'Målmand', ids, Math.max(2, rnd), 60) : null; }
+    case 'circ': { const ids = safe(arg); return ids.length ? circuit(id, 'dumbbell', 'Styrke-circuit', ids, Math.max(2, rnd), 45) : null; }
+    case 'prev': return circuit(id, 'shield', 'Skadeforebyggelse', arg.map(prefAlt), Math.max(2, few), 30);
+    case 'core': { let ids = arg.map(prefAlt); const s = ids.filter(painSafe); if (s.length >= 2) ids = s; return circuit(id, 'core', 'Core', ids, Math.max(2, few), 30); }
+    case 'mob': return circuit(id, 'repeat', 'Mobilitet', arg.map(prefAlt), 2, 10);
+    case 'cond': return progCond(arg, id, n);
+  }
+  return null;
+}
+function genProgWeek(p, n, ad) {
+  const blocks = [], asg = progAssign(p), Ls = Object.keys(p.sessions).sort((a, b) => (asg[a] ?? 9) - (asg[b] ?? 9) || a.localeCompare(b));
+  Ls.forEach(L => {
+    const T = p.sessions[L], session = { id: L, title: `Pas ${L} · ${T.t}` };
+    T.blocks.forEach((spec, k) => { const b = progBlock(spec, `${p.id}_${L}${k}`, p, n, ad); if (b) { b.session = session; blocks.push(b); } });
+  });
+  return { n, phase: phaseOf(n), title: `UGE ${n} · ${THEMES[n - 1]}`, desc: `${p.name}. ${Ls.length} pas om ugen.${ad.msg ? ' ' + ad.msg : ''}`, blocks, plan: true };
+}
+/* ---------- Ugeplan: kampdag og træningsdage ----------
+   Dage før kamp: 0 = kampdag, 1 = dagen før, 6 = dagen efter kamp (restitution). */
+const daysBefore = d => ST.prog.match < 0 ? null : (ST.prog.match - d + 7) % 7;
+function autoDays(n) {
+  const m = ST.prog.match;
+  if (m < 0 || seasonNow() === 'off') return (n >= 3 ? [0, 2, 4] : n === 2 ? [1, 3] : [2]);
+  return (n >= 3 ? [5, 4, 2] : n === 2 ? [4, 2] : [3]).map(b => (m - b + 7) % 7);
+}
+/* Dine valgte træningsdage. Har du ikke valgt nogen, foreslår appen dage ud fra kampdagen.
+   Vælger du færre dage end pas, får de letteste pas ingen fast dag. */
+function progDays(p = progActive()) {
+  if (!p) return [];
+  const n = Object.keys(p.sessions).length, m = ST.prog.match, own = ST.prog.days.filter(d => d !== m).slice(0, n);
+  return (own.length ? own : autoDays(n).filter(d => d !== m)).sort((a, b) => a - b);
+}
+/* Det tungeste pas (højst md) lægges længst fra kampen. Dagen efter kamp er restitution og får det letteste. */
+function progAssign(p = progActive()) {
+  if (!p) return {};
+  const away = d => { const b = daysBefore(d); return b == null ? 7 - d : b === 6 ? 0.5 : b; };
+  const ds = progDays(p).sort((a, b) => away(b) - away(a) || a - b);
+  const ls = Object.keys(p.sessions).sort((a, b) => (p.sessions[b].md || 0) - (p.sessions[a].md || 0) || a.localeCompare(b));
+  const out = {}; ls.forEach((L, i) => { if (i < ds.length) out[L] = ds[i]; });
+  return out;
+}
+/* Advarsler, hvis et pas ligger for tæt på kampen */
+function progWarnings(p = progActive()) {
+  if (!p || ST.prog.match < 0 || seasonNow() === 'off') return [];
+  const asg = progAssign(p);
+  return Object.entries(asg).filter(([L, d]) => { const b = daysBefore(d); return b != null && b < (p.sessions[L].md || 0); })
+    .map(([L, d]) => `Pas ${L} (${p.sessions[L].t.toLowerCase()}) ligger ${daysBefore(d) === 0 ? 'på kampdagen' : daysBefore(d) === 1 ? 'dagen før kamp' : daysBefore(d) + ' dage før kamp'}. Det bør ligge mindst ${p.sessions[L].md} dage før.`);
+}
 function weekDoneRatio(w, weeks) {
   const W = weeks[w - 1]; if (!W) return null;
   const items = W.blocks.flatMap(b => b.items.map((it, i) => ({ b, it, i })).filter(x => x.it.ex));
@@ -3345,11 +2940,11 @@ function adaptFor(n, weeks) {
   return { load: 1, sets: 0, msg: `Forrige uge: ${pctTxt}. Fortsætter som planlagt.` };
 }
 function computePlan() {
-  const c = ST.coach;
-  if (!c.active || !GOALS[c.goal]) return BASE_WEEKS;
+  const p = progActive();
+  if (!planOn()) return BASE_WEEKS;
   const weeks = [];
   const sa = statusAdapt(), cw = curWeek();
-  for (let n = 1; n <= 8; n++) { let ad = adaptFor(n, weeks); if (sa && n >= cw && n <= cw + 1) ad = mergeAd(ad, sa); weeks.push(genPlanWeek(n, ad)); }
+  for (let n = 1; n <= 8; n++) { let ad = adaptFor(n, weeks); if (sa && n >= cw && n <= cw + 1) ad = mergeAd(ad, sa); weeks.push(p ? genProgWeek(p, n, ad) : genPlanWeek(n, ad)); }
   return weeks;
 }
 function rebuildWeeks() { WEEKS = computePlan(); }
@@ -3567,7 +3162,7 @@ function coachAction(a, ds) {
   }
   if (a === 'activate') {
     if (!c.goal) { setCoachTab('mal'); return; }
-    c.active = true; resetPlanState(); save(); refreshPlan(); toast('Dit tilpassede program er klar'); go('program'); selectWeek(curWeek());
+    c.active = true; ST.prog.id = ''; resetPlanState(); save(); refreshPlan(); toast('Dit tilpassede program er klar'); go('program'); selectWeek(curWeek());
     return;
   }
   if (a === 'deactivate') {
@@ -3592,16 +3187,108 @@ function resetPlanState() {
 /* ----- Banner i programmet og kort på forsiden ----- */
 function renderPlanBanner() {
   const el = $('planBanner'); if (!el) return;
-  const c = ST.coach;
-  el.innerHTML = c.active && GOALS[c.goal]
-    ? `<div class="plan-banner on"><span>${ICON.gauge}<b>Tilpasset</b> · ${GOALS[c.goal].short}</span><button type="button" data-ctab="over" data-go="coach">Ændr</button></div>`
-    : `<div class="plan-banner"><span>${ICON.gauge}Få et program, der passer til dig</span><button type="button" data-ctab="over" data-go="coach">Min form</button></div>`;
+  const c = ST.coach, p = progActive();
+  el.innerHTML = p ? `<div class="plan-banner on"><span>${ICON[p.icon]}<b>${esc(p.name)}</b></span><button type="button" data-go="programmer">Skift</button></div>`
+    : c.active && GOALS[c.goal]
+    ? `<div class="plan-banner on"><span>${ICON.gauge}<b>Tilpasset</b> · ${GOALS[c.goal].short}</span><button type="button" data-go="programmer">Skift</button></div>`
+    : `<div class="plan-banner"><span>${ICON.glove}<b>Målmand 8</b> · vælg et andet program eller fokus</span><button type="button" data-go="programmer">Programmer</button></div>`;
+}
+
+/* ===== Programmer: vælg et færdigt program, din uge og kampdag ===== */
+let progFilter = { s: 'Alle', f: 'Alle' };
+const SEASON_NAME = { off: 'Off-season', pre: 'Opbygning', in: 'In-season', all: 'Hele året' };
+const COND_NAME = { cont: 'Rolig kondition', runcont: 'Roligt løb', int: 'Intervaller 30/60', short: 'Korte intervaller 15/75', tempo: 'Tempoløb', rsa: 'Gentagne sprint', b5: 'Konditionsblokke' };
+/* Øvelserne i hvert pas, til forhåndsvisning på programkortet */
+function progSample(p) {
+  if (p.base) return [{ t: 'Fitness · uge 1', ex: BASE_WEEKS[0].blocks.flatMap(b => b.items.filter(i => i.ex).map(i => EX[i.ex].name)) }];
+  return Object.entries(p.sessions).map(([L, T]) => ({ t: `Pas ${L} · ${T.t}`, ex: [...new Set(T.blocks.flatMap(spec => {
+    if (spec === 'warmfield') return [EX.fifa11.name];
+    if (!Array.isArray(spec)) return [];
+    if (spec[0] === 'cond') return [COND_NAME[spec[1]] || 'Kondition'];
+    return spec[1].map(x => EX[Array.isArray(x) ? x[0] : x.split(':')[0]].name);
+  }))] }));
+}
+function progCardHTML(p) {
+  const on = p.base ? !planOn() : ST.prog.id === p.id;
+  return `<article class="prog-card${on ? ' is-active' : ''}">
+    <header><span class="pg-ic" aria-hidden="true">${ICON[p.icon]}</span><div><h3>${esc(p.name)}</h3><p class="pg-meta">${SEASON_NAME[p.season]} · ${p.perWeek} pas/uge · ca. ${p.mins} min</p></div>${on ? '<span class="tag lime">Aktivt</span>' : ''}</header>
+    <div class="tags">${p.focus.map(f => `<span class="tag">${f}</span>`).join('')}<span class="tag eq">${esc(p.equip)}</span><span class="tag eq">${esc(p.level)}</span></div>
+    <p class="pg-desc">${esc(p.desc)}</p>
+    <details class="pg-more"><summary>Se passene</summary>${progSample(p).map(s => `<p class="pg-ses"><b>${esc(s.t)}</b><span>${esc(s.ex.join(' · '))}</span></p>`).join('')}</details>
+    <div class="pg-actions">${on ? `<button class="btn btn-lime" type="button" data-go="program">Åbn programmet</button>` : `<button class="btn btn-lime" type="button" data-pstart="${p.id}">Start programmet</button>`}</div></article>`;
+}
+function weekPlanHTML() {
+  const p = progActive(), m = ST.prog.match, asg = p ? progAssign(p) : {}, days = p ? progDays(p) : [], n = p ? Object.keys(p.sessions).length : 0;
+  const chip = (attr, v, on, label) => `<button class="chip" type="button" ${attr}="${v}" aria-pressed="${on}">${label}</button>`;
+  const row = (attr, has) => `<div class="chips wrap">${DAY_SHORT.map((d, i) => chip(attr, i, has(i), d)).join('')}</div>`;
+  const missing = p ? Object.keys(p.sessions).filter(L => asg[L] == null) : [];
+  const cell = i => { const L = Object.keys(asg).find(k => asg[k] === i), b = daysBefore(i);
+    const t = L ? `Pas ${L}` : i === m ? 'Kamp' : seasonNow() === 'in' && b === 1 ? 'Aktiv.' : ST.prog.ball.includes(i) ? 'Fodb.' : 'Hvile';
+    return `<li class="${L ? 'fit' : i === m ? 'match' : ''}"><small>${DAY_SHORT[i]}</small><b>${t}</b></li>`; };
+  return `<div class="panel wp"><h3>Din uge</h3>
+    <p class="t-sub">Kampdag</p><div class="chips wrap">${chip('data-pmatch', -1, m < 0, 'Ingen kamp')}${DAY_SHORT.map((d, i) => chip('data-pmatch', i, m === i, d)).join('')}</div>
+    <p class="t-sub">Fodboldtræning</p>${row('data-pball', i => ST.prog.ball.includes(i))}
+    ${p ? `<p class="t-sub">Træningsdage i programmet · ${days.length} af ${n}</p>${row('data-pday', i => days.includes(i))}
+      <ol class="wp-days" aria-label="Din uge">${DAY_SHORT.map((_, i) => cell(i)).join('')}</ol>
+      <p class="muted">${seasonNow() === 'in' ? 'Det tunge pas lægges længst fra kampen og det hurtige tættere på. Dagen før kamp er let aktivering.' : 'Ingen kampe: passene fordeles jævnt over ugen.'}</p>
+      ${missing.length ? `<p class="notice">Pas ${missing.join(' og ')} har ingen fast dag. Vælg ${missing.length === 1 ? 'en dag' : missing.length + ' dage'} mere, eller lav ${missing.length === 1 ? 'det' : 'dem'}, når du har tid.</p>` : ''}
+      ${progWarnings(p).map(w => `<p class="notice warn">${esc(w)}</p>`).join('')}` : '<p class="muted">Træningsdagene vælges, når du har startet et af programmerne med pas.</p>'}</div>`;
+}
+function renderProgrammer() {
+  const el = $('progBody'); if (!el) return;
+  const { s, f } = progFilter;
+  const isOn = p => p.base ? !planOn() : ST.prog.id === p.id;
+  const list = PROGRAMS.filter(p => (s === 'Alle' || p.season === s || p.season === 'all') && (f === 'Alle' || p.focus.includes(f))).sort((a, b) => isOn(b) - isOn(a));
+  el.innerHTML = `${weekPlanHTML()}
+    <button class="coach-row" type="button" data-ctab="mal" data-go="coach"><span class="cm-ic">${ICON.gauge}</span><span class="cr-t"><b>Vælg et fokus i stedet</b><small>Byg et program ud fra dit mål og din test${ST.coach.active && GOALS[ST.coach.goal] ? ` · aktivt: ${GOALS[ST.coach.goal].short}` : ''}</small></span><span class="lr-go">${ICON.chev}</span></button>
+    <div class="seg seg4 lib-season" role="group" aria-label="Sæson">${[['Alle', 'Alle'], ...SEASONS.map(x => [x.k, x.t])].map(([k, t]) => `<button class="seg-btn" type="button" data-pseason="${k}" aria-pressed="${k === s}">${t}</button>`).join('')}</div>
+    <div class="chips" role="group" aria-label="Fokus">${['Alle', ...FOCI].map(x => `<button class="chip" type="button" data-pfocus="${x}" aria-pressed="${x === f}">${x}</button>`).join('')}</div>
+    <p class="lib-count">${list.length} af ${PROGRAMS.length} programmer · alle er 8 uger</p>
+    <div class="prog-list">${list.map(progCardHTML).join('') || '<p class="empty">Ingen programmer matcher. <button class="link-btn" type="button" data-pseason="Alle" data-pfocus="Alle">Nulstil filtre</button></p>'}</div>`;
+}
+function mondayISO() { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return localISO(d); }
+function startProgram(id) {
+  const p = PROG_BY_ID[id]; if (!p) return;
+  const progress = ST.weeksDone.length || Object.keys(ST.done).length;
+  if (progress && !confirm(`Start "${p.name}"? Afkrydsninger og gennemførte uger nulstilles. Loggede sæt, tests, vægt og kampe bevares.`)) return;
+  ST.prog.id = p.base ? '' : p.id; ST.coach.active = false;
+  Object.keys(ST.done).filter(k => k.startsWith('week|')).forEach(k => delete ST.done[k]);
+  ST.weeksDone = []; ST.run = {}; ST.week = 1; ST.start = mondayISO();
+  save(); refreshPlan(); renderCurrent(); renderTiles(); updateTrainButton();
+  toast(`${p.name} er startet. God træning.`); selectWeek(1); go('program');
+}
+function progAction(ds) {
+  const pg = ST.prog;
+  if (ds.pstart) { startProgram(ds.pstart); return; }
+  if (ds.pseason || ds.pfocus) { if (ds.pseason) progFilter.s = ds.pseason; if (ds.pfocus) progFilter.f = ds.pfocus; renderProgrammer(); return; }
+  if (ds.pmatch != null) { pg.match = +ds.pmatch; pg.days = pg.days.filter(d => d !== pg.match); }
+  else if (ds.pball != null) { const d = +ds.pball; pg.ball = pg.ball.includes(d) ? pg.ball.filter(x => x !== d) : [...pg.ball, d].sort((a, b) => a - b); }
+  else if (ds.pday != null) {
+    const p = progActive(), d = +ds.pday, cur = progDays(p), n = Object.keys(p.sessions).length;
+    if (d === pg.match) { toast('Det er din kampdag'); return; }
+    if (cur.includes(d)) { if (cur.length <= 1) { toast('Mindst én træningsdag'); return; } pg.days = cur.filter(x => x !== d); }
+    else { if (cur.length >= n) { toast(`Programmet har ${n} pas. Fjern en dag først.`); return; } pg.days = [...cur, d].sort((a, b) => a - b); }
+  }
+  save(); refreshPlan(); renderCurrent(); renderTiles(); updateTrainButton();
+  const sc = $('page-programmer'), top = sc ? sc.scrollTop : 0; withFocus(renderProgrammer); if (sc) sc.scrollTop = top;
+}
+/* Første gang: vis et kort på forsiden, der hjælper med at vælge program */
+function renderStartCard() {
+  const el = $('startCard'); if (!el) return;
+  const fresh = !ST.prog.id && !ST.coach.active && !ST.start && !ST.weeksDone.length && !Object.keys(ST.done).length;
+  el.innerHTML = fresh ? `<a class="coach-row start-row" href="#/programmer"><span class="cm-ic">${ICON.calendar}</span><span class="cr-t"><b>Vælg dit program</b><small>${PROGRAMS.length} færdige programmer til off-season, opbygning og in-season, eller byg dit eget ud fra et fokus</small></span><span class="lr-go">${ICON.chev}</span></a>` : '';
 }
 
 /* ===== Træningsdage, ugens oversigt og dagens kort ===== */
 const DAY_SHORT = ['man', 'tir', 'ons', 'tor', 'fre', 'lør', 'søn'];
-const seasonNow = () => ST.coach.season || (ST.coach.goal === 'offseason' ? 'off' : 'in');
+/* 'in' = der spilles kampe (aktivering dagen før og kamp i ugen), 'off' = ingen kampe */
+const seasonNow = () => {
+  const p = progActive();
+  if (p) return p.season === 'off' || ST.prog.match < 0 ? 'off' : 'in';
+  return ST.coach.season || (ST.coach.goal === 'offseason' ? 'off' : 'in');
+};
 function planDays() {
+  if (progActive()) return progDays();
   const c = ST.coach, G = GOALS[c.goal]; if (!G) return [];
   const d = (c.days || []).slice().sort((a, b) => a - b).slice(0, G.sessions.length);
   return d.length ? d : (G.sessions.length >= 3 ? [0, 2, 4] : [1, 4]);
@@ -3609,6 +3296,7 @@ function planDays() {
 const homeDaysSel = () => (ST.coach.homeDays || []).filter(d => !planDays().includes(d));
 /* Antal vægtdage styrer, hvilke pas der bruges: 1 dag giver det mest alsidige pas, 2 dage de to første */
 function gymSessions() {
+  const p = progActive(); if (p) return Object.keys(p.sessions);
   const G = GOALS[ST.coach.goal]; if (!G) return [];
   const n = planDays().length, all = G.sessions;
   if (n >= all.length) return all;
@@ -3616,6 +3304,7 @@ function gymSessions() {
   return all.slice(0, n);
 }
 function sessionDay(L) {
+  if (progActive()) return progAssign()[L] ?? null;
   const k = gymSessions().indexOf(L), d = planDays();
   return k >= 0 && k < d.length ? d[k] : null;
 }
@@ -3626,25 +3315,34 @@ function sessionStats(n, L) {
   return { done: items.filter(x => ST.done[`week|${n}|${x.b.id}|${x.i}`]).length, total: items.length };
 }
 function todaySession() {
-  if (!ST.coach.active || !GOALS[ST.coach.goal]) return null;
+  if (!planOn()) return null;
   const idx = (new Date().getDay() + 6) % 7, L = gymSessions().find(l => sessionDay(l) === idx);
   return L ? { L, title: sessionTitle(curWeek(), L), ...sessionStats(curWeek(), L) } : null;
 }
 /* Næste pas, der ikke er klaret endnu: { L, title, day } */
 function nextOpenSession() {
-  if (!ST.coach.active || !GOALS[ST.coach.goal]) return null;
-  const n = curWeek(), today = (new Date().getDay() + 6) % 7, G = GOALS[ST.coach.goal];
+  if (!planOn()) return null;
+  const n = curWeek(), today = (new Date().getDay() + 6) % 7;
   const open = gymSessions().map(L => ({ L, day: sessionDay(L), ...sessionStats(n, L) })).filter(s => s.total && s.done < s.total);
   if (!open.length) return null;
   const upcoming = open.filter(s => s.day != null && s.day >= today).sort((a, b) => a.day - b.day)[0] || open[0];
   return { L: upcoming.L, title: sessionTitle(n, upcoming.L), day: upcoming.day, n };
 }
+/* Dagens type i et færdigt program: pas, kamp, aktivering dagen før kamp, fodbold eller hvile */
+function progDayKind(i) {
+  if (gymSessions().some(L => sessionDay(L) === i)) return 'fit';
+  const m = ST.prog.match;
+  if (m >= 0 && seasonNow() === 'in') { if (i === m) return 'match'; if (i === (m + 6) % 7) return 'fri'; }
+  return ST.prog.ball.includes(i) ? 'ball' : 'off';
+}
+function nextSessionTxt() { const nx = nextOpenSession(); return nx ? `Næste pas: ${nx.day != null ? DAY_SHORT[nx.day] + ' · ' : ''}${nx.title}.` : 'Alle pas i denne uge er klaret.'; }
 function renderToday() {
-  const idx = (new Date().getDay() + 6) % 7, day = DAYS[idx], n = curWeek(), W = WEEKS[n - 1], c = ST.coach;
+  const idx = (new Date().getDay() + 6) % 7, n = curWeek(), W = WEEKS[n - 1], c = ST.coach;
+  const day = progActive() ? { ...DAYS[idx], kind: progDayKind(idx) } : DAYS[idx];
   const phaseName = W.title.split('·')[1].trim().toLowerCase().replace(/^./, ch => ch.toUpperCase());
   const st = weekStats(n);
   let cls = '', big = '', text = '', btn = '', act = '', icon = day.icon, extra = '';
-  if (c.active && GOALS[c.goal]) {
+  if (planOn()) {
     const ses = todaySession();
     if (ses) {
       cls = 'is-fit'; icon = 'dumbbell'; big = `Pas ${ses.L}`;
@@ -3665,15 +3363,16 @@ function renderToday() {
       case 'fit': cls = 'is-fit'; big = `Fitness · uge ${n}`; text = `${phaseName}. ${st.done} af ${st.total} øvelser klaret.`; btn = 'Start dagens træning'; act = `data-ses-start="week|${n}|"`; break;
       case 'fri': big = 'Aktivering'; text = 'Bliv klar til kamp. Du skal føle dig frisk bagefter.'; btn = 'Åbn fredagens aktivering'; target = 'fredag'; break;
       case 'match': big = 'Kampdag'; text = 'Efter kampen: registrér koncentration, parathed og overskud.'; btn = 'Registrér kampen'; target = 'tracker'; break;
-      case 'off': big = 'Fri'; text = 'Restitution. Sov godt, spis godt. Næste fitnesspas er onsdag.'; btn = 'Se din progression'; target = 'progression'; break;
+      case 'off': big = 'Fri'; text = 'Restitution. Sov godt, spis godt. ' + (planOn() ? nextSessionTxt() : 'Næste fitnesspas er onsdag.'); btn = 'Se din progression'; target = 'progression'; break;
       default:
         big = 'Fodbold';
-        text = (idx === 1 ? `I morgen er det fitness: uge ${n}.` : idx === 3 ? 'Kamp lørdag. I morgen: let aktivering.' : 'Næste fitnesspas er onsdag.') + ' Lav hjemmerutinen inden træning: ca. 12 min uden udstyr.';
+        text = (planOn() ? nextSessionTxt() : idx === 1 ? `I morgen er det fitness: uge ${n}.` : idx === 3 ? 'Kamp lørdag. I morgen: let aktivering.' : 'Næste fitnesspas er onsdag.') + ' Lav hjemmerutinen inden træning: ca. 12 min uden udstyr.';
         btn = 'Før træning · hjemme'; target = 'hjemme';
     }
     if (!act) act = `data-go="${target}"`;
     if (day.kind === 'ball') extra = '<button class="btn btn-ghost" type="button" data-go="program">Se uge ' + n + '</button>';
   }
+  renderStartCard();
   $('todayCard').className = `today-card ${cls}`;
   $('todayCard').innerHTML = `<span class="today-ic" aria-hidden="true">${ICON[icon]}</span>
     <p class="today-small">I dag er det ${day.full}</p>
@@ -3774,7 +3473,7 @@ function saveLog(exId) {
   $('lgList').innerHTML = logListHTML(exId); $('lgReps').value = '';
   toast(pr ? `Ny rekord: ${pr}!` : 'Registreret'); if (pr) vib([100, 60, 100, 60, 220]);
   updateStatus();
-  if (ST.coach.active) { rebuildWeeks(); renderWeek(); renderCoachCard(); }
+  if (planOn()) { rebuildWeeks(); renderWeek(); renderCoachCard(); }
 }
 
 /* ===== Træningstilstand: ét trin ad gangen med sæt-logning og hvile ===== */
@@ -3819,7 +3518,7 @@ function startSession(spec) {
   keepAwake(true); go('pas');
 }
 function refreshViews() {
-  if (ST.coach.active) rebuildWeeks();
+  if (planOn()) rebuildWeeks();
   updateStatus();
   renderWeekNav(); renderWeek(); renderToday(); renderDays(); renderProgress(); renderHome(); renderFriday(); renderCoachCard(); renderWeekSummary(); updateTrainButton();
   if (curPage === 'fremgang') renderFremgang();
@@ -3945,8 +3644,12 @@ function sesAction(a, ds) {
 function dayInfo(i) {
   const d = DAYS[i], c = ST.coach, short = DAY_SHORT[i].toUpperCase();
   const baseTag = { fit: 'Fit', ball: 'Fod', fri: 'Akt', match: 'Kamp', off: 'Fri' };
-  if (!c.active || !GOALS[c.goal]) return { kind: d.kind, short, tag: baseTag[d.kind], label: d.label, icon: d.icon };
+  if (!planOn()) return { kind: d.kind, short, tag: baseTag[d.kind], label: d.label, icon: d.icon };
   const L = gymSessions().find(l => sessionDay(l) === i);
+  if (progActive() && !L) {
+    const k = progDayKind(i), lbl = { match: ['Kamp', 'glove'], fri: ['Aktivering', 'bolt'], ball: ['Fodbold', 'ball'] }[k];
+    if (lbl) return { kind: k, short, tag: baseTag[k], label: lbl[0], icon: lbl[1] };
+  }
   if (!L && homeDaysSel().includes(i)) return { kind: 'home', short, tag: 'Hjem', label: 'Hjemmetræning uden vægt', icon: 'house' };
   if (L) return { kind: 'fit', short, tag: L, label: sessionTitle(curWeek(), L), icon: 'dumbbell' };
   if (seasonNow() === 'in' && (d.kind === 'ball' || d.kind === 'match' || d.kind === 'fri')) return { kind: d.kind, short, tag: baseTag[d.kind], label: d.label, icon: d.icon };
@@ -3962,11 +3665,11 @@ function renderWeekSummary() {
   const el = $('weekSummary'); if (!el) return;
   const n = curWeek(), c = ST.coach, pills = [];
   const pill = (label, done, total) => `<div class="ws-pill ${total && done >= total ? 'ok' : ''}"><small>${label}</small><b>${done}<span>/${total}</span></b><i style="width:${total ? Math.min(100, done / total * 100) : 0}%"></i></div>`;
-  if (c.active && GOALS[c.goal]) {
+  if (planOn()) {
     const gs = gymSessions(), doneS = gs.map(L => sessionStats(n, L)).filter(s => s.total && s.done >= s.total).length;
     pills.push(pill('Pas', doneS, gs.length));
   } else { const s = weekStats(n); pills.push(pill('Fitness', s.done, s.total)); }
-  const hd = c.active ? homeDaysSel().length : 0;
+  const hd = planOn() ? homeDaysSel().length : 0;
   if (hd || seasonNow() === 'in') pills.push(pill('Hjemme', weekDates().filter(d => ST.homeLog.includes(d)).length, hd || 3));
   if (seasonNow() === 'in') {
     pills.push(pill('Fredag', FRIDAY.items.filter((_, i) => ST.fri.done[i]).length, FRIDAY.items.length));
@@ -3984,8 +3687,8 @@ function renderCoachCard() {
   const c = ST.coach, rec = lastTest(), f = rec ? formOf(rec) : null, G = GOALS[c.goal];
   if (!f || f.overall == null) el.innerHTML = `<button class="coach-row" type="button" data-ctab="over" data-go="coach"><span class="cm-ic">${ICON.gauge}</span><span class="cr-t"><b>Din form</b><small>Skriv vægt, vælg mål og tag testen</small></span><span class="lr-go">${ICON.chev}</span></button>`;
   else {
-    const nx = c.active ? nextOpenSession() : null;
-    const sub = c.active && G ? (nx ? `Næste: ${nx.day != null ? DAY_SHORT[nx.day] + ' · ' : ''}${nx.title}` : 'Alle træninger i denne uge er klaret') : (G ? G.name : 'Vælg et mål');
+    const nx = planOn() ? nextOpenSession() : null;
+    const sub = planOn() ? (nx ? `Næste: ${nx.day != null ? DAY_SHORT[nx.day] + ' · ' : ''}${nx.title}` : 'Alle træninger i denne uge er klaret') : (G ? G.name : 'Vælg et mål');
     el.innerHTML = `<button class="coach-row" type="button" data-ctab="over" data-go="coach"><span class="cm-score" style="color:${lvlCol(f.overall)}">${f.overall}</span><span class="cr-t"><b>Din form · ${levelOf(f.overall)}${statusPill()}</b><small>${esc(sub)}</small>${scaleBar(f.overall, true)}</span><span class="lr-go">${ICON.chev}</span></button>`;
   }
   renderTiles(); updateTrainButton();
@@ -3993,8 +3696,8 @@ function renderCoachCard() {
 function renderTiles() {
   const el = $('tiles'); if (!el) return;
   const t = seasonNow() === 'in'
-    ? [['ovelser', 'grid', 'Øvelser'], ['hjemme', 'house', 'Hjemme'], ['fredag', 'bolt', 'Fredag'], ['timer', 'timer', 'Timer'], ['tracker', 'chart', 'Tracker'], ['fremgang', 'pulse', 'Fremgang']]
-    : [['ovelser', 'grid', 'Øvelser'], ['timer', 'timer', 'Timer'], ['tracker', 'chart', 'Tracker'], ['fremgang', 'pulse', 'Fremgang'], ['progression', 'flame', 'Progression'], ['rpe', 'focus', 'RPE']];
+    ? [['programmer', 'calendar', 'Programmer'], ['ovelser', 'grid', 'Øvelser'], ['hjemme', 'house', 'Hjemme'], ['fredag', 'bolt', 'Fredag'], ['timer', 'timer', 'Timer'], ['tracker', 'chart', 'Tracker']]
+    : [['programmer', 'calendar', 'Programmer'], ['ovelser', 'grid', 'Øvelser'], ['timer', 'timer', 'Timer'], ['tracker', 'chart', 'Tracker'], ['fremgang', 'pulse', 'Fremgang'], ['progression', 'flame', 'Progression']];
   el.innerHTML = t.map(([r, ic, l]) => `<a class="tile" href="#/${r}"><span aria-hidden="true">${ICON[ic]}</span><b>${l}</b></a>`).join('');
 }
 
@@ -4006,7 +3709,10 @@ function weakHTML(f) {
   return `<p class="weak">Størst potentiale: <b>${e[0][0]}</b> (${e[0][1]}). Prøv mere ${tip}.</p>`;
 }
 function planCardHTML() {
-  const c = ST.coach, G = GOALS[c.goal];
+  const c = ST.coach, G = GOALS[c.goal], p = progActive();
+  if (p) return `<div class="panel plan-card"><div class="goal-chip"><span class="gc-ic">${ICON[p.icon]}</span><div><b>${esc(p.name)}</b><small>Færdigt program · ${gymSessions().length} pas om ugen · 8 uger</small></div></div>
+    <p class="muted" style="margin:8px 0 12px">Vil du hellere have et program, der bygges ud fra dit mål og din test? Vælg et mål, og tryk "Lav mit program".</p>
+    <div class="fc-actions"><button class="btn btn-lime" type="button" data-go="program">Åbn programmet</button><button class="btn btn-ghost" type="button" data-go="programmer">Skift program</button></div></div>`;
   if (!G) return `<div class="panel plan-card"><h3>Dit program</h3><p class="muted" style="margin:6px 0 12px">Vælg et mål, så laver appen et program til dig.</p><button class="btn btn-block btn-lime" type="button" data-ctab="mal">Vælg mål</button></div>`;
   return `<div class="panel plan-card"><div class="goal-chip"><span class="gc-ic">${ICON[G.icon]}</span><div><b>${G.name}</b><small>${gymSessions().length} vægtdage om ugen · 8 uger · ${c.active ? 'aktivt' : 'ikke lavet endnu'}</small></div></div>
     <div class="fc-actions">${c.active ? '<button class="btn btn-lime" type="button" data-go="program">Åbn programmet</button>' : '<button class="btn btn-lime" type="button" data-cact="activate">Lav mit program</button>'}<button class="btn btn-ghost" type="button" data-ctab="mal">Ændr mål</button></div>
@@ -4039,7 +3745,7 @@ function coachOverviewHTML() {
     ${f ? weakHTML(f) : ''}
     <div class="fc-actions"><button class="btn ${rec ? '' : 'btn-lime'}" type="button" data-ctab="test">${rec ? 'Tag testen igen' : 'Tag testen'}</button><button class="btn btn-ghost" type="button" data-go="fremgang">Fremgang</button></div></div>`;
   h += planCardHTML();
-  if (c.active) h += statusHTML();
+  if (planOn()) h += statusHTML();
   return h;
 }
 
@@ -4047,7 +3753,7 @@ function coachOverviewHTML() {
 function trainTarget() {
   if (SES && !SES.finalized) return { kind: 'resume' };
   const n = curWeek(), c = ST.coach;
-  if (c.active && GOALS[c.goal]) {
+  if (planOn()) {
     const ses = todaySession();
     if (ses && ses.done < ses.total) return { spec: `week|${n}|${ses.L}` };
     if (!ses && homeDaysSel().includes((new Date().getDay() + 6) % 7) && !ST.homeLog.includes(todayISO())) return { spec: `home|${homeLevel()}` };
@@ -4126,8 +3832,8 @@ function computeStatus() {
   const hasData = m.c1 != null || m.rpeN > 0 || m.lifts.length > 0 || painEntries(10).length > 0 || pctw != null;
   if (!hasData) flags.push({ k: 'info', t: 'For lidt data til en vurdering endnu. Afkryds øvelser og log dine sæt.' });
   const level = hasBad ? 'bad' : goods >= 2 ? 'great' : 'normal';
-  const reaction = level === 'bad' ? (c.active ? 'Programmet er lidt lettere (−5 % og −1 sæt på hovedløft) denne og næste uge.' : 'Overvej en lettere uge. Lav det tilpassede program, så justerer appen det automatisk.')
-    : level === 'great' ? (c.active ? 'Programmet øger belastningen 2,5 % denne og næste uge.' : 'Du kan gå lidt tungere næste gang.') : 'Programmet fortsætter som planlagt.';
+  const reaction = level === 'bad' ? (planOn() ? 'Programmet er lidt lettere (−5 % og −1 sæt på hovedløft) denne og næste uge.' : 'Overvej en lettere uge. Lav det tilpassede program, så justerer appen det automatisk.')
+    : level === 'great' ? (planOn() ? 'Programmet øger belastningen 2,5 % denne og næste uge.' : 'Du kan gå lidt tungere næste gang.') : 'Programmet fortsætter som planlagt.';
   return { level, flags, m, reaction, hasData };
 }
 function addDossier(e) {
@@ -4159,12 +3865,12 @@ function updateStatus() {
   if (s.hasData && (!c.statusLog.length || c.statusLog[c.statusLog.length - 1].wk !== wk)) c.statusLog = [...c.statusLog, { wk, date: todayISO(), level: s.level, comp: s.m.c1, rpe: s.m.rpe, weight: curWeight() }].slice(-26);
   c.status = next; evaluateOutcomes();
   if (dirty) save();
-  if (changed && c.active) rebuildWeeks();
+  if (changed && planOn()) rebuildWeeks();
   return changed;
 }
 /* Statussen ændrer det tilpassede program for denne og næste uge */
 function statusAdapt() {
-  const s = ST.coach.status; if (!ST.coach.active || !s) return null;
+  const s = ST.coach.status; if (!planOn() || !s) return null;
   if (s.level === 'bad') return { load: .95, sets: -1, msg: 'Status: dårligt. Lidt lettere (−5 %, −1 sæt), til det vender.' };
   if (s.level === 'great') return { load: 1.025, sets: 0, msg: 'Status: meget godt. Belastningen øges 2,5 %.' };
   return null;
@@ -4183,7 +3889,7 @@ function athleteTraits() {
   }
   const up = m.lifts.slice().sort((a, b) => b.pct - a.pct)[0];
   if (up && m.lifts.length > 1) t.push(['Fremgang hurtigst i', `${EX[up.ex].name} (${up.pct >= 0 ? '+' : '−'}${Math.abs(Math.round(up.pct))} %)`]);
-  if (c.active && GOALS[c.goal]) {
+  if (planOn()) {
     const miss = {}; for (let w = 1; w < curWeek(); w++) gymSessions().forEach(L => { const s = sessionStats(w, L); if (s.total && s.done < s.total) { const d = sessionDay(L); if (d != null) miss[d] = (miss[d] || 0) + 1; } });
     const top = Object.entries(miss).sort((a, b) => b[1] - a[1])[0];
     if (top && top[1] >= 2) t.push(['Springer oftest over', `${DAYS[+top[0]].full} (${top[1]} gange)`]);
@@ -4200,12 +3906,12 @@ function buildStatusDoc() {
   const c = ST.coach, lt = lastTest(), f = lt ? formOf(lt) : null, s = c.status || computeStatus(), W = WEEKS[curWeek() - 1];
   return {
     generated: todayISO(),
-    profile: { age: ageNow(), sex: c.sex, height_cm: c.height || null, weight_kg: curWeight(), body_fat_pct: c.bf || null, goal: GOALS[c.goal] ? GOALS[c.goal].name : null, season: seasonNow(), training_days: c.active ? planDays().map(d => DAY_SHORT[d]) : [], home_days: c.active ? homeDaysSel().map(d => DAY_SHORT[d]) : [] },
+    profile: { age: ageNow(), sex: c.sex, height_cm: c.height || null, weight_kg: curWeight(), body_fat_pct: c.bf || null, goal: GOALS[c.goal] ? GOALS[c.goal].name : null, program: progActive() ? progActive().name : c.active ? 'Tilpasset' : 'Målmand 8', season: seasonNow(), match_day: ST.prog.match >= 0 ? DAY_SHORT[ST.prog.match] : null, training_days: planOn() ? planDays().map(d => DAY_SHORT[d]) : [], home_days: planOn() ? homeDaysSel().map(d => DAY_SHORT[d]) : [] },
     form: f ? { overall: f.overall, level: levelOf(f.overall), categories: f.cats, last_test: lt.date } : null,
     status: { level: s.level, since: s.since || null, flags: s.flags, reaction: s.reaction, completion_last_week: s.m.c1, completion_week_before: s.m.c2, avg_rpe_14d: s.m.rpe, weight_trend_kg_per_week: s.m.wr },
     athlete_profile: Object.fromEntries(athleteTraits()),
     estimated_1rm_kg: Object.fromEntries(['frontsquat', 'rdl', 'dbbench'].map(ex => [ex, e1RM(ex) ? Math.round(e1RM(ex) * 10) / 10 : null])),
-    plan: { active: c.active, week: curWeek(), sessions: W && W.plan ? [...new Set(W.blocks.filter(b => b.session).map(b => b.session.id))].map(id => ({ id, title: sessionTitle(curWeek(), id), exercises: W.blocks.filter(b => b.session && b.session.id === id).flatMap(b => b.items.filter(i => i.ex).map(i => `${EX[i.ex].name}: ${i.dose}`)) })) : [] },
+    plan: { active: planOn(), week: curWeek(), sessions: W && W.plan ? [...new Set(W.blocks.filter(b => b.session).map(b => b.session.id))].map(id => ({ id, title: sessionTitle(curWeek(), id), exercises: W.blocks.filter(b => b.session && b.session.id === id).flatMap(b => b.items.filter(i => i.ex).map(i => `${EX[i.ex].name}: ${i.dose}`)) })) : [] },
     pain_last_30d: c.pain.filter(p => daysSince(p.date) <= 30).map(p => ({ date: p.date, area: p.area, severity: p.sev })),
     weekly_history: c.statusLog.slice(-8),
     coach_log: c.dossier.slice(-10).map(d => ({ date: d.date, type: d.type, text: d.text, outcome: d.outcome || null }))
@@ -4223,7 +3929,7 @@ function saveProfileFields() {
   if (kg !== '' && kg !== curWeight()) pushWeight(kg, c.bf);
 }
 document.addEventListener('change', e => { if (e.target.id && /^cp(Sex|Birth|Height|Weight|Bf|TKg|TBf)$/.test(e.target.id)) { saveProfileFields(); save(); } });
-function afterCoachChange() { if (ST.coach.active) refreshPlan(); else { updateStatus(); renderCoach(); renderCoachCard(); } }
+function afterCoachChange() { if (planOn()) refreshPlan(); else { updateStatus(); renderCoach(); renderCoachCard(); } }
 
 /* ===== Statussiden ===== */
 let painArea = '', painSev = 2;
@@ -4244,7 +3950,7 @@ function renderStatus() {
     <div class="panel st-card ${s.level}"><div class="st-top">${stPill(s.level, true)}<small>siden ${esc(daDate(s.since))}</small></div>
       <ul class="flags">${s.flags.map(f => `<li class="${f.k}">${esc(f.t)}</li>`).join('') || '<li class="info">Ingen markeringer.</li>'}</ul>
       <p class="st-react"><b>Reaktion:</b> ${esc(s.reaction)}</p>
-      ${c.active ? '' : '<p class="muted">Lav det tilpassede program under Min form, så ændrer programmet sig automatisk, når statussen skifter.</p>'}</div>
+      ${planOn() ? '' : '<p class="muted">Vælg et program under Programmer, eller lav et tilpasset under Min form, så ændrer programmet sig automatisk, når statussen skifter.</p>'}</div>
     <div class="panel"><h3>Tal bag statussen</h3>
       <div class="stat-row s2"><div><small>Gennemført sidste uge</small><b>${pc(m.c1)}</b></div><div><small>Ugen før</small><b>${pc(m.c2)}</b></div><div><small>Gns. RPE (14 dage)</small><b>${m.rpe != null ? fmtNum(m.rpe) : '–'}</b><small>${m.rpeN} sæt</small></div><div><small>Vægttendens</small><b>${m.wr == null ? '–' : (m.wr >= 0 ? '+' : '−') + fmtNum(Math.abs(m.wr)) + ' kg/uge'}</b></div></div>
       ${m.lifts.length ? `<p class="t-sub" style="margin:12px 0 6px">Estimeret maks, seneste 2 uger mod ugerne før</p><ul class="cmp">${m.lifts.map(l => `<li><b>${EX[l.ex].name}</b><span>${fmtNum(l.before)} → ${fmtNum(l.now)} kg</span>${arrow(l.pct)}</li>`).join('')}</ul>` : '<p class="muted" style="margin-top:10px">Log mindst to træningsdage pr. løft, så vises udviklingen her.</p>'}</div>
@@ -4273,9 +3979,9 @@ function statusAction(a, ds) {
     c.pain.push({ id: Date.now() * 1000 + (logSeq++ % 1000), date: todayISO(), area: painArea, sev: painSev }); c.pain = c.pain.slice(-80);
     addDossier({ type: 'pain', text: `${AREA_NAME[painArea]}: ${['', 'let', 'middel', 'slem'][painSev]} smerte eller ømhed noteret.` });
     save(); toast(painSev >= 3 ? 'Noteret. Stop området og få det tjekket' : 'Noteret'); painArea = '';
-    if (c.active) refreshPlan(); else updateStatus(); renderStatus(); return;
+    if (planOn()) refreshPlan(); else updateStatus(); renderStatus(); return;
   }
-  if (a === 'painDel') { c.pain = c.pain.filter(p => String(p.id) !== ds.id); save(); if (c.active) refreshPlan(); else updateStatus(); renderStatus(); return; }
+  if (a === 'painDel') { c.pain = c.pain.filter(p => String(p.id) !== ds.id); save(); if (planOn()) refreshPlan(); else updateStatus(); renderStatus(); return; }
   if (a === 'noteAdd') { const t = $('stNote').value.trim(); if (!t) { toast('Skriv en note'); return; } addDossier({ type: 'note', text: t.slice(0, 260) }); save(); renderStatus(); toast('Note gemt'); return; }
   if (a === 'noteDel') { c.dossier = c.dossier.filter(d => String(d.id) !== ds.id); save(); renderStatus(); return; }
   if (a === 'copy') { const txt = JSON.stringify(buildStatusDoc(), null, 2); (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Kopieret'), () => { const r = document.createRange(); r.selectNodeContents($('stDoc')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast('Markeret. Kopiér manuelt'); }); }
