@@ -1324,7 +1324,12 @@ const ICON = {
   chev: SV('<path d="M9 5l7 7-7 7"/>', ' stroke-width="2.6"'),
   gauge: SV('<path d="M3.5 17.5a8.5 8.5 0 1 1 17 0"/><path d="M12 17.5l4.2-5.6"/><circle cx="12" cy="17.5" r="1.4" fill="currentColor"/>'),
   test: SV('<path d="M9 3h6M10 3v5.5L5 19a1.5 1.5 0 0 0 1.4 2h11.2A1.5 1.5 0 0 0 19 19l-5-10.5V3"/><path d="M7.5 15h9"/>'),
-  shield: SV('<path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.9-7.5-9.5V6z"/><path d="M9 12l2 2 4-4"/>')
+  shield: SV('<path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.9-7.5-9.5V6z"/><path d="M9 12l2 2 4-4"/>'),
+  star: SV('<path d="M12 3.2l2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-2.9-5.4 2.9 1.1-6-4.5-4.2 6.1-.8z"/>'),
+  grip: SV('<path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"/>', ' stroke-width="3.4"'),
+  plus: SV('<path d="M12 5v14M5 12h14"/>', ' stroke-width="2.6"'),
+  sun: SV('<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>'),
+  share: SV('<path d="M12 3v12M7.5 7.5L12 3l4.5 4.5"/><path d="M5 12v7.5h14V12"/>')
 };
 
 /* ===== Øvelser =====
@@ -1594,13 +1599,14 @@ const AREA_OF = { squat: ['knæ', 'hofte'], hinge: ['ryg', 'baglår', 'hofte'], 
 const KEY = 'gk8-goalkeeper-v1';
 const DEF = () => ({
   week: 1, start: '', done: {}, weeksDone: [], matches: [], tests: {}, logs: [], swaps: {}, run: {}, runDate: '', coach: DEF_COACH(),
-  prog: { id: '', match: 5, days: [], ball: [0, 1, 3], doneSeen: '' }, // aktivt færdigt program ('' = Målmand 8), kampdag (−1 = ingen), træningsdage og fodbolddage (0 = mandag)
+  prog: { id: '', match: 5, days: [], ball: [0, 1, 3], doneSeen: '', seasonSeen: '' }, // aktivt færdigt program ('' = Målmand 8), kampdag (−1 = ingen), træningsdage og fodbolddage (0 = mandag)
   checkins: [], // dagligt tjek: { date, sleep, sore, energy } på 1–5
   loads: [], // belastning pr. pas og kamp: { id, date, min, rpe, src }
   custom: [], // egne programmer fra "Byg selv"
+  favs: [], // favoritøvelser (id'er)
   fri: { wk: '', done: {} },
   home: { date: '', done: {} }, homeLog: [], lastExport: '',
-  settings: { sound: true, vib: true, custom: { work: 30, rest: 60, rounds: 10 }, metric: 'avg', lib: 'Alle', libEquip: 'Alle', libCat: 'Alle', libSeason: 'Alle', homeLevel: null }
+  settings: { sound: true, vib: true, custom: { work: 30, rest: 60, rounds: 10 }, metric: 'avg', lib: 'Alle', libEquip: 'Alle', libCat: 'Alle', libSeason: 'Alle', homeLevel: null, theme: 'dark', calTime: '17:00', calMatchTime: '13:00', calAlarm: 60 }
 });
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const clampNum = (v, lo, hi, d) => { v = +v; return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
@@ -1648,9 +1654,10 @@ function mergeState(d) {
   }));
   out.coach = cleanCoach(d.coach);
   out.custom = cleanCustom(d.custom);
+  out.favs = Array.isArray(d.favs) ? [...new Set(d.favs.filter(id => EX[id]))].slice(0, 200) : [];
   const pg = isObj(d.prog) ? d.prog : {}, dayList = v => Array.isArray(v) ? [...new Set(v.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6))].sort((a, b) => a - b) : null;
   const known = id => (PROG_BY_ID[id] && !PROG_BY_ID[id].base) || out.custom.some(c => c.id === id);
-  out.prog = { id: known(pg.id) ? pg.id : '', match: Math.round(clampNum(pg.match, -1, 6, 5)), days: dayList(pg.days) || [], ball: dayList(pg.ball) || [0, 1, 3], doneSeen: str(pg.doneSeen, 12) };
+  out.prog = { id: known(pg.id) ? pg.id : '', match: Math.round(clampNum(pg.match, -1, 6, 5)), days: dayList(pg.days) || [], ball: dayList(pg.ball) || [0, 1, 3], doneSeen: str(pg.doneSeen, 12), seasonSeen: str(pg.seasonSeen, 12) };
   const lvl = v => Math.round(clampNum(v, 1, 5, 3));
   out.checkins = (Array.isArray(d.checkins) ? d.checkins : []).filter(c => isObj(c) && isISO(c.date)).slice(-120).map(c => ({ date: c.date, sleep: lvl(c.sleep), sore: lvl(c.sore), energy: lvl(c.energy) }));
   out.loads = (Array.isArray(d.loads) ? d.loads : []).filter(l => isObj(l) && isISO(l.date)).slice(-400).map((l, i) => ({ id: Math.round(clampNum(l.id, 0, 9e15, Date.now() + i)), date: l.date, min: Math.round(clampNum(l.min, 1, 300, 60)), rpe: Math.round(clampNum(l.rpe, 1, 10, 6)), src: ['pas', 'fod', 'andet'].includes(l.src) ? l.src : 'pas' }));
@@ -1668,7 +1675,10 @@ function mergeState(d) {
     sound: s.sound !== false, vib: s.vib !== false,
     custom: { work: clampNum(c.work, 5, 600, 30), rest: clampNum(c.rest, 0, 600, 60), rounds: Math.round(clampNum(c.rounds, 1, 40, 10)) },
     metric: ['avg', ...METRICS.map(m => m.k)].includes(s.metric) ? s.metric : 'avg',
-    lib: ['Alle', ...BENEFITS.map(b => b.k)].includes(s.lib) ? s.lib : 'Alle',
+    lib: ['Alle', 'Fav', ...BENEFITS.map(b => b.k)].includes(s.lib) ? s.lib : 'Alle',
+    theme: ['dark', 'light', 'auto'].includes(s.theme) ? s.theme : 'dark',
+    calTime: /^\d\d:\d\d$/.test(s.calTime) ? s.calTime : '17:00', calMatchTime: /^\d\d:\d\d$/.test(s.calMatchTime) ? s.calMatchTime : '13:00',
+    calAlarm: [0, 30, 60, 120].includes(+s.calAlarm) ? +s.calAlarm : 60,
     libEquip: ['Alle', 'home', ...EQUIPS].includes(s.libEquip) ? s.libEquip : 'Alle',
     libCat: CATS.includes(s.libCat) ? s.libCat : 'Alle',
     libSeason: SEASONS.some(x => x.k === s.libSeason) ? s.libSeason : 'Alle',
@@ -1705,23 +1715,27 @@ function updateBackupNote() {
     el.textContent = `Sidste backup: ${daDate(ST.lastExport)}.` + (days >= 14 && hasData ? ' Det er på tide at tage en ny.' : '');
   } else el.textContent = hasData ? 'Du har endnu ikke lavet en backup. Tryk "Eksportér data".' : '';
 }
+/* Del en fil (installeret app på telefon) eller hent den (browser). Returnerer false, hvis brugeren annullerede. */
+async function shareOrDownload(name, text, type, title) {
+  const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
+  if (standalone && window.File && navigator.canShare) {
+    const file = new File([text], name, { type });
+    if (navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title }); return true; }
+      catch (e) { if (e && e.name === 'AbortError') return false; }
+    }
+  }
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return true;
+}
 async function exportData() {
   try {
     ST.lastExport = localISO(new Date()); save();
-    const name = `malmand8-data-${ST.lastExport}.json`, json = JSON.stringify(ST, null, 2);
-    const standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
-    if (standalone && window.File && navigator.canShare) {
-      const file = new File([json], name, { type: 'application/json' });
-      if (navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], title: 'Målmand 8 · backup' }); toast('Data eksporteret'); updateBackupNote(); return; }
-        catch (e) { if (e && e.name === 'AbortError') return; }
-      }
-    }
-    const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
-    const a = document.createElement('a');
-    a.href = url; a.download = name;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    if (!(await shareOrDownload(`malmand8-data-${ST.lastExport}.json`, JSON.stringify(ST, null, 2), 'application/json', 'Målmand 8 · backup'))) return;
     toast('Data eksporteret'); updateBackupNote();
   } catch (e) { toast('Kunne ikke eksportere data'); }
 }
@@ -2044,8 +2058,8 @@ const LIB_PAGE = 18;
 /* Med en valgt sæson vises kun øvelser, der er gode i perioden (2+), med kerneøvelserne først */
 function libFiltered() {
   const g = ST.settings.lib, eq = ST.settings.libEquip, c = ST.settings.libCat, sn = ST.settings.libSeason, q = libQ.trim().toLowerCase();
-  const list = Object.entries(EX).filter(([, e]) =>
-    (g === 'Alle' || e.good.includes(g)) &&
+  const list = Object.entries(EX).filter(([id, e]) =>
+    (g === 'Alle' || (g === 'Fav' ? ST.favs.includes(id) : e.good.includes(g))) &&
     (c === 'Alle' || e.cat === c) &&
     (eq === 'Alle' || (eq === 'home' ? isHomeEx(e) : e.equip === eq)) &&
     (sn === 'Alle' || e.season[sn] >= 2) &&
@@ -2059,10 +2073,53 @@ function seasonRowHTML(e) {
     return `<div class="sn${s.k === sn ? ' is-sel' : ''}" role="img" aria-label="${s.t}: ${SEASON_FIT[v].toLowerCase()}"><small>${s.t}</small><span class="sn-bars" aria-hidden="true">${[1, 2, 3].map(i => `<i${i <= v ? ' class="on"' : ''}></i>`).join('')}</span><b>${SEASON_FIT[v]}</b></div>`; }).join('')}</div>
     ${e.season.in > 0 ? `<p class="md-line">${ICON.calendar}<span>In-season: ${MD_TXT[e.md].toLowerCase()}</span></p>` : ''}`;
 }
+/* ===== Animerede figurer =====
+   Led-positionerne for START og SLUT beregnes af tegnemotoren, og animationen glider jævnt
+   frem og tilbage mellem dem i ét stort felt. Startes med "Se bevægelsen" i øvelsesdialogen. */
+const illKey = id => ILL[id] ? id : (EX[id] && EX[id].illu);
+const canAnimate = id => { const X = ILL[illKey(id)]; return !!(X && !X.custom && X.poses && X.poses.length === 2); };
+function lerpJ(a, b, k) {
+  if (typeof a === 'number' && typeof b === 'number') return a + (b - a) * k;
+  if (a == null || b == null) return k < .5 ? a : b;
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length ? a.map((v, i) => lerpJ(v, b[i], k)) : (k < .5 ? a : b);
+  if (typeof a === 'object' && typeof b === 'object') { const o = {}; new Set([...Object.keys(a), ...Object.keys(b)]).forEach(key => { o[key] = lerpJ(a[key], b[key], k); }); return o; }
+  return k < .5 ? a : b;
+}
+function animFrameSVG(id, k) {
+  const X = ILL[illKey(id)], J = lerpJ(joints(X.poses[0]), joints(X.poses[1]), k), side = k < .5 ? 0 : 1;
+  const back = X.back && X.back[side], front = X.front && X.front[side];
+  return `<svg viewBox="0 0 170 212" class="illu illu-anim" role="img" aria-label="${esc(EX[id].name)}: bevægelsen" focusable="false"><rect x="0.5" y="0.5" width="169" height="211" rx="18" fill="#111A15" stroke="#21302A"/>
+    <line x1="10" y1="${G + 5}" x2="160" y2="${G + 5}" stroke="#2D3D34" stroke-width="2"/>${back ? back(J) : ''}${figure(J, X.hl)}${front ? front(J) : ''}
+    <text x="85" y="202" text-anchor="middle" class="illu-label">${k < .15 ? (X.labels || ['START'])[0] : k > .85 ? (X.labels || ['', 'SLUT'])[1] : ''}</text></svg>`;
+}
+let animRun = null;
+function toggleAnim(id) {
+  const box = document.querySelector(`.m-illu[data-illu="${id}"]`), btn = document.querySelector(`[data-anim="${id}"]`); if (!box) return;
+  if (animRun) { cancelAnimationFrame(animRun.raf); const was = animRun.id; animRun = null; box.innerHTML = illustration(id); if (btn) btn.innerHTML = ICON.play + 'Se bevægelsen'; if (was === id) return; }
+  const t0 = performance.now(); let last = 0;
+  const step = now => {
+    if (!box.isConnected || !$('exSheet').open) { animRun = null; return; }
+    if (now - last > 33) { last = now; const k = .5 - .5 * Math.cos((now - t0) / 1300 * Math.PI); box.innerHTML = animFrameSVG(id, k); } // 30 billeder/sek, frem og tilbage på 2,6 sek
+    animRun.raf = requestAnimationFrame(step);
+  };
+  animRun = { id, raf: requestAnimationFrame(step) };
+  if (btn) btn.innerHTML = ICON.pause + 'Stop';
+}
+
+/* Favoritter: stjerne på kort og i dialogen. Filtreres med "★ Favoritter" og står først i byggerens vælger. */
+const favBtn = id => `<button class="fav-btn" type="button" data-fav="${id}" aria-pressed="${ST.favs.includes(id)}" aria-label="${ST.favs.includes(id) ? 'Fjern fra favoritter' : 'Tilføj til favoritter'}">${ICON.star}</button>`;
+function toggleFav(id) {
+  if (!EX[id]) return;
+  const on = !ST.favs.includes(id);
+  ST.favs = on ? [...ST.favs, id] : ST.favs.filter(x => x !== id); save();
+  document.querySelectorAll(`[data-fav="${id}"]`).forEach(b => { b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'Fjern fra favoritter' : 'Tilføj til favoritter'); });
+  toast(on ? `${EX[id].name} er en favorit` : 'Fjernet fra favoritter');
+  if (ST.settings.lib === 'Fav' && curPage === 'ovelser') renderLibList();
+}
 function libCardHTML(id, e) {
   return `<article class="ex-card">
       <button class="ex-illu" type="button" data-open="lib|${id}" aria-label="Vis ${esc(e.name)} i stor visning">${illustration(id)}</button>
-      <div class="ex-body"><h3>${e.name}</h3>${goodTagsHTML(e)}<p class="ex-meta">${esc(e.cat)}${isHomeEx(e) ? ' · kan laves hjemme' : ''}</p>${seasonRowHTML(e)}<p class="ex-goal">${e.goal}</p>
+      <div class="ex-body"><div class="ex-head"><h3>${e.name}</h3>${favBtn(id)}</div>${goodTagsHTML(e)}<p class="ex-meta">${esc(e.cat)}${isHomeEx(e) ? ' · kan laves hjemme' : ''}</p>${seasonRowHTML(e)}<p class="ex-goal">${e.goal}</p>
         <ol class="ex-steps">${['Start', 'Bevægelse', 'Slut'].map((l, i) => `<li><b>${l}</b><span>${e.how[i]}</span></li>`).join('')}</ol>
         <dl class="ex-dose"><div><dt>Reps/tid</dt><dd>${e.dose}</dd></div><div><dt>Pause</dt><dd>${e.rest}</dd></div></dl>
         <ul class="ex-tips">${e.tips.map(t => `<li>${ICON.tip}<span>${t}</span></li>`).join('')}</ul></div></article>`;
@@ -2084,7 +2141,7 @@ function renderLibrary(force) {
   const g = ST.settings.lib, sn = ST.settings.libSeason;
   $('libSeason').innerHTML = [{ k: 'Alle', t: 'Alle' }, ...SEASONS].map(s => `<button class="seg-btn" type="button" data-lseason="${s.k}" aria-pressed="${s.k === sn}">${s.t}</button>`).join('');
   $('libSeasonLegend').innerHTML = SEASONS.map(s => `<dt>${s.t}</dt><dd>${s.d}</dd>`).join('') + `<dt>Søjlerne</dt><dd>${SEASON_FIT.slice(1).map((t, i) => `${i + 1} = ${t.toLowerCase()}`).join(', ')}. Vælger du en sæson, vises kerneøvelserne først.</dd><dt>Tæt på kamp</dt><dd>Hvor tæt på kampen øvelsen kan ligge i en normal dosis. Tunge løft og hårde spring giver ømhed, så de skal ligge tidligt i ugen.</dd>`;
-  $('libChips').innerHTML = ['Alle', ...BENEFITS.map(b => b.k)].map(c => `<button class="chip" type="button" data-good="${c}" aria-pressed="${c === g}">${c}</button>`).join('');
+  $('libChips').innerHTML = ['Alle', 'Fav', ...BENEFITS.map(b => b.k)].map(c => `<button class="chip" type="button" data-good="${c}" aria-pressed="${c === g}">${c === 'Fav' ? `★ Favoritter${ST.favs.length ? ' · ' + ST.favs.length : ''}` : c}</button>`).join('');
   $('libEquip').innerHTML = [['Alle', 'Alt udstyr'], ['home', 'Kan laves hjemme'], ...EQUIPS.map(x => [x, x])].map(([v, t]) => `<option value="${v}" ${v === ST.settings.libEquip ? 'selected' : ''}>${t}</option>`).join('');
   $('libCat').innerHTML = CATS.map(c => `<option value="${c}" ${c === ST.settings.libCat ? 'selected' : ''}>${c === 'Alle' ? 'Alle typer' : c}</option>`).join('');
   $('libLegend').innerHTML = BENEFITS.map(b => `<dt>${b.k}</dt><dd>${b.d}</dd>`).join('');
@@ -2135,8 +2192,9 @@ function openSheet(ctx) {
   const doneBtn = canDone ? `<button class="btn" type="button" data-sheet-done aria-pressed="${done}">${ICON.check}${done ? 'Færdig' : 'Markér færdig'}</button>` : `<button class="btn" type="button" data-sheet-close>Luk</button>`;
   const d = $('exSheet');
   d.innerHTML = `<div class="sheet-in"><div class="grab" aria-hidden="true"></div>
-    <div class="sheet-top"><div><p class="today-small">${where}</p><h3 id="sheetTitle">${name}</h3></div><button class="sheet-close" type="button" data-sheet-close aria-label="Luk">${ICON.close}</button></div>
-    <div class="m-illu">${illustration(exId)}</div>
+    <div class="sheet-top"><div><p class="today-small">${where}</p><h3 id="sheetTitle">${name}</h3></div><div class="sheet-btns">${favBtn(exId)}<button class="sheet-close" type="button" data-sheet-close aria-label="Luk">${ICON.close}</button></div></div>
+    <div class="m-illu" data-illu="${exId}">${illustration(exId)}</div>
+    ${canAnimate(exId) ? `<button class="link-btn anim-btn" type="button" data-anim="${exId}">${ICON.play}Se bevægelsen</button>` : ''}
     <div class="m-dose">${tiles.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('')}</div>
     ${item && item.prog ? `<p class="prog-line">${esc(item.prog)}</p>` : ''}
     ${goodTagsHTML(e)}
@@ -2145,6 +2203,7 @@ function openSheet(ctx) {
     <ol class="ex-steps">${['Start', 'Bevægelse', 'Slut'].map((l, i) => `<li><b>${l}</b><span>${e.how[i]}</span></li>`).join('')}</ol>
     <ul class="ex-tips">${e.tips.map(t => `<li>${ICON.tip}<span>${t}</span></li>`).join('')}</ul>
     ${origItem ? `<button class="btn btn-ghost btn-block" type="button" data-swap-open>${ICON.repeat}${item.swapped ? 'Skift igen eller gendan original' : 'Skift øvelse'}</button>` : ''}
+    <button class="btn btn-ghost btn-block" type="button" data-addto="${exId}">${ICON.plus}Føj til eget program</button>
     ${e.log ? logSectionHTML(exId, item) : ''}
     <div class="m-actions">${timerBtn || ''}${doneBtn}</div></div>`;
   if (!timerBtn) d.querySelector('.m-actions').style.gridTemplateColumns = '1fr';
@@ -2485,8 +2544,15 @@ document.addEventListener('click', e => {
   if (ds.pstart || ds.pseason || ds.pfocus || ds.pmatch != null || ds.pball != null || ds.pday != null || ds.pcount != null) { progAction(ds); return; }
   if (ds.chk || 'chkEdit' in ds || 'chkSave' in ds) { checkAction(ds); return; }
   if ('bnew' in ds) { bDraft = newDraft(); bSes = 0; go('byg'); return; }
+  if (ds.fav) { toggleFav(ds.fav); return; }
+  if (ds.addto || ds.addback || ds.addnew || ds.addpick) { addToAction(ds); return; }
+  if (ds.anim) { toggleAnim(ds.anim); return; }
   if (Object.keys(ds).some(k => /^b(ses|add|delses|pickOpen|pgood|pmore|pick|step|move|delitem|cancel|save|edit|del)$/.test(k))) { builderAction(ds); return; }
   if (ds.load) { loadAction(ds); return; }
+  if (ds.themeSet) { setTheme(ds.themeSet); return; }
+  if (t.id === 'themeBtn') { setTheme(themeNow() === 'light' ? 'dark' : 'light'); return; }
+  if ('seasonHide' in ds) { ST.prog.seasonSeen = localISO(new Date()).slice(0, 7); save(); renderSeasonCard(); return; }
+  if ('cal' in ds && t.matches('[data-cal]')) { exportCalendar(); return; }
   if ('doneHide' in ds) { ST.prog.doneSeen = ST.start || 'nostart'; save(); renderDoneCard(); return; }
   if (ds.foldOpen) openFolds.add(ds.foldOpen);
   if (ds.ptab) { progView = ds.ptab; renderProgView(); $('page-program').scrollTop = 0; return; }
@@ -3445,7 +3511,7 @@ function progCardHTML(p) {
   const on = p.base ? !planOn() : ST.prog.id === p.id;
   return `<article class="prog-card${on ? ' is-active' : ''}">
     <header><span class="pg-ic" aria-hidden="true">${ICON[p.icon]}</span><div><h3>${esc(p.name)}</h3><p class="pg-meta">${SEASON_NAME[p.season]} · ${p.perWeek} pas/uge${p.base ? '' : ` (kan tilpasses 1–${progMaxDays(p)})`} · ca. ${p.mins} min</p></div>${on ? '<span class="tag lime">Aktivt</span>' : ''}</header>
-    <div class="tags">${p.focus.map(f => `<span class="tag">${f}</span>`).join('')}<span class="tag eq">${esc(p.equip)}</span><span class="tag eq">${esc(p.level)}</span></div>
+    <div class="tags">${p.season === seasonByDate() ? `<span class="tag lime">Passer til ${MONTH[new Date().getMonth()]}</span>` : ''}${p.focus.map(f => `<span class="tag">${f}</span>`).join('')}<span class="tag eq">${esc(p.equip)}</span><span class="tag eq">${esc(p.level)}</span></div>
     <p class="pg-desc">${esc(p.desc)}</p>
     <details class="pg-more"><summary>Se passene</summary>${progSample(p).map(s => `<p class="pg-ses"><b>${esc(s.t)}</b><span>${esc(s.ex.join(' · '))}</span></p>`).join('')}</details>
     <div class="pg-actions">${on ? `<button class="btn btn-lime" type="button" data-go="program">Åbn programmet</button>` : `<button class="btn btn-lime" type="button" data-pstart="${p.id}">Start programmet</button>`}${p.custom ? `<button class="btn btn-ghost" type="button" data-bedit="${p.id}">Ret</button>` : ''}</div></article>`;
@@ -3459,7 +3525,7 @@ function weekPlanHTML() {
     : days.length < n ? `<p class="notice">Programmet er lavet til ${n} dage. Med ${days.length} ${days.length === 1 ? 'dag samles det hele i ét helkropspas' : 'dage slås de lettere pas sammen'}: hovedløftene bevares, og der er færre ekstraøvelser.</p>`
     : `<p class="notice">Programmet er lavet til ${n} dage. Ekstra pas: ${Object.entries(ses).filter(([, T]) => T.extra).map(([L, T]) => `Pas ${L} · ${T.t.toLowerCase()}`).join(', ')}.</p>`;
   const cell = i => { const L = Object.keys(asg).find(k => asg[k] === i), b = daysBefore(i);
-    const t = L ? `Pas ${L}` : i === m ? 'Kamp' : seasonNow() === 'in' && b === 1 ? 'Aktiv.' : ST.prog.ball.includes(i) ? 'Fodb.' : 'Hvile';
+    const t = L ? `Pas ${L}` : i === m ? 'Kamp' : seasonNow() === 'in' && b === 1 ? 'Akt' : ST.prog.ball.includes(i) ? 'Fod' : 'Hvile';
     return `<li class="${L ? 'fit' : i === m ? 'match' : ''}"><small>${DAY_SHORT[i]}</small><b>${t}</b></li>`; };
   return `<div class="panel wp"><h3>Din uge</h3>
     <p class="t-sub">Kampdag</p><div class="chips wrap">${chip('data-pmatch', -1, m < 0, 'Ingen kamp')}${DAY_SHORT.map((d, i) => chip('data-pmatch', i, m === i, d)).join('')}</div>
@@ -3476,7 +3542,7 @@ function renderProgrammer() {
   const { s, f } = progFilter;
   const isOn = p => p.base ? !planOn() : ST.prog.id === p.id;
   const all = allPrograms(), list = all.filter(p => (s === 'Alle' || p.season === s || p.season === 'all') && (f === 'Alle' || p.focus.includes(f))).sort((a, b) => isOn(b) - isOn(a) || !!b.custom - !!a.custom);
-  el.innerHTML = `${weekPlanHTML()}${progStartHTML()}
+  el.innerHTML = `${weekPlanHTML()}${progStartHTML()}${calendarHTML()}
     <h3 class="sub-h">Vælg program</h3>
     <button class="coach-row" type="button" data-bnew><span class="cm-ic">${ICON.edit}</span><span class="cr-t"><b>Byg dit eget program</b><small>Dine øvelser, sæt og gentagelser${ST.custom.length ? ` · ${ST.custom.length} gemt` : ''}</small></span><span class="lr-go">${ICON.chev}</span></button>
     <button class="coach-row" type="button" data-ctab="mal" data-go="coach"><span class="cm-ic">${ICON.gauge}</span><span class="cr-t"><b>Vælg et fokus i stedet</b><small>Byg et program ud fra dit mål og din test${ST.coach.active && GOALS[ST.coach.goal] ? ` · aktivt: ${GOALS[ST.coach.goal].short}` : ''}</small></span><span class="lr-go">${ICON.chev}</span></button>
@@ -3571,7 +3637,7 @@ const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d
 const progEnded = () => (ST.start && daysSince(ST.start) >= 56) || ST.weeksDone.includes(8);
 /* Næste program: off-season → opbygning → in-season. Ellers efter årstiden (dansk sæson) */
 function nextProgramFor(p) {
-  const m = new Date().getMonth(), byDate = (m === 11 || m === 0) ? 'off' : (m === 1 || m === 2 || m === 6) ? 'pre' : 'in';
+  const byDate = seasonByDate();
   const season = p && p.season === 'off' ? 'pre' : p && p.season === 'pre' ? 'in' : byDate;
   const gk = !p || p.custom || p.focus.includes('Målmand');
   return PROG_BY_ID[gk ? { off: 'gkoff', pre: 'gkpre', in: 'gkin' }[season] : { off: 'strength', pre: 'speed', in: 'prevent' }[season]];
@@ -3712,7 +3778,7 @@ function renderToday() {
     if (!act) act = `data-go="${target}"`;
     if (day.kind === 'ball') extra = '<button class="btn btn-ghost" type="button" data-go="program">Se uge ' + n + '</button>';
   }
-  renderStartCard(); renderMatchCard(); renderDoneCard(); renderCheckCard();
+  renderStartCard(); renderMatchCard(); renderDoneCard(); renderSeasonCard(); renderCheckCard();
   $('todayCard').className = `today-card ${cls}`;
   $('todayCard').innerHTML = `<span class="today-ic" aria-hidden="true">${ICON[icon]}</span>
     <p class="today-small">I dag er det ${day.full}</p>
@@ -4361,9 +4427,100 @@ function statusAction(a, ds) {
   if (a === 'copy') { const txt = JSON.stringify(buildStatusDoc(), null, 2); (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast('Kopieret'), () => { const r = document.createRange(); r.selectNodeContents($('stDoc')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast('Markeret. Kopiér manuelt'); }); }
 }
 
+/* ===== Tema: mørk, lys (udendørs) eller automatisk efter telefonen ===== */
+const themeNow = () => ST.settings.theme === 'auto' ? (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : ST.settings.theme;
+function applyTheme() {
+  const t = themeNow();
+  document.documentElement.setAttribute('data-theme', t);
+  const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute('content', t === 'light' ? '#F2F5F0' : '#0C1210');
+  const b = $('themeBtn'); if (b) b.setAttribute('aria-label', t === 'light' ? 'Skift til mørk tilstand' : 'Skift til lys udendørs-tilstand');
+  document.querySelectorAll('[data-theme-set]').forEach(x => x.setAttribute('aria-pressed', x.dataset.themeSet === ST.settings.theme));
+}
+function setTheme(t) { ST.settings.theme = t; save(); applyTheme(); toast(t === 'light' ? 'Lys udendørs-tilstand' : t === 'dark' ? 'Mørk tilstand' : 'Følger telefonens indstilling'); }
+if (window.matchMedia) { try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => { if (ST.settings.theme === 'auto') applyTheme(); }); } catch (e) { } }
+
+/* ===== Kalender-eksport (.ics) =====
+   Programmets pas, aktivering dagen før kamp og kampe frem til programmets slut, med påmindelse.
+   Tiderne er lokale (uden tidszone), så kalenderen bruger telefonens tid. UID'erne er faste pr. dato,
+   så en ny eksport opdaterer de samme begivenheder i kalendere, der understøtter det. */
+const icsEsc = s => String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+const icsFold = line => { const out = []; let s = line; while (s.length > 70) { out.push(s.slice(0, 70)); s = ' ' + s.slice(70); } out.push(s); return out.join('\r\n'); };
+const icsTime = (iso, hhmm, addMin = 0) => { const d = new Date(`${iso}T${hhmm}:00`); d.setMinutes(d.getMinutes() + addMin); const p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}T${p(d.getHours())}${p(d.getMinutes())}00`; };
+function calendarEvents() {
+  const start = ST.start || mondayISO(), end = addDays(start, 56), from = todayISO(), ev = [], p = progActive(), s = ST.settings;
+  const weekOf = iso => Math.min(8, Math.max(1, Math.floor((new Date(iso + 'T12:00:00') - new Date(start + 'T12:00:00')) / 864e5 / 7) + 1));
+  for (let iso = from; iso < end; iso = addDays(iso, 1)) {
+    const wd = (new Date(iso + 'T12:00:00').getDay() + 6) % 7, n = weekOf(iso), W = WEEKS[n - 1];
+    const exList = blocks => blocks.flatMap(b => b.items.filter(i => i.ex).map(i => `${EX[i.ex].name}: ${String(i.dose).replace(/^× /, '')}`)).join('\n');
+    if (planOn()) {
+      gymSessions().filter(L => sessionDay(L) === wd).forEach(L => {
+        const bl = W.blocks.filter(b => b.session && b.session.id === L), t = bl.length ? bl[0].session.title : `Pas ${L}`;
+        ev.push({ uid: `${iso}-pas-${L}`, date: iso, time: s.calTime, min: p ? p.mins : 60, title: `${t} · uge ${n}`, desc: `${p ? p.name : 'Tilpasset program'}, uge ${n}.\n\n${exList(bl)}\n\nÅbn appen og tryk Træn for at starte passet.` });
+      });
+    } else if (DAYS[wd].kind === 'fit') ev.push({ uid: `${iso}-fit`, date: iso, time: s.calTime, min: 60, title: `Målmand 8 · fitness uge ${n}`, desc: `${W.title}.\n\n${exList(W.blocks)}` });
+    const m = matchDayIdx();
+    if (m >= 0 && seasonNow() === 'in') {
+      if (wd === (m + 6) % 7) ev.push({ uid: `${iso}-akt`, date: iso, time: s.calTime, min: 15, title: 'Aktivering før kamp', desc: 'Let aktivering, ca. 10 min. Du skal føle dig frisk bagefter. Se Rutiner › Før kamp i appen.' });
+      if (wd === m) ev.push({ uid: `${iso}-kamp`, date: iso, time: s.calMatchTime, min: 105, title: 'Kamp', desc: 'Husk at registrere kampen i appen bagefter (30 sek).' });
+    }
+  }
+  return ev;
+}
+function buildICS(events) {
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z', a = ST.settings.calAlarm;
+  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Maalmand 8//DA', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Målmand 8'];
+  events.forEach(e => {
+    L.push('BEGIN:VEVENT', `UID:${e.uid}@maalmand8`, `DTSTAMP:${stamp}`, `DTSTART:${icsTime(e.date, e.time)}`, `DTEND:${icsTime(e.date, e.time, e.min)}`, `SUMMARY:${icsEsc(e.title)}`, `DESCRIPTION:${icsEsc(e.desc)}`);
+    if (a) L.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEsc(e.title)}`, `TRIGGER:-PT${a}M`, 'END:VALARM');
+    L.push('END:VEVENT');
+  });
+  L.push('END:VCALENDAR');
+  return L.map(icsFold).join('\r\n') + '\r\n';
+}
+function calendarHTML() {
+  const s = ST.settings, n = calendarEvents().length;
+  return `<div class="panel cal"><h3>Læg i kalenderen</h3>
+    <p class="muted">Dine pas${seasonNow() === 'in' ? ', aktivering og kampe' : ''} frem til programmets slut: ${n} begivenheder med påmindelse. Telefonen spørger, om de skal lægges i kalenderen.</p>
+    <div class="form-row form-row-even"><label class="field">Træning kl.<input type="time" id="calTime" value="${s.calTime}"></label>${seasonNow() === 'in' ? `<label class="field">Kamp kl.<input type="time" id="calMatchTime" value="${s.calMatchTime}"></label>` : '<span></span>'}</div>
+    <label class="field">Påmindelse<select id="calAlarm">${[[0, 'Ingen'], [30, '30 min før'], [60, '1 time før'], [120, '2 timer før']].map(([v, t]) => `<option value="${v}"${+s.calAlarm === v ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
+    <button class="btn btn-block" type="button" data-cal ${n ? '' : 'disabled'}>${ICON.calendar}Hent kalenderfil</button></div>`;
+}
+document.addEventListener('change', e => {
+  const id = e.target.id; if (!['calTime', 'calMatchTime', 'calAlarm'].includes(id)) return;
+  ST.settings[id] = id === 'calAlarm' ? +e.target.value : e.target.value; save();
+});
+async function exportCalendar() {
+  const ev = calendarEvents(); if (!ev.length) { toast('Ingen kommende pas at lægge i kalenderen'); return; }
+  if (await shareOrDownload('maalmand8-kalender.ics', buildICS(ev), 'text/calendar', 'Målmand 8 · kalender')) toast(`${ev.length} begivenheder klar til kalenderen`);
+}
+
+/* ===== Forslag efter sæson ud fra datoen =====
+   Dansk fodbold: off-season i december–januar, opbygning i februar–marts og juli, sæson ellers.
+   Passer det aktive program ikke til årstiden, foreslår forsiden et skifte (én gang pr. måned). */
+const seasonByDate = (d = new Date()) => { const m = d.getMonth(); return (m === 11 || m === 0) ? 'off' : (m === 1 || m === 2 || m === 6) ? 'pre' : 'in'; };
+const MONTH = ['januar', 'februar', 'marts', 'april', 'maj', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'december'];
+function seasonSuggestion() {
+  const want = seasonByDate(), p = progActive();
+  const cur = p ? p.season : ST.coach.active && GOALS[ST.coach.goal] ? (ST.coach.goal === 'offseason' ? 'off' : 'in') : 'in';
+  if (cur === 'all' || cur === want) return null;
+  const gk = !p || p.custom || p.focus.includes('Målmand');
+  return { want, cur, prog: PROG_BY_ID[gk ? { off: 'gkoff', pre: 'gkpre', in: 'gkin' }[want] : { off: 'strength', pre: 'speed', in: 'prevent' }[want]] };
+}
+function renderSeasonCard() {
+  const el = $('seasonCard'); if (!el) return;
+  const s = seasonSuggestion(), key = localISO(new Date()).slice(0, 7);
+  if (!s || ST.prog.seasonSeen === key || progEnded()) { el.innerHTML = ''; return; }
+  const cur = progActive() ? progActive().name : ST.coach.active ? 'Dit tilpassede program' : 'Målmand 8';
+  el.innerHTML = `<div class="panel season-card"><p class="eyebrow">${MONTH[new Date().getMonth()]} · ${SEASON_NAME[s.want].toLowerCase()}</p>
+    <h3>Tid til ${SEASON_NAME[s.want].toLowerCase()}?</h3>
+    <p class="muted">${esc(cur)} er lavet til ${SEASON_NAME[s.cur].toLowerCase()}. Det er ${MONTH[new Date().getMonth()]}, hvor de fleste er i ${SEASON_NAME[s.want].toLowerCase()}. Forslag: ${esc(s.prog.name)}.</p>
+    <div class="done-actions"><button class="btn btn-lime" type="button" data-pstart="${s.prog.id}">Start ${esc(s.prog.name)}</button><button class="btn btn-ghost" type="button" data-go="programmer">Se alle programmer</button></div>
+    <button class="link-btn" type="button" data-season-hide>Ikke nu</button></div>`;
+}
+
 /* ===== Belastning: RPE × minutter =====
    Pas, fodboldtræning og kampe giver hver en belastning (RPE × minutter).
-   Akut = sidste 7 dage. Kronisk = gennemsnitlig uge over de sidste 28 dage.
+   Akut = sidste 7 dage. Kronisk = gennemsnitlig uge i de 4 uger før.
    Forholdet mellem dem viser, om ugen er markant hårdere end det, kroppen er vant til. */
 const LOAD_SRC = { pas: 'Pas', fod: 'Fodbold', andet: 'Andet', kamp: 'Kamp' };
 const ZONE = {
@@ -4383,7 +4540,9 @@ function loadEntries() {
 function loadStats() {
   const E = loadEntries(); if (!E.length) return null;
   const sum = (a, b) => E.filter(e => { const d = daysSince(e.date); return d >= a && d < b; }).reduce((s, e) => s + e.load, 0);
-  const acute = sum(0, 7), chronic = sum(0, 28) / 4, oldest = Math.max(...E.map(e => daysSince(e.date)));
+  /* Denne uge (de sidste 7 dage) mod gennemsnittet af de 4 uger før. Er der kun 2–3 ugers historik, bruges de. */
+  const oldest = Math.max(...E.map(e => daysSince(e.date))), prevWeeks = Math.max(1, Math.min(4, Math.floor((oldest - 7) / 7) + 1));
+  const acute = sum(0, 7), chronic = sum(7, 7 + prevWeeks * 7) / prevWeeks;
   const ratio = chronic > 0 && oldest >= 21 ? acute / chronic : null;
   return { acute, chronic, ratio, oldest, weeks: [5, 4, 3, 2, 1, 0].map(w => sum(w * 7, w * 7 + 7)), zone: ratio == null ? null : ratio < .8 ? 'low' : ratio <= 1.3 ? 'ok' : ratio <= 1.5 ? 'high' : 'risk' };
 }
@@ -4401,7 +4560,7 @@ function loadPanelHTML() {
   const zoneTxt = !s ? 'Registrér RPE efter dine pas og kampe, så holder appen øje med din samlede belastning.'
     : s.ratio == null ? `Der skal være 3 ugers data, før appen kan sammenligne. Du har ${Math.floor(s.oldest / 7)} uge${Math.floor(s.oldest / 7) === 1 ? '' : 'r'}.` : ZONE[s.zone][1];
   return `<div class="panel load-card${s && s.zone ? ' z-' + s.zone : ''}"><div class="st-top"><b class="st-h">Belastning</b>${s && s.zone ? `<span class="stp ${s.zone === 'ok' ? 'great' : s.zone === 'low' ? '' : 'bad'} big">${ZONE[s.zone][0]}</span>` : ''}</div>
-    ${s ? `<div class="stat-row s2"><div><small>Sidste 7 dage</small><b>${Math.round(s.acute)}</b></div><div><small>Gns. uge (28 dage)</small><b>${Math.round(s.chronic)}</b></div></div>${loadChartSVG(s.weeks)}` : ''}
+    ${s ? `<div class="stat-row s2"><div><small>Sidste 7 dage</small><b>${Math.round(s.acute)}</b></div><div><small>Gns. af ugerne før</small><b>${Math.round(s.chronic)}</b></div></div>${loadChartSVG(s.weeks)}` : ''}
     <p class="muted">${zoneTxt}${s && s.ratio != null ? ` Forhold: ${fmtNum(s.ratio)} (godt område: 0,8–1,3).` : ''}</p>
     <details class="sub-fold"><summary>Registrér fodbold eller anden træning</summary>
       <div class="chips" role="group" aria-label="Type">${['fod', 'andet'].map(k => `<button class="chip" type="button" data-load="src" data-v="${k}" aria-pressed="${d.src === k}">${LOAD_SRC[k]}</button>`).join('')}</div>
@@ -4416,20 +4575,29 @@ function loadAction(ds) {
     loadDraft = { ...loadDraft, min, rpe }; addLoad({ min, rpe, src: loadDraft.src }); toast(`${LOAD_SRC[loadDraft.src]} registreret`); renderCoach();
   }
 }
-/* Kamp-indsigt: friskere ben efter lettere uger? Sammenligner kampe efter uger med lav og høj belastning */
+/* Kamp-indsigt: hvordan påvirker ugen før kampen dine ben?
+   1) Antal pas ugen før (fx "friskere i uger med 2 pas end med 3"), når mindst to antal har 2+ kampe hver.
+   2) Samlet belastning ugen før: kampe efter lette mod hårde uger. */
 function matchInsight() {
-  const E = loadEntries().filter(e => e.src !== 'kamp');
-  const rows = ST.matches.map(m => {
-    const load = E.filter(e => { const d = (new Date(m.date + 'T12:00:00') - new Date(e.date + 'T12:00:00')) / 864e5; return d >= 1 && d <= 7; }).reduce((s, e) => s + e.load, 0);
-    return { m, load };
-  }).filter(r => r.load > 0);
-  if (rows.length < 4) return { n: rows.length, txt: '' };
+  const E = loadEntries().filter(e => e.src !== 'kamp'), before = (m, e) => { const d = (new Date(m.date + 'T12:00:00') - new Date(e.date + 'T12:00:00')) / 864e5; return d >= 1 && d <= 7; };
+  const rows = ST.matches.map(m => ({ m, load: E.filter(e => before(m, e)).reduce((s, e) => s + e.load, 0), pas: E.filter(e => e.src === 'pas' && before(m, e)).length })).filter(r => r.load > 0);
+  const legs = rs => rs.reduce((s, r) => s + r.m.legs, 0) / rs.length;
+  const byPas = {}; rows.forEach(r => (byPas[r.pas] = byPas[r.pas] || []).push(r));
+  const groups = Object.entries(byPas).filter(([, rs]) => rs.length >= 2).sort((a, b) => b[1].length - a[1].length).slice(0, 2);
+  let pasTxt = '';
+  if (groups.length === 2) {
+    const [[n1, r1], [n2, r2]] = groups.sort((a, b) => a[0] - b[0]), l1 = legs(r1), l2 = legs(r2), word = n => `${n} pas`;
+    pasTxt = Math.abs(l1 - l2) < .4 ? `Dine ben var omtrent lige friske i uger med ${word(n1)} og ${word(n2)} (${fmtNum(l1)} og ${fmtNum(l2)}).`
+      : l1 > l2 ? `Dine ben var friskere i uger med ${word(n1)} end med ${word(n2)}: ${fmtNum(l1)} mod ${fmtNum(l2)}.`
+      : `Dine ben var friskere i uger med ${word(n2)} end med ${word(n1)}: ${fmtNum(l2)} mod ${fmtNum(l1)}.`;
+  }
+  if (rows.length < 4) return { n: rows.length, txt: pasTxt };
   const sorted = rows.slice().sort((a, b) => a.load - b.load), half = Math.floor(sorted.length / 2), lo = sorted.slice(0, half), hi = sorted.slice(-half);
   const avg = (rs, k) => rs.reduce((s, r) => s + r.m[k], 0) / rs.length, aLo = avg(lo, 'legs'), aHi = avg(hi, 'legs');
   const d = aLo - aHi;
-  const txt = Math.abs(d) < .4 ? `Ingen tydelig forskel endnu: dine ben var omtrent lige friske efter lette og hårde uger (${fmtNum(aLo)} og ${fmtNum(aHi)}).`
+  const txt = (pasTxt ? pasTxt + ' ' : '') + (Math.abs(d) < .4 ? `Ingen tydelig forskel endnu: dine ben var omtrent lige friske efter lette og hårde uger (${fmtNum(aLo)} og ${fmtNum(aHi)}).`
     : d > 0 ? `Dine ben var friskere i kampe efter lettere uger: ${fmtNum(aLo)} mod ${fmtNum(aHi)} efter hårdere uger. Overvej en lettere uge før vigtige kampe.`
-    : `Dine ben var faktisk friskere efter hårdere uger: ${fmtNum(aHi)} mod ${fmtNum(aLo)}. Du tåler belastningen godt.`;
+    : `Dine ben var faktisk friskere efter hårdere uger: ${fmtNum(aHi)} mod ${fmtNum(aLo)}. Du tåler belastningen godt.`);
   return { n: rows.length, txt };
 }
 function renderMatchInsight() {
@@ -4467,6 +4635,55 @@ function customBlock(items, id, p, n, ad) {
 }
 
 let bDraft = null, bSes = 0, bpQ = '', bpGood = 'Alle', bpShown = 30;
+const newItem = id => { const e = EX[id]; return { ex: id, sets: e.log ? 3 : 2, reps: defReps(e), secs: e.secs ? Math.min(600, e.secs) : 0 }; };
+/* "Føj til eget program" fra en øvelse i biblioteket eller programmet: vælg program og pas */
+function openAddTo(exId) {
+  const d = $('exSheet'), back = sheetCtx, e = EX[exId];
+  const opt = (val, title, sub, has) => `<li class="item${has ? ' is-done' : ''}"><button class="item-open" type="button" data-addpick="${val}"><span class="item-txt"><span class="nm">${esc(title)}</span><span class="nt">${esc(sub)}${has ? ' · er der allerede' : ''}</span></span></button></li>`;
+  const groups = [];
+  if (bDraft && bDraft.sessions.length) groups.push(`<p class="t-sub">Programmet du bygger nu</p><ul class="items">${bDraft.sessions.map((s, k) => opt(`draft|${k}|${exId}`, s.t, `${bDraft.name || 'Uden navn'} · ${s.items.length} øvelser`, s.items.some(i => i.ex === exId))).join('')}</ul>`);
+  ST.custom.forEach(c => groups.push(`<p class="t-sub">${esc(c.name)}</p><ul class="items">${c.sessions.map((s, k) => opt(`${c.id}|${k}|${exId}`, s.t, `${s.items.length} øvelser`, s.items.some(i => i.ex === exId))).join('')}</ul>`));
+  d.innerHTML = `<div class="sheet-in"><div class="grab" aria-hidden="true"></div>
+    <div class="sheet-top"><div><p class="today-small">${esc(e.name)}</p><h3 id="sheetTitle">Føj til eget program</h3></div><button class="sheet-close" type="button" data-sheet-close aria-label="Luk">${ICON.close}</button></div>
+    ${groups.join('') || '<p class="muted">Du har ingen egne programmer endnu.</p>'}
+    <div class="done-actions"><button class="btn btn-lime" type="button" data-addnew="${exId}">${ICON.plus}Nyt program med ${esc(e.name)}</button>${back ? `<button class="btn btn-ghost" type="button" data-addback="${esc(back)}">Tilbage</button>` : ''}</div></div>`;
+  d._ctx = null;
+  if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
+  d.scrollTop = 0;
+}
+function addToAction(ds) {
+  if (ds.addto) { openAddTo(ds.addto); return; }
+  if (ds.addback) { openSheet(ds.addback); return; }
+  if (ds.addnew) { bDraft = newDraft(); bDraft.sessions[0].items.push(newItem(ds.addnew)); bSes = 0; closeSheet(); go('byg'); toast(`${EX[ds.addnew].name} er lagt i et nyt program`); return; }
+  if (ds.addpick) {
+    const [cid, k, id] = ds.addpick.split('|'), prog = cid === 'draft' ? bDraft : ST.custom.find(c => c.id === cid), s = prog && prog.sessions[+k];
+    if (!s || !EX[id]) return;
+    if (s.items.some(i => i.ex === id)) { toast('Øvelsen er der allerede'); return; }
+    if (s.items.length >= 12) { toast('Højst 12 øvelser i et pas'); return; }
+    s.items.push(newItem(id));
+    if (cid === 'draft') { bSes = +k; closeSheet(); go('byg'); }
+    else { save(); if (ST.prog.id === cid) refreshPlan(); closeSheet(); if (curPage === 'program' && progView === 'vaelg') renderProgrammer(); }
+    toast(`Lagt i ${s.t}`);
+  }
+}
+/* Træk og slip: tag i håndtaget og flyt øvelsen. Pilene virker stadig som alternativ. */
+let bDrag = null;
+document.addEventListener('pointerdown', e => {
+  const h = e.target.closest('[data-bdrag]'); if (!h || !bDraft) return;
+  const li = h.closest('.b-item'); bDrag = { li, list: li.parentElement, id: e.pointerId };
+  li.classList.add('dragging'); try { h.setPointerCapture(e.pointerId); } catch (err) { } e.preventDefault();
+});
+document.addEventListener('pointermove', e => {
+  if (!bDrag || e.pointerId !== bDrag.id) return;
+  const { li, list } = bDrag, after = [...list.children].filter(x => x !== li).find(x => { const r = x.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; });
+  if (after) { if (li.nextElementSibling !== after) list.insertBefore(li, after); } else if (list.lastElementChild !== li) list.appendChild(li);
+});
+['pointerup', 'pointercancel'].forEach(t => document.addEventListener(t, e => {
+  if (!bDrag || e.pointerId !== bDrag.id) return;
+  const order = [...bDrag.list.children].map(x => +x.dataset.idx), s = bDraft.sessions[bSes];
+  bDrag = null; if (order.every((v, i) => v === i)) { renderBuilder(); return; }
+  s.items = order.map(i => s.items[i]); renderBuilder();
+}));
 const newDraft = () => ({ id: 'c' + Date.now(), name: '', sessions: [{ t: 'Pas A', items: [] }] });
 const defReps = e => { const m = String(e.dose).match(/(\d+)/); return m ? Math.min(20, +m[1]) : 8; };
 function renderBuilder() {
@@ -4474,7 +4691,7 @@ function renderBuilder() {
   if (!bDraft) bDraft = newDraft();
   const d = bDraft; bSes = Math.min(bSes, d.sessions.length - 1); const s = d.sessions[bSes], editing = ST.custom.some(c => c.id === d.id);
   const row = (it, i) => { const e = EX[it.ex], unit = it.secs ? 'sek' : 'gent.';
-    return `<li class="b-item"><span class="thumb" aria-hidden="true">${illustration(it.ex)}</span><div class="b-main"><b>${esc(e.name)}</b>
+    return `<li class="b-item" data-idx="${i}"><button class="b-grip" type="button" data-bdrag="${i}" aria-label="Træk for at flytte ${esc(e.name)}">${ICON.grip}</button><span class="thumb" aria-hidden="true">${illustration(it.ex)}</span><div class="b-main"><b>${esc(e.name)}</b>
       <div class="b-steps"><div class="b-step"><button type="button" data-bstep="${i}|sets|-1" aria-label="Færre sæt">−</button><span><b>${it.sets}</b> sæt</span><button type="button" data-bstep="${i}|sets|1" aria-label="Flere sæt">+</button></div>
       <div class="b-step"><button type="button" data-bstep="${i}|${it.secs ? 'secs' : 'reps'}|-1" aria-label="Færre">−</button><span><b>${it.secs || it.reps}</b> ${unit}</span><button type="button" data-bstep="${i}|${it.secs ? 'secs' : 'reps'}|1" aria-label="Flere">+</button></div></div></div>
       <div class="b-tools"><button class="icon-btn" type="button" data-bmove="${i}|-1" aria-label="Flyt op" ${i ? '' : 'disabled'}>▲</button><button class="icon-btn" type="button" data-bmove="${i}|1" aria-label="Flyt ned" ${i < s.items.length - 1 ? '' : 'disabled'}>▼</button><button class="icon-btn" type="button" data-bdelitem="${i}" aria-label="Fjern ${esc(e.name)}">${ICON.trash}</button></div></li>`; };
@@ -4492,7 +4709,7 @@ function openPicker() {
   d.innerHTML = `<div class="sheet-in"><div class="grab" aria-hidden="true"></div>
     <div class="sheet-top"><div><p class="today-small">${esc(bDraft.sessions[bSes].t)}</p><h3 id="sheetTitle">Tilføj øvelse</h3></div><button class="sheet-close" type="button" data-sheet-close aria-label="Luk">${ICON.close}</button></div>
     <label class="lib-search"><span class="sr-only">Søg</span><input type="search" id="bpQ" placeholder="Søg øvelse" value="${esc(bpQ)}" autocomplete="off" enterkeyhint="search"></label>
-    <div class="chips" role="group" aria-label="Godt til">${['Alle', ...BENEFITS.map(b => b.k)].map(c => `<button class="chip" type="button" data-bpgood="${c}" aria-pressed="${c === bpGood}">${c}</button>`).join('')}</div>
+    <div class="chips" role="group" aria-label="Godt til">${['Alle', 'Fav', ...BENEFITS.map(b => b.k)].map(c => `<button class="chip" type="button" data-bpgood="${c}" aria-pressed="${c === bpGood}">${c === 'Fav' ? '★ Favoritter' : c}</button>`).join('')}</div>
     <ul class="items" id="bpList"></ul></div>`;
   renderPickList();
   if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
@@ -4500,7 +4717,8 @@ function openPicker() {
 }
 function renderPickList() {
   const q = bpQ.trim().toLowerCase(), have = new Set(bDraft.sessions[bSes].items.map(i => i.ex));
-  const all = Object.entries(EX).filter(([, e]) => (bpGood === 'Alle' || e.good.includes(bpGood)) && (!q || `${e.name} ${e.good.join(' ')} ${e.equip}`.toLowerCase().includes(q))), list = all.slice(0, bpShown);
+  const all = Object.entries(EX).filter(([id, e]) => (bpGood === 'Alle' || (bpGood === 'Fav' ? ST.favs.includes(id) : e.good.includes(bpGood))) && (!q || `${e.name} ${e.good.join(' ')} ${e.equip}`.toLowerCase().includes(q)))
+    .sort((a, b) => ST.favs.includes(b[0]) - ST.favs.includes(a[0])), list = all.slice(0, bpShown); // favoritter først
   $('bpList').innerHTML = (list.map(([id, e]) => `<li class="item${have.has(id) ? ' is-done' : ''}"><button class="item-open" type="button" data-bpick="${id}"><span class="thumb" aria-hidden="true">${illustration(id)}</span><span class="item-txt"><span class="nm">${esc(e.name)}${have.has(id) ? ' · tilføjet' : ''}</span><span class="nt good">${esc(e.good.slice(0, 3).join(' · '))}</span><span class="nt">${esc(e.equip)}</span></span></button></li>`).join('') || '<li class="empty">Ingen øvelser matcher.</li>')
     + (all.length > list.length ? `<li><button class="btn btn-block" type="button" data-bpmore>Vis flere (${all.length - list.length} mere)</button></li>` : '');
 }
@@ -4516,7 +4734,7 @@ function builderAction(ds) {
     const e = EX[ds.bpick]; if (!e) return;
     if (s.items.some(i => i.ex === ds.bpick)) { toast('Øvelsen er allerede i passet'); return; }
     if (s.items.length >= 12) { toast('Højst 12 øvelser i et pas'); return; }
-    s.items.push({ ex: ds.bpick, sets: e.log ? 3 : 2, reps: defReps(e), secs: e.secs ? Math.min(600, e.secs) : 0 });
+    s.items.push(newItem(ds.bpick));
     closeSheet(); renderBuilder(); toast(`${e.name} tilføjet`); return;
   }
   if (ds.bstep) {
@@ -4551,6 +4769,7 @@ document.addEventListener('input', e => {
 
 /* ===== Start ===== */
 function renderAll() {
+  applyTheme();
   rebuildWeeks();
   updateStatus();
   renderProgress(); renderToday(); renderDays(); renderWeekNav(); renderWeek();
