@@ -2287,6 +2287,7 @@ function tLoad(name, segs, opt = {}) {
   TM.name = name;
   TM.segs = opt.noPrep ? segs : [{ type: 'prep', secs: 5, label: 'Gør dig klar', round: first.round || 1, rounds: first.rounds || 1 }, ...segs];
   TM.i = 0; TM.left = TM.segs[0].secs; TM.el = 0; TM.done = false; TM.src = opt.src || null; TM.preset = opt.preset || null; TM.cue = null; TM.cueT = 1;
+  TM.doneCtx = opt.done && opt.done.length ? opt.done : null; // øvelser, der krydses af, når timeren er kørt færdig
   recalcTail(); renderPresetChips(); updateStepVals(); tRender();
   if (opt.autostart) tStart();
 }
@@ -2324,7 +2325,12 @@ function tTick() {
 }
 function tAdvance(quiet = false) {
   TM.i++;
-  if (TM.i >= TM.segs.length) { TM.i = TM.segs.length - 1; TM.left = 0; TM.done = true; recalcTail(); tPause(); cue('done'); toast('Timer færdig. Godt arbejde.'); return false; }
+  if (TM.i >= TM.segs.length) {
+    TM.i = TM.segs.length - 1; TM.left = 0; TM.done = true; recalcTail(); tPause(); cue('done');
+    const k = completeFromTimer();
+    toast(k ? `Timer færdig. ${k === 1 ? 'Øvelsen er' : k + ' øvelser er'} krydset af.` : 'Timer færdig. Godt arbejde.');
+    return false;
+  }
   const s = curSeg(); TM.left = s.secs; TM.el = 0; TM.cue = null; TM.cueT = 1.2; recalcTail();
   if (!quiet) cue(s.type);
   if (!TM.running) tStart(); else tRender();
@@ -2420,8 +2426,26 @@ function startStepHold(k, dir) {
   const tick = () => { stepCustom(k, dir); delay = Math.max(60, delay - 40); stepHoldTimer = setTimeout(tick, delay); };
   stepHoldTimer = setTimeout(tick, delay);
 }
-function startProgramTimer(name, segs, src, noPrep = false) {
-  tLoad(name, segs, { src, autostart: true, noPrep });
+/* Når en timer fra programmet, rutinerne eller aktiveringen er kørt helt færdig, krydses øvelserne af.
+   Nulstilles timeren eller vælges et andet interval, sker der intet. Pausetimere krydser ikke noget af. */
+const blockCtxs = (base, items) => items.map((it, i) => it.ex ? `${base}|${i}` : null).filter(Boolean);
+function completeFromTimer() {
+  const ctxs = (TM.doneCtx || []).filter(c => !isDone(c)); TM.doneCtx = null;
+  if (!ctxs.length) return 0;
+  ctxs.forEach(c => setDone(c, true));
+  const t = todayISO(), homeCtx = ctxs.find(c => c.startsWith('home|'));
+  if (homeCtx) { // hele rutinen klaret → dagens rutine registreres, ligesom ved manuel afkrydsning
+    const L = homeCtx.split('|')[1], lv = HOME[+L];
+    if (lv && lv.blocks.every(b => b.items.every((_, i) => ST.home.done[`home|${L}|${b.id}|${i}`])) && !ST.homeLog.includes(t)) { ST.homeLog.push(t); ST.homeLog = ST.homeLog.slice(-120); }
+  }
+  save();
+  if (SES && TM.src === 'session') { const st = SES.steps[SES.i]; if (st && st.type === 'block' && st.b.items.every((it, i) => !it.ex || isDone(st.ictx(i)))) { SES.i++; SES.in = null; } }
+  refreshViews(); if (curPage === 'pas') renderSession();
+  return ctxs.length;
+}
+function startProgramTimer(name, segs, src, noPrep = false, done = null) {
+  tLoad(name, segs, { src, autostart: true, noPrep, done });
+  if (TM.doneCtx) toast(TM.doneCtx.length === 1 ? 'Øvelsen krydses af, når timeren er færdig' : 'Øvelserne krydses af, når timeren er færdig');
   closeSheet();
   pageScroll.timer = 0; go('timer');
 }
@@ -2578,7 +2602,7 @@ document.addEventListener('click', e => {
   if (ds.ctab) { setCoachTab(ds.ctab); if (ds.go) go(ds.go); return; }
   if (ds.go) { if (ds.go === 'program') selectWeek(curWeek()); if (ds.segOpen) setTrackerTab(ds.segOpen); if (ds.mdate) { $('mDate').value = ds.mdate; mDateTouched = true; syncMatchWeek(); } go(ds.go); return; }
   if (ds.seg) { setTrackerTab(ds.seg); $('page-tracker').scrollTop = 0; return; }
-  if (ds.timer) { const [n, id] = ds.timer.split('|'); const b = WEEKS[+n - 1].blocks.find(x => x.id === id); startProgramTimer(`Uge ${n} · ${b.timer.name}`, swappedSegs(b, `week|${n}|${id}`), `blk-${n}-${id}`); return; }
+  if (ds.timer) { const [n, id] = ds.timer.split('|'); const b = WEEKS[+n - 1].blocks.find(x => x.id === id); startProgramTimer(`Uge ${n} · ${b.timer.name}`, swappedSegs(b, `week|${n}|${id}`), `blk-${n}-${id}`, false, blockCtxs(`week|${n}|${id}`, b.items)); return; }
   if (ds.tfsave) {
     const n = +ds.tfsave;
     ST.tests[n] = cleanTest({ date: localISO(new Date()), dist: $('tfDist').value.trim(), watt: $('tfWatt').value.trim(), hr: $('tfHr').value.trim(), rpe: $('tfRpe').value });
@@ -2587,7 +2611,7 @@ document.addEventListener('click', e => {
   if (ds.logsave) { saveLog(ds.logsave); return; }
   if (ds.edit) { startEditMatch(ds.edit); return; }
   if (ds.rest) { startProgramTimer(`Pause · ${ds.rest} sek`, [{ ...S('rest', +ds.rest, 'Pause mellem sæt'), round: 1, rounds: 1 }], ds.src, true); return; }
-  if (ds.hometimer) { const [L, id] = ds.hometimer.split('|'); const b = HOME[+L].blocks.find(x => x.id === id); startProgramTimer(b.timer.name, swappedSegs(b, `home|${L}|${id}`), `home-${id}`); return; }
+  if (ds.hometimer) { const [L, id] = ds.hometimer.split('|'); const b = HOME[+L].blocks.find(x => x.id === id); startProgramTimer(b.timer.name, swappedSegs(b, `home|${L}|${id}`), `home-${id}`, false, blockCtxs(`home|${L}|${id}`, b.items)); return; }
   if (ds.homelevel) { ST.settings.homeLevel = +ds.homelevel; save(); renderHome(); return; }
   if (ds.preset) { loadPreset(ds.preset); return; }
   if (ds.step) { // mus/touch håndteres af pointerdown (hold-nede); tastatur og skærmlæser giver click uden pointerdown
@@ -2609,11 +2633,11 @@ document.addEventListener('click', e => {
     return;
   }
   if (ds.sheetTimer) {
-    const c = $('exSheet')._ctx;
-    if (ds.sheetTimer === 'segs') startProgramTimer(c.name, c.segs, c.src);
-    else if (ds.sheetTimer === 'item') startProgramTimer(c.name, c.perSide ? sides(c.secs, c.name) : single(c.secs, c.name), c.src);
+    const c = $('exSheet')._ctx, own = c.base ? [sheetCtx] : null; // øvelser fra biblioteket krydses ikke af
+    if (ds.sheetTimer === 'segs') startProgramTimer(c.name, c.segs, c.src, false, own);
+    else if (ds.sheetTimer === 'item') startProgramTimer(c.name, c.perSide ? sides(c.secs, c.name) : single(c.secs, c.name), c.src, false, own);
     else if (ds.sheetTimer === 'rest') startProgramTimer(`Pause · ${c.block.restTimer} sek`, [{ ...S('rest', c.block.restTimer, 'Pause mellem sæt'), round: 1, rounds: 1 }], c.src, true);
-    else startProgramTimer(c.block.timer.name, swappedSegs(c.block, c.base), c.src);
+    else startProgramTimer(c.block.timer.name, swappedSegs(c.block, c.base), c.src, false, c.base ? blockCtxs(c.base, c.block.items) : null);
     return;
   }
   switch (t.id) {
@@ -2637,7 +2661,7 @@ document.addEventListener('click', e => {
     case 'miniToggle': TM.running ? tPause() : tStart(); break;
     case 'tgSound': ST.settings.sound = !ST.settings.sound; t.setAttribute('aria-pressed', ST.settings.sound); save(); if (ST.settings.sound) { unlockAudio(); cue('tick'); } break;
     case 'tgVib': ST.settings.vib = !ST.settings.vib; t.setAttribute('aria-pressed', ST.settings.vib); save(); vib(60); break;
-    case 'friTimer': startProgramTimer(FRIDAY.timer.name, swappedSegs(FRIDAY, 'fri'), 'kampklar'); break;
+    case 'friTimer': startProgramTimer(FRIDAY.timer.name, swappedSegs(FRIDAY, 'fri'), 'kampklar', false, blockCtxs('fri', FRIDAY.items)); break;
     case 'homeDone': toggleHomeDone(); break;
     case 'friReset': ST.fri.done = {}; save(); renderFriday(); toast('Aktiveringen er nulstillet'); break;
     case 'resetAll':
@@ -2882,7 +2906,21 @@ function e1Points(exId) {
 }
 /* Vægtet gennemsnit af seneste tests og sæt (halveringstid 3 uger). Enkelte urealistiske sæt (>25 % over det øvrige) ignoreres.
    Tallet kan derfor også falde, hvis du er blevet svagere. */
+/* Beslægtede løft: når en variant er ny (ingen loggede sæt), estimeres maks ud fra et løft med samme fokus.
+   Faktorerne er typiske forhold mellem løftene; resultatet sættes 5 % ned, så første forslag er forsigtigt.
+   Håndvægtsløft er pr. hånd. */
+const E1_REL = {
+  backsquat: [['frontsquat', 1.18]], frontsquat: [['backsquat', .85]], legpress: [['backsquat', 1.8], ['frontsquat', 2.1]], goblet: [['frontsquat', .45], ['backsquat', .38]],
+  trapbar: [['rdl', 1.15]], rdl: [['trapbar', .87]], dbrdl: [['rdl', .4], ['trapbar', .35]], hipthrust: [['rdl', 1.1], ['trapbar', .95]],
+  landminepress: [['dbbench', 1.2]], dbbench: [['landminepress', .83]], dbpress: [['dbbench', .65]],
+  cablerow: [['dbrow', 1.6]], dbrow: [['cablerow', .6]], stepup: [['bulgarian', 1]], bulgarian: [['stepup', 1]]
+};
 function e1RM(exId) {
+  const own = e1Direct(exId); if (own) return own;
+  for (const [rel, f] of E1_REL[exId] || []) { const v = e1Direct(rel); if (v) return v * f * .95; }
+  return null;
+}
+function e1Direct(exId) {
   let pts = e1Points(exId); if (!pts.length) return null;
   const test = pts.find(p => p.src === 'test'), logs = pts.filter(p => p.src === 'log');
   const sorted = logs.map(p => p.e1).sort((a, b) => a - b);
@@ -2955,8 +2993,16 @@ function logSet(exId, kg, reps, rpe, week) {
 }
 
 
+/* Tilpasset program: i uge 3–4 og 7–8 bruges en variant med samme fokus (uge 5–6 vender tilbage til uge 1–2) */
+const COACH_VAR = {
+  frontsquat: 'backsquat', goblet: 'legpress', rdl: 'trapbar', dbbench: 'landminepress', pullup: 'latpull', dbrow: 'cablerow',
+  bulgarian: 'stepup', splitsquat: 'reverselunge', slcalf: 'soleus', boxjump: 'depthjump', broadjump: 'lateralstick', medthrow: 'gkthrow',
+  sprint5: 'flysprint', skater: 'slhop', medslam: 'medrot', kbswing: 'trapjump', pogo: 'lateralstick', hipflexor: 'hips9090'
+};
+const varyTxt = n => n === 3 || n === 7 ? ' Nye øvelsesvarianter de næste to uger.' : n === 5 ? ' Øvelserne fra uge 1–2 kommer igen, nu med mere belastning.' : '';
+const coachVar = (ex, n) => Math.floor((n - 1) / 2) % 2 ? (COACH_VAR[ex] || ex) : ex;
 function strItem(slot, role, g, n, ad) {
-  const main = role === 'main', ex = main ? liftFor(slot) : prefAlt(liftFor(slot));
+  const main = role === 'main', base = coachVar(liftFor(slot), n), ex = main ? base : prefAlt(base);
   return liftItem(ex, main, SCH[g][n - 1], g === 'bodyfat' ? 12 : g === 'offseason' ? 10 : 8, n, ad);
 }
 /* Ét styrkeløft med sæt, gentagelser og vægt. S0 = [sæt, gentagelser, % af maks] for hovedløft, accR = gentagelser for assistance */
@@ -3056,7 +3102,7 @@ function makeBlock(spec, L, g, n, ad) {
   }
   if (type === 'pwr') {
     const sets = (g === 'explosive' ? [3, 3, 4, 2, 4, 4, 5, 2] : [2, 2, 3, 2, 3, 3, 3, 2])[n - 1];
-    const ids = arg.map(prefAlt).filter(painSafe); // risikable spring og kast udelades ved smerte
+    const ids = arg.map(x => prefAlt(coachVar(x, n))).filter(painSafe); // risikable spring og kast udelades ved smerte
     return ids.length ? circuit(L + '-pwr', 'bolt', 'Power', ids, sets, g === 'explosive' ? 90 : 60) : null;
   }
   if (type === 'core') {
@@ -3064,7 +3110,7 @@ function makeBlock(spec, L, g, n, ad) {
     let picks = [0, 1, 2].map(k => prefAlt(CORE_POOL[(base + k * 3) % CORE_POOL.length])); const safe = picks.filter(painSafe); if (safe.length >= 2) picks = safe;
     return circuit(L + '-core', 'core', 'Core', picks, 3, 30);
   }
-  if (type === 'mob') return circuit(L + '-mob', 'repeat', 'Mobilitet', arg.map(prefAlt), 2, 10);
+  if (type === 'mob') return circuit(L + '-mob', 'repeat', 'Mobilitet', arg.map(x => prefAlt(coachVar(x, n))), 2, 10);
   if (type === 'cond') return condBlock(L, g, n, arg);
   return null;
 }
@@ -3078,7 +3124,7 @@ function genPlanWeek(n, ad) {
   });
   if (n === 8) blocks.push(linkBlock('retest', 'Gentag din test', 'Tag testen igen, så kan du se din fremgang på pilemærkerne.', 'test', 'Åbn testen'));
   const note = ad.msg ? ` ${ad.msg}` : '';
-  return { n, phase: phaseOf(n), title: `UGE ${n} · ${THEMES[n - 1]}`, desc: `${G.short}. ${gymSessions().length} pas om ugen.${note}`, blocks, plan: true };
+  return { n, phase: phaseOf(n), title: `UGE ${n} · ${THEMES[n - 1]}`, desc: `${G.short}. ${gymSessions().length} pas om ugen.${varyTxt(n)}${note}`, blocks, plan: true };
 }
 /* ---------- Færdige programmer (programs.js) ---------- */
 const P_ROUNDS = { offseason: [2, 2, 3, 2, 3, 3, 3, 2], explosive: [3, 3, 4, 2, 4, 4, 5, 2], maint: [2, 2, 3, 2, 3, 3, 3, 2], ramp: [2, 2, 2, 2, 3, 3, 3, 2] };
@@ -3111,8 +3157,16 @@ function progCond(kind, id, n) {
   b.id = id;
   return b;
 }
+/* Variation hver anden uge: "a|b" giver a i uge 1–2 og 5–6, b i uge 3–4 og 7–8 ("a|b|c": a, b, c, a) */
+const pickAlt = (tok, n) => { const a = String(tok).split('|'); return a[Math.floor((n - 1) / 2) % a.length]; };
+function resolveAlts(arg, n) {
+  if (typeof arg === 'string') return pickAlt(arg, n);
+  return arg.map(x => Array.isArray(x) ? [pickAlt(x[0], n), x[1], pickAlt(x[2], n)] : x.includes(':') ? `${pickAlt(x.split(':')[0], n)}:${x.split(':')[1]}` : pickAlt(x, n));
+}
 function progBlock(spec, id, p, n, ad) {
-  const [type, arg] = Array.isArray(spec) ? spec : [spec], sch = p.scheme, rnd = Math.max(2, P_ROUNDS[sch][n - 1] + (ad.rounds || 0)), few = Math.min(3, rnd);
+  let [type, arg] = Array.isArray(spec) ? spec : [spec];
+  if (arg != null && type !== 'custom') arg = resolveAlts(arg, n);
+  const sch = p.scheme, rnd = Math.max(2, P_ROUNDS[sch][n - 1] + (ad.rounds || 0)), few = Math.min(3, rnd);
   const safe = ids => ids.map(prefAlt).filter(painSafe); // risikable øvelser udelades ved smerte
   switch (type) {
     case 'warm': { const w = WARM(6); w.id = id; return w; }
@@ -3200,7 +3254,8 @@ function genProgWeek(p, n, ad) {
     const T = ses[L], a2 = dayAd(ad, n, asg[L]), session = { id: L, title: `Pas ${L} · ${T.t}`, light: !!a2.light };
     T.blocks.forEach((spec, k) => { const b = progBlock(spec, `${T.pre}${L}${k}`, p, n, a2); if (b) { b.session = session; blocks.push(b); } });
   });
-  return { n, phase: phaseOf(n), title: `UGE ${n} · ${THEMES[n - 1]}`, desc: `${p.name}. ${Ls.length} pas om ugen.${ad.msg ? ' ' + ad.msg : ''}`, blocks, plan: true };
+  const vary = p.custom ? '' : varyTxt(n);
+  return { n, phase: phaseOf(n), title: `UGE ${n} · ${THEMES[n - 1]}`, desc: `${p.name}. ${Ls.length} pas om ugen.${vary}${ad.msg ? ' ' + ad.msg : ''}`, blocks, plan: true };
 }
 /* ---------- Ugeplan: kampdag og træningsdage ----------
    Dage før kamp: 0 = kampdag, 1 = dagen før, 6 = dagen efter kamp (restitution). */
@@ -3513,15 +3568,15 @@ function renderPlanBanner() {
 let progFilter = { s: 'Alle', f: 'Alle' };
 const SEASON_NAME = { off: 'Off-season', pre: 'Opbygning', in: 'In-season', all: 'Hele året' };
 const COND_NAME = { cont: 'Rolig kondition', runcont: 'Roligt løb', int: 'Intervaller 30/60', short: 'Korte intervaller 15/75', tempo: 'Tempoløb', rsa: 'Gentagne sprint', b5: 'Konditionsblokke' };
-/* Øvelserne i hvert pas, til forhåndsvisning på programkortet */
+/* Øvelserne i hvert pas, til forhåndsvisning på programkortet. Varianter vises som "a / b". */
 function progSample(p) {
   if (p.base) return [{ t: 'Fitness · uge 1', ex: BASE_WEEKS[0].blocks.flatMap(b => b.items.filter(i => i.ex).map(i => EX[i.ex].name)) }];
   return Object.entries(p.sessions).map(([L, T]) => ({ t: `Pas ${L} · ${T.t}`, ex: [...new Set(T.blocks.flatMap(spec => {
     if (spec === 'warmfield') return [EX.fifa11.name];
     if (!Array.isArray(spec)) return [];
-    if (spec[0] === 'cond') return [COND_NAME[spec[1]] || 'Kondition'];
+    if (spec[0] === 'cond') return [spec[1].split('|').map(k => COND_NAME[k] || 'Kondition').join(' / ')];
     if (spec[0] === 'custom') return spec[1].map(i => `${EX[i.ex].name} ${i.sets}×${i.secs ? i.secs + 's' : i.reps}`);
-    return spec[1].map(x => EX[Array.isArray(x) ? x[0] : x.split(':')[0]].name);
+    return spec[1].map(x => (Array.isArray(x) ? x[0] : x.split(':')[0]).split('|').map(id => EX[id].name).join(' / '));
   }))] }));
 }
 function progCardHTML(p) {
@@ -4069,7 +4124,7 @@ function sesAction(a, ds) {
     case 'skip': SES.i++; SES.in = null; renderSession(); break;
     case 'skiprest': tReset(); SES.resting = false; renderSession(); break;
     case 'rest30': if (TM.src === 'session' && curSeg()) { TM.left += 30; curSeg().secs += 30; tRender(); } break;
-    case 'timer': startProgramTimer(`${SES.title} · ${st.b.title}`, swappedSegs(st.b, st.base), 'session'); break;
+    case 'timer': startProgramTimer(`${SES.title} · ${st.b.title}`, swappedSegs(st.b, st.base), 'session', false, blockCtxs(st.base, st.b.items)); break;
     case 'blockdone': st.b.items.forEach((it, i) => { if (it.ex) setDone(st.ictx(i), true); }); save(); SES.i++; SES.in = null; renderSession(); break;
     case 'srpe': SES.srpe = SES.srpe === +ds.v ? 0 : +ds.v; document.querySelectorAll('[data-ses=srpe]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.v === SES.srpe)); break;
     case 'finish': {
