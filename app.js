@@ -759,6 +759,198 @@ function cableRowStation(J) {
   return rect(8, G - 6, 36, 6, 3, '#34433B', 'none', 0) + rect(J.hip[0] - 16, J.hip[1] + 6, 32, 9, 4, '#34433B') + rect(100, G - 38, 8, 38, 2, '#2A3830', COL.eqLine, 1.5) +
     rect(128, 30, 22, G - 26, 4, '#1B2520', COL.eqLine, 2) + rect(132, 44, 14, 70, 2, '#2A3830', 'none', 0) + circ(133, G - 58, 6, '#34433B');
 }
+/* ---- Del 2b: fitnessøvelser med vægt (stang, håndvægte, maskiner, kabel) ---- */
+function inclineBench() { return rect(78, G - 36, 46, 9, 4, '#34433B', COL.eqLine, 2) + ln([100, G - 32], [50, G - 82], 10, '#34433B') + bar([100, G - 27], [100, G + 4], 5); }
+function seatMachine() { return rect(34, G - 40, 52, 9, 4, '#34433B', COL.eqLine, 2) + rect(26, G - 112, 11, 76, 4, '#34433B', COL.eqLine, 2) + bar([60, G - 31], [60, G + 4], 6); }
+function dipBars() { return bar([58, G - 80], [124, G - 80], 6, '#A9B8AE') + bar([64, G - 80], [64, G + 4], 6) + bar([118, G - 80], [118, G + 4], 6); }
+function hyperBench() { return rect(68, G - 82, 26, 12, 5, '#34433B', COL.eqLine, 2) + bar([80, G - 70], [58, G + 4], 6) + bar([58, G + 4], [30, G + 4], 6) + circ(36, G - 14, 6, '#34433B'); }
+function machinePad(J) { const f = J.legs[1].f; return circ(f[0] + 2, f[1] - 4, 7, '#34433B', COL.eqLine, 2); }
+const pressHandle = J => { const h = J.arms[1].h; return bar([152, G - 60], [152, G + 4], 6) + ln([h[0], h[1] + 6], [152, G - 56], 3, COL.eqLine) + rect(h[0] - 3, h[1] - 10, 6, 20, 3, '#A9B8AE', 'none', 0); };
+const STAND = { hip: [80, G - 70], legs: [{ foot: [77, G] }, { foot: [84, G] }] };
+const LYING = { hip: [104, G - 34], sh: [56, G - 34], head: [37, G - 34], legs: [{ foot: [134, G], b: -1 }, { foot: [138, G], b: -1 }] };
+Object.assign(ILL, {
+  bbbench: {
+    hl: ['upper', 'fore'],
+    poses: [{ ...LYING, arms: [{ hand: [64, G - 56], b: 1 }, { hand: [68, G - 54], b: 1 }] }, { ...LYING, arms: [{ hand: [58, G - 78] }, { hand: [62, G - 78] }] }],
+    back: [() => benchLong(G - 27), () => benchLong(G - 27)],
+    front: [J => plateEnd(J.arms[1].h), J => plateEnd(J.arms[1].h)],
+    arrows: [[], [arrow(`M100 ${G - 60} L100 ${G - 96}`)]]
+  },
+  inclinedb: {
+    hl: ['upper', 'fore'],
+    poses: [
+      { hip: [96, G - 40], sh: [62, G - 74], legs: [{ knee: [126, G - 42], foot: [130, G] }, { knee: [129, G - 41], foot: [133, G] }], arms: [{ hand: [72, G - 92], b: 1 }, { hand: [75, G - 90], b: 1 }] },
+      { hip: [96, G - 40], sh: [62, G - 74], legs: [{ knee: [126, G - 42], foot: [130, G] }, { knee: [129, G - 41], foot: [133, G] }], arms: [{ hand: [66, G - 118] }, { hand: [69, G - 116] }] }
+    ],
+    back: [inclineBench, inclineBench],
+    front: [J => dbEnd(J.arms[1].h), J => dbEnd(J.arms[1].h)],
+    arrows: [[arrow(`M138 ${G - 84} L138 ${G - 124}`)], [arrow(`M138 ${G - 124} L138 ${G - 84}`, true)]]
+  },
+  machinechest: {
+    hl: ['upper', 'fore'],
+    poses: [
+      { hip: [60, G - 44], t: -6, legs: [{ knee: [94, G - 46], foot: [98, G] }, { knee: [97, G - 45], foot: [101, G] }], arms: [{ hand: [74, G - 96], b: 1 }, { hand: [77, G - 94], b: 1 }] },
+      { hip: [60, G - 44], t: -6, legs: [{ knee: [94, G - 46], foot: [98, G] }, { knee: [97, G - 45], foot: [101, G] }], arms: [{ hand: [100, G - 96] }, { hand: [103, G - 94] }] }
+    ],
+    back: [seatMachine, seatMachine],
+    front: [pressHandle, pressHandle],
+    arrows: [[arrow(`M110 ${G - 138} L150 ${G - 138}`)], [arrow(`M150 ${G - 138} L110 ${G - 138}`, true)]]
+  },
+  cablefly: {
+    hl: ['upper', 'torso'],
+    poses: [
+      { front: 1, hip: [85, G - 70], legs: [{ foot: [78, G], b: 1 }, { foot: [92, G], b: -1 }], arms: [{ hand: [42, G - 118], b: 1 }, { hand: [128, G - 118], b: -1 }] },
+      { front: 1, hip: [85, G - 70], legs: [{ foot: [78, G], b: 1 }, { foot: [92, G], b: -1 }], arms: [{ hand: [80, G - 92], b: 1 }, { hand: [90, G - 92], b: -1 }] }
+    ],
+    back: [() => towerR(12) + towerR(158), () => towerR(12) + towerR(158)],
+    front: [J => ln(J.arms[0].h, [16, 40], 2.2, COL.eqLine) + ln(J.arms[1].h, [154, 40], 2.2, COL.eqLine), J => ln(J.arms[0].h, [16, 40], 2.2, COL.eqLine) + ln(J.arms[1].h, [154, 40], 2.2, COL.eqLine)],
+    arrows: [[], [arrow(`M40 ${G - 150} L66 ${G - 150}`), arrow(`M130 ${G - 150} L104 ${G - 150}`)]]
+  },
+  dbfly: {
+    hl: ['upper', 'torso'],
+    poses: [{ ...LYING, arms: [{ hand: [64, G - 38], b: 1 }, { hand: [68, G - 37], b: 1 }] }, { ...LYING, arms: [{ hand: [58, G - 79] }, { hand: [62, G - 79] }] }],
+    back: [() => benchLong(G - 27), () => benchLong(G - 27)],
+    front: [J => dbEnd(J.arms[1].h), J => dbEnd(J.arms[1].h)],
+    arrows: [[], [arrow(`M100 ${G - 56} Q104 ${G - 84} 80 ${G - 100}`)]]
+  },
+  dips: {
+    hl: ['upper', 'fore', 'torso'],
+    poses: [
+      { hip: [78, G - 78], sh: [82, G - 124], legs: [{ knee: [80, G - 44], foot: [60, G - 30], toe: false }, { knee: [83, G - 44], foot: [63, G - 30], toe: false }], arms: [{ elbow: [83, G - 102], hand: [84, G - 80] }, { elbow: [86, G - 102], hand: [87, G - 80] }] },
+      { hip: [74, G - 56], sh: [86, G - 100], legs: [{ knee: [76, G - 22], foot: [56, G - 10], toe: false }, { knee: [79, G - 22], foot: [59, G - 10], toe: false }], arms: [{ elbow: [64, G - 92], hand: [84, G - 80] }, { elbow: [67, G - 92], hand: [87, G - 80] }] }
+    ],
+    back: [dipBars, dipBars],
+    arrows: [[arrow(`M150 ${G - 130} L150 ${G - 90}`)], [arrow(`M150 ${G - 90} L150 ${G - 130}`, true)]]
+  },
+  declinepush: {
+    hl: ['upper', 'fore', 'torso'],
+    poses: [
+      { hip: [80, G - 40], sh: [128, G - 44], head: [146, G - 46], legs: [{ knee: [48, G - 38], foot: [16, G - 36], toe: [24, G - 30] }, { knee: [50, G - 38], foot: [18, G - 36], toe: [26, G - 30] }], arms: [{ hand: [124, G], b: 1 }, { hand: [128, G], b: 1 }] },
+      { hip: [82, G - 26], sh: [128, G - 16], head: [147, G - 16], legs: [{ knee: [49, G - 31], foot: [16, G - 36], toe: [24, G - 30] }, { knee: [51, G - 31], foot: [18, G - 36], toe: [26, G - 30] }], arms: [{ hand: [124, G], b: 1 }, { hand: [128, G], b: 1 }] }
+    ],
+    back: [() => boxP(4, G - 30, 36, 30), () => boxP(4, G - 30, 36, 30)],
+    arrows: [[arrow(`M160 ${G - 76} L160 ${G - 34}`)], [arrow(`M160 ${G - 34} L160 ${G - 76}`, true)]]
+  },
+  bbrow: {
+    hl: ['upper', 'torso'],
+    poses: [
+      { hip: [60, G - 62], t: 62, legs: [{ foot: [80, G], b: -1 }, { foot: [86, G], b: -1 }], arms: [{ hand: [104, G - 36] }, { hand: [107, G - 35] }] },
+      { hip: [60, G - 62], t: 62, legs: [{ foot: [80, G], b: -1 }, { foot: [86, G], b: -1 }], arms: [{ hand: [84, G - 62], b: 1 }, { hand: [87, G - 61], b: 1 }] }
+    ],
+    front: [J => plateEnd(J.arms[1].h), J => plateEnd(J.arms[1].h)],
+    arrows: [[], [arrow(`M140 ${G - 30} L140 ${G - 70}`)]]
+  },
+  straightarm: {
+    hl: ['upper', 'torso'],
+    poses: [
+      { hip: [70, G - 70], t: 20, legs: [{ foot: [66, G] }, { foot: [73, G] }], arms: [{ hand: [128, G - 130] }, { hand: [130, G - 128] }] },
+      { hip: [70, G - 70], t: 20, legs: [{ foot: [66, G] }, { foot: [73, G] }], arms: [{ hand: [90, G - 72] }, { hand: [93, G - 71] }] }
+    ],
+    back: [() => cableTower(150, G - 150), () => cableTower(150, G - 150)],
+    front: [J => ln(J.arms[1].h, [142, G - 150], 2.2, COL.eqLine), J => ln(J.arms[1].h, [142, G - 150], 2.2, COL.eqLine)],
+    arrows: [[arrow(`M118 ${G - 104} Q120 ${G - 78} 104 ${G - 62}`)], [arrow(`M104 ${G - 62} Q120 ${G - 78} 118 ${G - 104}`, true)]]
+  },
+  pullover: {
+    hl: ['upper', 'torso'],
+    poses: [{ ...LYING, arms: [{ hand: [14, G - 44] }, { hand: [16, G - 46] }] }, { ...LYING, arms: [{ hand: [58, G - 80] }, { hand: [61, G - 80] }] }],
+    back: [() => benchLong(G - 27), () => benchLong(G - 27)],
+    front: [J => dbEnd(J.arms[1].h), J => dbEnd(J.arms[1].h)],
+    arrows: [[arrow(`M22 ${G - 72} Q30 ${G - 108} 60 ${G - 110}`)], [arrow(`M60 ${G - 110} Q30 ${G - 108} 22 ${G - 72}`, true)]]
+  },
+  deadlift: {
+    hl: ['thigh', 'torso'],
+    poses: [
+      { hip: [58, G - 42], t: 66, legs: [{ foot: [86, G], b: -1 }, { foot: [92, G], b: -1 }], arms: [{ hand: [96, G - 19] }, { hand: [99, G - 19] }] },
+      { hip: [80, G - 70], legs: [{ foot: [77, G] }, { foot: [84, G] }], arms: [{ hand: [84, G - 74] }, { hand: [87, G - 74] }] }
+    ],
+    front: [J => plate(J.arms[1].h), J => plate(J.arms[1].h)],
+    arrows: [[arrow(`M146 ${G - 40} L146 ${G - 100}`)], [arrow(`M146 ${G - 100} L146 ${G - 40}`, true)]]
+  },
+  shrug: {
+    hl: ['torso', 'upper'],
+    poses: [{ ...STAND, arms: [{ hand: [82, G - 74] }, { hand: [85, G - 74] }] }, { ...STAND, sh: [80, G - 127], arms: [{ hand: [82, G - 83] }, { hand: [85, G - 83] }] }],
+    front: [J => dbEnd(J.arms[1].h), J => dbEnd(J.arms[1].h)],
+    arrows: [[], [arrow(`M116 ${G - 112} L116 ${G - 140}`)]]
+  },
+  backext: {
+    hl: ['torso', 'thigh'],
+    poses: [
+      { hip: [80, G - 74], sh: [100, G - 30], legs: [{ knee: [58, G - 46], foot: [36, G - 18], toe: false }, { knee: [60, G - 45], foot: [38, G - 17], toe: false }], arms: [{ hand: [100, G - 46], b: -1 }, { hand: [102, G - 45], b: -1 }] },
+      { hip: [80, G - 74], sh: [110, G - 112], legs: [{ knee: [58, G - 46], foot: [36, G - 18], toe: false }, { knee: [60, G - 45], foot: [38, G - 17], toe: false }], arms: [{ hand: [112, G - 92], b: -1 }, { hand: [114, G - 91], b: -1 }] }
+    ],
+    back: [hyperBench, hyperBench],
+    arrows: [[], [arrow(`M136 ${G - 40} Q152 ${G - 80} 138 ${G - 114}`)]]
+  },
+  bbohp: {
+    hl: ['upper', 'fore'],
+    poses: [{ ...STAND, arms: [{ elbow: [94, G - 98], hand: [96, G - 120] }, { elbow: [96, G - 96], hand: [98, G - 118] }] }, { ...STAND, arms: [{ hand: [86, G - 160], b: -1 }, { hand: [89, G - 158], b: -1 }] }],
+    front: [J => plateEnd(J.arms[1].h), J => plateEnd(J.arms[1].h)],
+    arrows: [[arrow(`M136 ${G - 100} L136 ${G - 146}`)], [arrow(`M136 ${G - 146} L136 ${G - 100}`, true)]]
+  },
+  latraise: {
+    hl: ['upper'],
+    poses: [
+      { front: 1, hip: [85, G - 70], legs: [{ foot: [78, G], b: 1 }, { foot: [92, G], b: -1 }], arms: [{ hand: [72, G - 74], b: 1 }, { hand: [98, G - 74], b: -1 }] },
+      { front: 1, hip: [85, G - 70], legs: [{ foot: [78, G], b: 1 }, { foot: [92, G], b: -1 }], arms: [{ hand: [40, G - 116] }, { hand: [130, G - 116] }] }
+    ],
+    front: [J => dbEnd(J.arms[0].h) + dbEnd(J.arms[1].h), J => dbEnd(J.arms[0].h) + dbEnd(J.arms[1].h)],
+    arrows: [[], [arrow(`M34 ${G - 82} Q22 ${G - 100} 32 ${G - 128}`), arrow(`M136 ${G - 82} Q148 ${G - 100} 138 ${G - 128}`)]]
+  },
+  frontraise: {
+    hl: ['upper'],
+    poses: [{ ...STAND, arms: [{ hand: [84, G - 74] }, { hand: [87, G - 74] }] }, { ...STAND, arms: [{ hand: [124, G - 120] }, { hand: [126, G - 118] }] }],
+    front: [J => dbEnd(J.arms[1].h), J => dbEnd(J.arms[1].h)],
+    arrows: [[arrow(`M128 ${G - 72} Q150 ${G - 92} 140 ${G - 128}`)], [arrow(`M140 ${G - 128} Q150 ${G - 92} 128 ${G - 72}`, true)]]
+  },
+  reardelt: {
+    hl: ['upper', 'torso'],
+    poses: [
+      { hip: [60, G - 62], t: 70, legs: [{ foot: [80, G], b: -1 }, { foot: [86, G], b: -1 }], arms: [{ hand: [106, G - 32] }, { hand: [109, G - 31] }] },
+      { hip: [60, G - 62], t: 70, legs: [{ foot: [80, G], b: -1 }, { foot: [86, G], b: -1 }], arms: [{ hand: [104, G - 120] }, { hand: [107, G - 119] }] }
+    ],
+    front: [J => dbEnd(J.arms[1].h), J => dbEnd(J.arms[1].h)],
+    arrows: [[], [arrow(`M140 ${G - 40} Q154 ${G - 80} 132 ${G - 122}`)]]
+  },
+  bbcurl: {
+    hl: ['fore', 'upper'],
+    poses: [{ ...STAND, arms: [{ elbow: [81, G - 95], hand: [82, G - 73] }, { elbow: [83, G - 94], hand: [84, G - 72] }] }, { ...STAND, arms: [{ elbow: [81, G - 95], hand: [96, G - 111] }, { elbow: [83, G - 94], hand: [98, G - 110] }] }],
+    front: [J => plateEnd(J.arms[1].h), J => plateEnd(J.arms[1].h)],
+    arrows: [[arrow(`M124 ${G - 76} Q132 ${G - 104} 114 ${G - 124}`)], [arrow(`M114 ${G - 124} Q132 ${G - 104} 124 ${G - 76}`, true)]]
+  },
+  skullcrusher: {
+    hl: ['fore'],
+    poses: [{ ...LYING, arms: [{ elbow: [52, G - 58], hand: [34, G - 50] }, { elbow: [55, G - 58], hand: [37, G - 50] }] }, { ...LYING, arms: [{ elbow: [52, G - 58], hand: [50, G - 80] }, { elbow: [55, G - 58], hand: [53, G - 80] }] }],
+    back: [() => benchLong(G - 27), () => benchLong(G - 27)],
+    front: [J => dbEnd(J.arms[1].h), J => dbEnd(J.arms[1].h)],
+    arrows: [[], [arrow(`M30 ${G - 72} Q34 ${G - 96} 52 ${G - 104}`)]]
+  },
+  ohtricep: {
+    hl: ['fore'],
+    poses: [{ ...STAND, arms: [{ elbow: [84, G - 140], hand: [70, G - 124] }, { elbow: [87, G - 139], hand: [73, G - 123] }] }, { ...STAND, arms: [{ elbow: [84, G - 140], hand: [86, G - 162] }, { elbow: [87, G - 139], hand: [89, G - 161] }] }],
+    front: [J => dbEnd(J.arms[1].h), J => dbEnd(J.arms[1].h)],
+    arrows: [[], [arrow(`M120 ${G - 128} L120 ${G - 164}`)]]
+  },
+  legcurl: {
+    hl: ['thigh'],
+    poses: [
+      { hip: [80, G - 34], sh: [124, G - 36], head: [143, G - 38], legs: [{ knee: [52, G - 34], foot: [20, G - 34], toe: false }, { knee: [54, G - 33], foot: [22, G - 33], toe: false }], arms: [{ hand: [140, G - 24] }, { hand: [143, G - 24] }] },
+      { hip: [80, G - 34], sh: [124, G - 36], head: [143, G - 38], legs: [{ knee: [52, G - 34], foot: [44, G - 67], toe: false }, { knee: [54, G - 33], foot: [46, G - 66], toe: false }], arms: [{ hand: [140, G - 24] }, { hand: [143, G - 24] }] }
+    ],
+    back: [() => benchLong(G - 27), () => benchLong(G - 27)],
+    front: [machinePad, machinePad],
+    arrows: [[], [arrow(`M18 ${G - 52} Q20 ${G - 84} 40 ${G - 92}`)]]
+  },
+  legext: {
+    hl: ['thigh'],
+    poses: [
+      { hip: [60, G - 44], t: -6, legs: [{ knee: [94, G - 46], foot: [92, G - 12] }, { knee: [97, G - 45], foot: [95, G - 11] }], arms: [{ hand: [66, G - 44] }, { hand: [69, G - 43] }] },
+      { hip: [60, G - 44], t: -6, legs: [{ knee: [94, G - 46], foot: [127, G - 54] }, { knee: [97, G - 45], foot: [130, G - 53] }], arms: [{ hand: [66, G - 44] }, { hand: [69, G - 43] }] }
+    ],
+    back: [seatMachine, seatMachine],
+    front: [machinePad, machinePad],
+    arrows: [[arrow(`M118 ${G - 8} Q144 ${G - 18} 144 ${G - 54}`)], [arrow(`M144 ${G - 54} Q144 ${G - 18} 118 ${G - 8}`, true)]]
+  }
+});
 /* ---- Del 3: core, bære, spring, læg ---- */
 function wheelP(J) { const h = J.arms[1].h; return circ(h[0], G - 12, 12, '#18221D', COL.eqLine, 3) + circ(h[0], G - 12, 3, COL.eqLine, 'none', 0); }
 function boxBench(x, w) { return rect(x, G - 38, w, 38, 5, '#2A3830', COL.eqLine, 2); }
@@ -1839,7 +2031,10 @@ function resolveItem(it, ctx) {
 }
 function swapOptions(ctx, origEx) {
   const o = EX[origEx], kind = ctx.split('|')[0];
-  return Object.entries(EX).filter(([id, e]) => id !== origEx && e.pattern === o.pattern && (kind === 'week' || isHomeEx(e)) && (kind !== 'fri' || !e.hard));
+  const all = Object.entries(EX).filter(([id, e]) => id !== origEx && e.pattern === o.pattern && (kind === 'week' || isHomeEx(e)) && (kind !== 'fri' || !e.hard));
+  // Samme primære kropsdel først, så pull-ups ikke foreslår en biceps curl; for få match → hele bevægelsesgruppen
+  const same = all.filter(([, e]) => o.body[0] && e.body[0] === o.body[0]);
+  return same.length >= 3 ? same : all;
 }
 /* Byt segmenterne i en blok ud, så den guidede timer følger de byttede øvelser */
 function swappedSegs(block, base) {
@@ -2950,7 +3145,9 @@ function e1Points(exId) {
 const E1_REL = {
   backsquat: [['frontsquat', 1.18]], frontsquat: [['backsquat', .85]], legpress: [['backsquat', 1.8], ['frontsquat', 2.1]], goblet: [['frontsquat', .45], ['backsquat', .38]],
   trapbar: [['rdl', 1.15]], rdl: [['trapbar', .87]], dbrdl: [['rdl', .4], ['trapbar', .35]], hipthrust: [['rdl', 1.1], ['trapbar', .95]],
-  landminepress: [['dbbench', 1.2]], dbbench: [['landminepress', .83]], dbpress: [['dbbench', .65]],
+  landminepress: [['dbbench', 1.2]], dbbench: [['landminepress', .83], ['bbbench', .59]], dbpress: [['dbbench', .65], ['bbohp', .62]],
+  bbbench: [['dbbench', 1.7]], inclinedb: [['dbbench', .85], ['bbbench', .5]], closebench: [['bbbench', .9]], bbohp: [['dbpress', 1.6], ['bbbench', .65]],
+  deadlift: [['trapbar', .95], ['rdl', 1.3]],
   cablerow: [['dbrow', 1.6]], dbrow: [['cablerow', .6]], stepup: [['bulgarian', 1]], bulgarian: [['stepup', 1]]
 };
 function e1RM(exId) {

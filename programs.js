@@ -61,8 +61,8 @@ const PROGRAMS = [
     desc: 'Klassisk off-season: ben, overkrop og helkrop med tunge basisløft og mere volumen. Bygger det fundament, som fart og spring senere skal stå på. Øvelserne skifter hver anden uge.',
     sessions: {
       A: { t: 'Ben', md: 3, blocks: ['warm', ['str', ['backsquat|legpress:main', 'rdl|dbrdl:acc', 'walkinglunge|bulgarian:acc', 'soleus|stepcalf:acc']], ['core', ['abwheel|hollow', 'pallof|woodchop', 'copenhagen']]] },
-      B: { t: 'Overkrop', md: 2, blocks: ['warm', ['str', ['dbbench|landminepress:main', 'pullup|latpull:main', 'dbpress|pikepush:acc', 'cablerow|dbrow:acc', 'facepull|ytw:acc']], ['core', ['suitcase|farmer', 'hollow|legraise', 'sideplank|plankreach']], ['upper', ['dbcurl|hammercurl:acc', 'pushdown|benchdip:acc'], 'Arme']] },
-      C: { t: 'Helkrop og kraft', md: 3, blocks: ['warm', ['str', ['trapbar|rdl:main', 'bulgarian|stepup:acc', 'landminepress|dbpress:acc', 'invrow|dbrow:acc']], ['pwr', ['kbswing|medslam', 'boxjump|broadjump']], ['cond', 'cont']] }
+      B: { t: 'Overkrop', md: 2, blocks: ['warm', ['str', ['bbbench|inclinedb:main', 'pullup|chinup:main', 'dbpress|bbohp:acc', 'bbrow|machinerow:acc', 'facepull|reardelt:acc']], ['core', ['suitcase|farmer', 'hollow|legraise', 'sideplank|plankreach']], ['upper', ['dbcurl|hammercurl:acc', 'pushdown|skullcrusher:acc'], 'Arme']] },
+      C: { t: 'Helkrop og kraft', md: 3, blocks: ['warm', ['str', ['trapbar|deadlift:main', 'bulgarian|stepup:acc', 'landminepress|dbpress:acc', 'invrow|dbrow:acc']], ['pwr', ['kbswing|medslam', 'boxjump|broadjump']], ['cond', 'cont']] }
     }
   },
   {

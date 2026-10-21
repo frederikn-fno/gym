@@ -691,6 +691,136 @@ A('rsa', 'Gentagne sprint', 'Kondition', ['Udholdenhed', 'Hurtighed'], 'Ingen ud
   ['Sæt to kegler 20–30 meter fra hinanden.', 'Sprint hurtigt til keglen.', 'Jog roligt tilbage på 20–25 sekunder, og sprint igen.'],
   '2 × 6 sprint', '20–25 sek', ['Hold kvaliteten. Stop, når tiden falder meget.', '3 minutters pause mellem sættene.'], { illu: 'sprint5', hard: true });
 
+/* --- Fitness med vægt: bryst --- */
+A('bbbench', 'Bænkpres med stang', 'Styrke', ['Styrke'], 'Stang', 'push',
+  'Det klassiske overkropsløft: stærkt bryst, skuldre og triceps til dueller og at stå imod.',
+  ['Lig på bænken med øjnene under stangen og fødderne i gulvet. Grib lidt bredere end skuldrene.', 'Løft stangen ud, og sænk den kontrolleret til nederste del af brystet.', 'Pres stangen op, til armene er strakte.'],
+  '5 × 5', '2–3 min', ['Saml skulderbladene, og hold dem nede i bænken hele sættet.', 'Brug en makker eller sikkerhedsstænger ved tunge sæt.'], { log: true });
+A('closebench', 'Smal bænkpres', 'Styrke', ['Styrke'], 'Stang', 'push',
+  'Bænkpres med fokus på triceps: kraft i strakte arme til skud og udkast.',
+  ['Lig som til bænkpres, men grib i skulderbredde.', 'Sænk stangen til brystet med albuerne tæt ind til kroppen.', 'Pres stangen op, til armene er strakte.'],
+  '8 reps', '90 sek', ['Albuerne peger skråt ned mod hofterne, ikke ud til siden.', 'Grib ikke smallere end skulderbredde: det belaster håndleddene.'], { illu: 'bbbench', log: true });
+A('inclinedb', 'Skråbænkpres med håndvægte', 'Styrke', ['Styrke'], 'Håndvægte', 'push',
+  'Øvre bryst og forreste skulder: kraft, når du skubber opad og fremad.',
+  ['Stil bænken i 30–45 grader, og sid med håndvægtene på lårene.', 'Læn dig tilbage, og hold vægtene ved brystet med albuerne skråt ned.', 'Pres vægtene op over brystet, og sænk dem kontrolleret.'],
+  '10 reps', '90 sek', ['Lavere vinkel giver mere bryst, højere giver mere skulder.', 'Hold skulderbladene samlet mod bænken.'], { log: true });
+A('machinechest', 'Brystpres i maskine', 'Styrke', ['Styrke'], 'Maskine', 'push',
+  'Sikker og stabil brysttræning: nem at gå tungt på uden makker.',
+  ['Indstil sædet, så håndtagene er ud for midten af brystet.', 'Pres håndtagene frem, til armene næsten er strakte.', 'Før dem langsomt tilbage, til du mærker et let stræk i brystet.'],
+  '10 reps', '75 sek', ['Ryggen og hovedet hviler mod ryglænet.', 'Lås ikke albuerne helt i yderstillingen.'], { log: true });
+A('cablefly', 'Flyes i kabel', 'Styrke', ['Styrke'], 'Kabel', 'push',
+  'Brystet i en lang bevægelse: åbner og styrker brystet og forreste skulder.',
+  ['Stå mellem to kabler med et håndtag i hver hånd og et skridt frem.', 'Før hænderne sammen foran brystet i en stor bue med let bøjede albuer.', 'Før dem langsomt tilbage, til du mærker et stræk i brystet.'],
+  '12 reps', '60 sek', ['Albuerne har samme bøjning hele vejen: det er ikke et pres.', 'Brug en let vægt og en rolig bevægelse.'], { log: true });
+A('dbfly', 'Flyes med håndvægte', 'Styrke', ['Styrke'], 'Håndvægte', 'push',
+  'Stræk og styrke i brystet med frie vægte.',
+  ['Lig på en bænk med håndvægtene over brystet og håndfladerne mod hinanden.', 'Sænk vægtene ud til siderne i en bue med let bøjede albuer.', 'Før dem op igen i samme bue, til de mødes over brystet.'],
+  '12 reps', '60 sek', ['Gå kun så langt ned, som skulderen kan lide.', 'Tag lettere vægte end til bænkpres.'], { log: true });
+A('dips', 'Dips i barre', 'Styrke', ['Styrke'], 'Andet', 'push',
+  'Bryst, triceps og skuldre med kropsvægt. Kan gøres tungere med vægtbælte.',
+  ['Støt dig på barren med strakte arme og let fremadlænet overkrop.', 'Bøj albuerne, og sænk dig, til overarmene er vandrette.', 'Pres dig op, til armene er strakte.'],
+  '6–10 reps', '90 sek', ['Brug en maskine med modvægt eller en elastik, hvis du ikke kan endnu.', 'Gå ikke dybere, end skulderen kan lide.'], { log: true });
+A('declinepush', 'Armstrækninger med hævede fødder', 'Styrke', ['Styrke'], 'Bænk/kasse', 'push',
+  'Sværere armstrækninger med mere vægt på øvre bryst og skuldre.',
+  ['Sæt fødderne på en bænk eller kasse og hænderne i gulvet lidt bredere end skuldrene.', 'Sænk brystet mod gulvet med kroppen som en planke.', 'Pres dig op, til armene er strakte.'],
+  '8–12 reps', '60 sek', ['Jo højere fødderne er, jo sværere er det.', 'Spænd mave og baller, så hoften ikke hænger.'], { home: true });
+
+/* --- Fitness med vægt: ryg --- */
+A('bbrow', 'Bøjet roning med stang', 'Styrke', ['Styrke'], 'Stang', 'pull',
+  'Tyk, stærk ryg: holder skuldrene stabile og overkroppen rank i dueller.',
+  ['Stå med stangen i hænderne, og læn dig frem med lige ryg, til overkroppen er ca. 45 grader.', 'Træk stangen op mod navlen, og saml skulderbladene.', 'Sænk stangen kontrolleret, til armene er strakte.'],
+  '8 reps', '90 sek', ['Ryggen er lige, og overkroppen står stille. Ingen sving.', 'Knæene er let bøjede.'], { log: true });
+A('tbarrow', 'T-bar roning', 'Styrke', ['Styrke'], 'Stang', 'pull',
+  'Tung roning med et neutralt greb: meget ryg og mindre belastning af lænden end bøjet roning.',
+  ['Stå over en stang i et hjørne eller en T-bar-maskine, og grib håndtaget tæt ved vægtskiverne.', 'Læn dig frem med lige ryg, og træk håndtaget op mod brystet.', 'Sænk kontrolleret.'],
+  '8–10 reps', '90 sek', ['Træk med albuerne, ikke med hænderne.', 'Hold brystet oppe.'], { illu: 'bbrow', log: true });
+A('machinerow', 'Roning i maskine', 'Styrke', ['Styrke'], 'Maskine', 'pull',
+  'Stabil rygtræning med støtte til brystet: godt til at gå tungt uden at belaste lænden.',
+  ['Sid med brystet mod puden, og grib håndtagene.', 'Træk håndtagene ind mod kroppen, og saml skulderbladene.', 'Før dem langsomt frem igen.'],
+  '10 reps', '75 sek', ['Brystet bliver på puden hele vejen.', 'Hold et kort stop, når skulderbladene er samlet.'], { illu: 'cablerow', log: true });
+A('straightarm', 'Straight-arm pulldown', 'Styrke', ['Styrke'], 'Kabel', 'pull',
+  'Den brede rygmuskel uden armene: samme bevægelse som når du kaster dig ned efter en bold.',
+  ['Stå foran et højt kabel med en stang eller et reb og strakte arme.', 'Læn dig lidt frem, og pres stangen ned til lårene med strakte arme.', 'Før den langsomt op igen.'],
+  '12 reps', '60 sek', ['Armene er strakte hele vejen.', 'Overkroppen står stille.'], { log: true });
+A('chinup', 'Chin-ups', 'Styrke', ['Styrke'], 'Stang', 'pull',
+  'Pull-ups med underhåndsgreb: mere biceps og lettere for de fleste.',
+  ['Hæng i stangen med håndfladerne mod dig og skulderbredt greb.', 'Træk dig op, til hagen er over stangen.', 'Sænk kontrolleret til strakte arme.'],
+  '5–8 reps', '90 sek', ['Start hvert gentag ved at trække skulderbladene ned.', 'Brug elastik eller maskine til hjælp, hvis du ikke kan endnu.'], { illu: 'pullup', log: true });
+A('pullover', 'Pullover med håndvægt', 'Styrke', ['Styrke'], 'Håndvægte', 'pull',
+  'Ryg og bryst i én lang bevægelse: stærk og bevægelig, når du rækker op efter høje bolde.',
+  ['Lig på en bænk, og hold én håndvægt med begge hænder over brystet.', 'Sænk vægten i en bue bag hovedet med let bøjede albuer.', 'Før den tilbage over brystet.'],
+  '12 reps', '60 sek', ['Gå kun så langt bagud, som skulderen kan lide.', 'Hold ribbenene nede, så lænden ikke svajer.'], { log: true });
+A('deadlift', 'Dødløft med stang', 'Styrke', ['Styrke'], 'Stang', 'hinge',
+  'Hele bagsiden: baller, baglår og ryg. Et af de stærkeste løft til kraft i afsættet.',
+  ['Stå med midtfoden under stangen, og grib lige uden for knæene.', 'Bøj knæene, til skinnebenene rører stangen. Brystet op og ryggen lige.', 'Pres gulvet væk, og rejs dig op med stangen tæt på kroppen.'],
+  '5 reps', '2–3 min', ['Ryggen er lige hele vejen. Stop sættet, hvis den runder.', 'Stangen glider langs benene.'], { log: true });
+A('shrug', 'Skulderløft med håndvægte', 'Styrke', ['Styrke'], 'Håndvægte', 'pull',
+  'Stærke trapezmuskler: en mere robust nakke, når du lander og går i dueller.',
+  ['Stå med en tung håndvægt i hver hånd og armene strakt ned.', 'Løft skuldrene lige op mod ørerne.', 'Hold et sekund, og sænk langsomt.'],
+  '12 reps', '60 sek', ['Rul ikke skuldrene: bare op og ned.', 'Armene er strakte. Det er skuldrene, der løfter.'], { log: true });
+A('backext', 'Rygstræk på bænk', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Maskine', 'hinge',
+  'Stærk lænd, baller og baglår: beskytter ryggen ved mange fald og landinger.',
+  ['Læg hofterne på puden og hælene under rullen.', 'Sænk overkroppen langsomt ned med lige ryg.', 'Løft overkroppen op, til kroppen er en lige linje.'],
+  '12 reps', '60 sek', ['Løft ikke højere end en lige linje.', 'Hold en vægtskive ind til brystet, når det bliver let.'], { log: true });
+
+/* --- Fitness med vægt: skuldre --- */
+A('bbohp', 'Militærpres med stang', 'Styrke', ['Styrke'], 'Stang', 'push',
+  'Tungt skulderpres stående: stærke skuldre og en stabil krop til udkast og høje bolde.',
+  ['Stå med stangen foran skuldrene og grebet lidt bredere end skuldrene.', 'Pres stangen lige op over hovedet, og skub hovedet frem under den.', 'Sænk stangen kontrolleret til skuldrene.'],
+  '6 reps', '2 min', ['Spænd mave og baller, så lænden ikke svajer.', 'Stangen går i en lige linje op.'], { log: true });
+A('machinepress', 'Skulderpres i maskine', 'Styrke', ['Styrke'], 'Maskine', 'push',
+  'Skulderstyrke med støtte til ryggen: let at gå tungt og sikkert.',
+  ['Indstil sædet, så håndtagene er i skulderhøjde.', 'Pres håndtagene op, til armene næsten er strakte.', 'Sænk dem langsomt til skulderhøjde.'],
+  '10 reps', '75 sek', ['Ryggen hviler mod ryglænet.', 'Albuerne er lidt foran kroppen.'], { illu: 'dbpress', log: true });
+A('arnold', 'Arnold press', 'Styrke', ['Styrke'], 'Håndvægte', 'push',
+  'Skulderpres med en drejning, der rammer hele skulderen.',
+  ['Sid med håndvægtene foran ansigtet og håndfladerne mod dig.', 'Drej håndfladerne udad, mens du presser vægtene op over hovedet.', 'Drej tilbage, mens du sænker dem.'],
+  '10 reps', '75 sek', ['Rolig drejning, ingen sving.', 'Tag lettere vægte end til almindeligt skulderpres.'], { illu: 'dbpress', log: true });
+A('latraise', 'Sideløft med håndvægte', 'Styrke', ['Styrke'], 'Håndvægte', 'push',
+  'Bredere og stærkere skuldre: stabile, når du strækker armene ud til siden i en redning.',
+  ['Stå med en let håndvægt i hver hånd ved siden af kroppen.', 'Løft armene ud til siden, til de er i skulderhøjde, med let bøjede albuer.', 'Sænk langsomt.'],
+  '12–15 reps', '45 sek', ['Brug lette vægte og ingen sving.', 'Løft ikke højere end skulderhøjde.'], { log: true });
+A('frontraise', 'Frontløft med håndvægte', 'Styrke', ['Styrke'], 'Håndvægte', 'push',
+  'Forreste skulder: styrke, når du rækker armene frem og op efter bolden.',
+  ['Stå med en let håndvægt i hver hånd foran lårene.', 'Løft armene lige frem til skulderhøjde.', 'Sænk langsomt.'],
+  '12 reps', '45 sek', ['Overkroppen står stille.', 'Skift arm, hvis du vil have mere kontrol.'], { log: true });
+A('reardelt', 'Omvendt flyes bøjet frem', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Håndvægte', 'pull',
+  'Bageste skulder og øvre ryg: balance i skulderen efter meget pres og mange kast.',
+  ['Læn dig frem med lige ryg og en let håndvægt i hver hånd.', 'Løft armene ud til siden med let bøjede albuer, og saml skulderbladene.', 'Sænk langsomt.'],
+  '15 reps', '45 sek', ['Brug lette vægte.', 'Hold nakken i forlængelse af ryggen.'], { log: true });
+
+/* --- Fitness med vægt: arme --- */
+A('bbcurl', 'Curl med stang', 'Styrke', ['Styrke'], 'Stang', 'pull',
+  'Stærke biceps og underarme med en tungere vægt end håndvægte.',
+  ['Stå med stangen i underhåndsgreb og armene strakt ned.', 'Bøj albuerne, og løft stangen op mod skuldrene.', 'Sænk langsomt til strakte arme.'],
+  '10 reps', '60 sek', ['Albuerne bliver ved siden af kroppen.', 'Ingen sving med ryggen.'], { log: true });
+A('preachercurl', 'Scott curl i maskine', 'Styrke', ['Styrke'], 'Maskine', 'pull',
+  'Biceps uden snyd: armene hviler på puden, så kun biceps arbejder.',
+  ['Sid med overarmene på puden og grib håndtaget.', 'Bøj albuerne, og løft håndtaget op mod skuldrene.', 'Sænk langsomt, til armene næsten er strakte.'],
+  '10–12 reps', '60 sek', ['Sænk langsomt: det er der, du bliver stærk.', 'Stræk ikke albuerne helt i bunden med tung vægt.'], { illu: 'dbcurl', log: true });
+A('cablecurl', 'Curl i kabel', 'Styrke', ['Styrke'], 'Kabel', 'pull',
+  'Biceps med jævn modstand hele vejen.',
+  ['Stå foran et lavt kabel med en stang eller et reb.', 'Bøj albuerne, og løft håndtaget op mod skuldrene.', 'Sænk langsomt.'],
+  '12 reps', '45 sek', ['Albuerne bliver ved siden af kroppen.', 'Stå stille. Det er kun underarmene, der bevæger sig.'], { illu: 'dbcurl', log: true });
+A('skullcrusher', 'Liggende triceps-pres', 'Styrke', ['Styrke'], 'Håndvægte', 'push',
+  'Kraftige triceps til strakte arme i redninger og lange udkast.',
+  ['Lig på en bænk med en håndvægt i hver hånd eller en curlstang over brystet.', 'Bøj albuerne, og sænk vægten mod panden. Overarmene står stille.', 'Stræk armene igen.'],
+  '10–12 reps', '60 sek', ['Overarmene peger let bagud og står stille.', 'Brug en moderat vægt og en rolig bevægelse.'], { log: true });
+A('ohtricep', 'Triceps-pres over hovedet', 'Styrke', ['Styrke'], 'Håndvægte', 'push',
+  'Triceps i en lang position: stærke arme, når du rækker op over hovedet.',
+  ['Stå eller sid med én håndvægt holdt med begge hænder over hovedet.', 'Bøj albuerne, og sænk vægten bag hovedet.', 'Stræk armene op igen.'],
+  '12 reps', '60 sek', ['Albuerne peger fremad og bliver tæt på hovedet.', 'Spænd maven, så lænden ikke svajer.'], { log: true });
+
+/* --- Fitness med vægt: benmaskiner --- */
+A('legcurl', 'Benbøjning i maskine', 'Styrke', ['Styrke', 'Skadesforebyggelse'], 'Maskine', 'hinge',
+  'Stærke baglår: færre forstrækninger i sprint og spark.',
+  ['Lig på maven med rullen lige over hælene.', 'Bøj knæene, og træk hælene op mod ballerne.', 'Sænk langsomt.'],
+  '10–12 reps', '60 sek', ['Hofterne bliver nede på puden.', 'Sænk på 2–3 sekunder.'], { log: true });
+A('legext', 'Benstræk i maskine', 'Styrke', ['Styrke'], 'Maskine', 'squat',
+  'Isoleret forlårsstyrke: stærke knæ til afsæt og landinger.',
+  ['Sid med ryggen mod ryglænet og rullen foran anklerne.', 'Stræk benene, til de er næsten strakte.', 'Sænk langsomt.'],
+  '12 reps', '60 sek', ['Hold et kort stop i toppen.', 'Brug en moderat vægt, hvis knæene er ømme.'], { log: true });
+
 /* ===== Sæson =====
    [off, pre, in, md] pr. øvelse.
    off/pre/in: hvor godt øvelsen passer i perioden. 3 = kerneøvelse, 2 = god, 1 = lidt eller let, 0 = spring over.
@@ -716,6 +846,13 @@ const SEASON = {
   /* Skub */
   pushup: [2, 2, 2, 1], kneepushup: [2, 1, 1, 1], diamondpush: [2, 1, 1, 1], dbpress: [3, 2, 2, 2], dbbench: [3, 2, 2, 2], pikepush: [2, 1, 1, 1],
   clappush: [1, 3, 2, 2], landminepress: [3, 2, 2, 2], pushdown: [2, 1, 1, 1], benchdip: [2, 1, 1, 1], dbcurl: [2, 1, 1, 1], hammercurl: [2, 1, 1, 1],
+  /* Fitness med vægt */
+  bbbench: [3, 2, 2, 2], closebench: [2, 2, 1, 2], inclinedb: [3, 2, 2, 2], machinechest: [3, 2, 2, 2], cablefly: [2, 1, 1, 1], dbfly: [2, 1, 1, 1],
+  dips: [3, 2, 1, 2], declinepush: [2, 2, 2, 1], bbrow: [3, 2, 2, 2], tbarrow: [3, 2, 1, 2], machinerow: [3, 2, 2, 2], straightarm: [2, 2, 2, 1],
+  chinup: [3, 2, 2, 2], pullover: [2, 2, 1, 1], deadlift: [3, 2, 1, 3], shrug: [2, 1, 1, 1], backext: [2, 2, 2, 1], bbohp: [3, 2, 2, 2],
+  machinepress: [3, 2, 2, 2], arnold: [2, 2, 1, 2], latraise: [2, 2, 2, 1], frontraise: [2, 1, 1, 1], reardelt: [2, 2, 3, 1],
+  bbcurl: [2, 1, 1, 1], preachercurl: [2, 1, 1, 1], cablecurl: [2, 1, 1, 1], skullcrusher: [2, 1, 1, 1], ohtricep: [2, 1, 1, 1],
+  legcurl: [3, 2, 2, 2], legext: [2, 2, 1, 2],
   /* Træk */
   latpull: [3, 2, 2, 2], dbrow: [3, 2, 2, 2], invrow: [2, 2, 2, 1], pullup: [3, 2, 2, 2], bandpull: [2, 2, 3, 0], cablerow: [3, 2, 2, 2], facepull: [2, 2, 3, 1],
   superman: [2, 1, 1, 1], ytw: [2, 2, 3, 0], extrot: [2, 2, 3, 0],
@@ -761,6 +898,12 @@ const BODY_EX = {
   landminepress: ['Skuldre', 'Bryst', 'Core'], pushdown: ['Arme'], benchdip: ['Arme', 'Skuldre'],
   dbcurl: ['Arme'], hammercurl: ['Arme'], facepull: ['Skuldre', 'Ryg'], ytw: ['Skuldre', 'Ryg'], bandpull: ['Skuldre', 'Ryg'], extrot: ['Skuldre'],
   superman: ['Ryg', 'Baller og baglår'],
+  bbbench: ['Bryst', 'Skuldre', 'Arme'], inclinedb: ['Bryst', 'Skuldre', 'Arme'], machinechest: ['Bryst', 'Arme'], closebench: ['Arme', 'Bryst'],
+  cablefly: ['Bryst'], dbfly: ['Bryst'], dips: ['Bryst', 'Arme', 'Skuldre'], declinepush: ['Bryst', 'Skuldre', 'Arme'],
+  bbrow: ['Ryg', 'Arme'], tbarrow: ['Ryg', 'Arme'], machinerow: ['Ryg', 'Arme'], straightarm: ['Ryg'], chinup: ['Ryg', 'Arme'], pullover: ['Ryg', 'Bryst'],
+  deadlift: ['Baller og baglår', 'Ryg', 'Ben'], shrug: ['Ryg', 'Skuldre'], backext: ['Ryg', 'Baller og baglår'],
+  bbohp: ['Skuldre', 'Arme', 'Core'], machinepress: ['Skuldre', 'Arme'], arnold: ['Skuldre', 'Arme'], latraise: ['Skuldre'], frontraise: ['Skuldre'], reardelt: ['Skuldre', 'Ryg'],
+  bbcurl: ['Arme'], preachercurl: ['Arme'], cablecurl: ['Arme'], skullcrusher: ['Arme'], ohtricep: ['Arme'], legcurl: ['Baller og baglår'], legext: ['Ben'],
   /* Ben og hofte */
   bulgarian: ['Ben', 'Baller og baglår'], splitsquat: ['Ben', 'Baller og baglår'], reverselunge: ['Ben', 'Baller og baglår'], walkinglunge: ['Ben', 'Baller og baglår'],
   stepup: ['Ben', 'Baller og baglår'], singlesquat: ['Ben', 'Baller og baglår'], sumosquat: ['Ben', 'Hofte og lyske'], backsquat: ['Ben', 'Baller og baglår'],
