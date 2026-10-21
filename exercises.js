@@ -747,3 +747,40 @@ Object.entries(SEASON).forEach(([id, [off, pre, inn, md]]) => { if (EX[id]) Obje
 /* Sikkerhedsnet: en ny øvelse uden sæson-data får en neutral vurdering i stedet for at vælte filtrene */
 Object.entries(EX).forEach(([id, e]) => { if (!e.season) { console.warn('Øvelse uden sæson-data:', id); Object.assign(e, { season: { off: 2, pre: 2, in: 2 }, md: 2 }); } });
 
+/* ===== Kropsdele =====
+   Hvilke kropsdele en øvelse primært træner (den første er den vigtigste). Bruges til filteret i biblioteket.
+   Udgangspunktet følger bevægelsen; undtagelserne står i BODY_EX. Fokus-øvelser har ingen kropsdel. */
+const BODY = ['Bryst', 'Ryg', 'Skuldre', 'Arme', 'Core', 'Ben', 'Baller og baglår', 'Læg og ankler', 'Hofte og lyske', 'Hele kroppen'];
+const BODY_PATTERN = {
+  squat: ['Ben'], hinge: ['Baller og baglår'], calf: ['Læg og ankler'], plyo: ['Ben'], agility: ['Ben'],
+  push: ['Bryst', 'Arme'], pull: ['Ryg', 'Arme'], core: ['Core'], carry: ['Hele kroppen', 'Core'], cardio: ['Hele kroppen'], mobility: [], focus: []
+};
+const BODY_EX = {
+  /* Skub og træk */
+  dbbench: ['Bryst', 'Skuldre', 'Arme'], diamondpush: ['Arme', 'Bryst'], dbpress: ['Skuldre', 'Arme'], pikepush: ['Skuldre', 'Arme'],
+  landminepress: ['Skuldre', 'Bryst', 'Core'], pushdown: ['Arme'], benchdip: ['Arme', 'Skuldre'],
+  dbcurl: ['Arme'], hammercurl: ['Arme'], facepull: ['Skuldre', 'Ryg'], ytw: ['Skuldre', 'Ryg'], bandpull: ['Skuldre', 'Ryg'], extrot: ['Skuldre'],
+  superman: ['Ryg', 'Baller og baglår'],
+  /* Ben og hofte */
+  bulgarian: ['Ben', 'Baller og baglår'], splitsquat: ['Ben', 'Baller og baglår'], reverselunge: ['Ben', 'Baller og baglår'], walkinglunge: ['Ben', 'Baller og baglår'],
+  stepup: ['Ben', 'Baller og baglår'], singlesquat: ['Ben', 'Baller og baglår'], sumosquat: ['Ben', 'Hofte og lyske'], backsquat: ['Ben', 'Baller og baglår'],
+  rdl: ['Baller og baglår', 'Ryg'], dbrdl: ['Baller og baglår', 'Ryg'], trapbar: ['Baller og baglår', 'Ben', 'Ryg'], kbswing: ['Baller og baglår', 'Hele kroppen'],
+  /* Kondition */
+  run: ['Ben'], rsa: ['Ben'], tempo: ['Ben'], bike: ['Ben'], stairs: ['Ben'], jumprope: ['Læg og ankler', 'Ben'],
+  /* Bæreøvelser */
+  bearcrawl: ['Hele kroppen', 'Core', 'Skuldre'], farmer: ['Hele kroppen', 'Arme', 'Core'], ohcarry: ['Skuldre', 'Core'], suitcase: ['Core', 'Arme'],
+  /* Core og lyske */
+  adductsqueeze: ['Hofte og lyske'], copenhagen: ['Hofte og lyske', 'Core'], plankreach: ['Core', 'Skuldre'], mtnclimber: ['Core', 'Hele kroppen'],
+  /* Spring og kast */
+  pogo: ['Læg og ankler', 'Ben'], bounds: ['Ben', 'Baller og baglår'], burpee: ['Hele kroppen'], gkhighcatch: ['Hele kroppen', 'Ben'], gkstar: ['Hele kroppen'],
+  gkthrow: ['Skuldre', 'Arme', 'Core'], medrot: ['Core', 'Skuldre'], medslam: ['Hele kroppen', 'Core', 'Skuldre'], medthrow: ['Bryst', 'Skuldre', 'Arme'],
+  /* Fart og målmandsbevægelser */
+  ladder: ['Ben', 'Læg og ankler'], latbandwalk: ['Hofte og lyske', 'Baller og baglår'], gkbarrier: ['Ben', 'Hofte og lyske'], gkcollapse: ['Hele kroppen', 'Core'],
+  gkshuffledive: ['Hele kroppen'], diveget: ['Hele kroppen'], fifa11: ['Hele kroppen'],
+  /* Mobilitet */
+  anklemob: ['Læg og ankler'], catcow: ['Ryg'], openbook: ['Ryg'], cossack: ['Hofte og lyske', 'Ben'], deepsquat: ['Hofte og lyske', 'Ben'], foamroll: ['Hele kroppen'],
+  hipairplane: ['Hofte og lyske', 'Baller og baglår'], hipflexor: ['Hofte og lyske'], hips9090: ['Hofte og lyske'], latlunge: ['Hofte og lyske', 'Ben'],
+  shoulderband: ['Skuldre'], wgs: ['Hofte og lyske', 'Ryg']
+};
+Object.entries(EX).forEach(([id, e]) => { e.body = BODY_EX[id] || BODY_PATTERN[e.pattern] || []; });
+

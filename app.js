@@ -1643,7 +1643,7 @@ const DEF = () => ({
   favs: [], // favoritøvelser (id'er)
   fri: { wk: '', done: {} },
   home: { date: '', done: {} }, homeLog: [], lastExport: '',
-  settings: { sound: true, vib: true, custom: { work: 30, rest: 60, rounds: 10 }, metric: 'avg', lib: 'Alle', libEquip: 'Alle', libCat: 'Alle', libSeason: 'Alle', homeLevel: null, theme: 'dark', calTime: '17:00', calMatchTime: '13:00', calAlarm: 60 }
+  settings: { sound: true, vib: true, custom: { work: 30, rest: 60, rounds: 10 }, metric: 'avg', lib: 'Alle', libEquip: 'Alle', libCat: 'Alle', libSeason: 'Alle', libBody: 'Alle', homeLevel: null, theme: 'dark', calTime: '17:00', calMatchTime: '13:00', calAlarm: 60 }
 });
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const clampNum = (v, lo, hi, d) => { v = +v; return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
@@ -1719,6 +1719,7 @@ function mergeState(d) {
     libEquip: ['Alle', 'home', ...EQUIPS].includes(s.libEquip) ? s.libEquip : 'Alle',
     libCat: CATS.includes(s.libCat) ? s.libCat : 'Alle',
     libSeason: SEASONS.some(x => x.k === s.libSeason) ? s.libSeason : 'Alle',
+    libBody: BODY.includes(s.libBody) ? s.libBody : 'Alle',
     homeLevel: s.homeLevel === 1 || s.homeLevel === 2 ? s.homeLevel : null
   };
   return out;
@@ -2092,14 +2093,16 @@ let libQ = '', libShown = 30;
 const LIB_PAGE = 30;
 /* Med en valgt sæson vises kun øvelser, der er gode i perioden (2+), med kerneøvelserne først */
 function libFiltered() {
-  const g = ST.settings.lib, eq = ST.settings.libEquip, c = ST.settings.libCat, sn = ST.settings.libSeason, q = libQ.trim().toLowerCase();
+  const g = ST.settings.lib, eq = ST.settings.libEquip, c = ST.settings.libCat, sn = ST.settings.libSeason, bd = ST.settings.libBody, q = libQ.trim().toLowerCase();
   const list = Object.entries(EX).filter(([id, e]) =>
     (g === 'Alle' || (g === 'Fav' ? ST.favs.includes(id) : e.good.includes(g))) &&
+    (bd === 'Alle' || e.body.includes(bd)) &&
     (c === 'Alle' || e.cat === c) &&
     (eq === 'Alle' || (eq === 'home' ? isHomeEx(e) : e.equip === eq)) &&
     (sn === 'Alle' || e.season[sn] >= 2) &&
-    (!q || `${e.name} ${e.goal} ${e.good.join(' ')} ${e.equip} ${e.cat}`.toLowerCase().includes(q)));
-  return sn === 'Alle' ? list : list.sort((a, b) => b[1].season[sn] - a[1].season[sn]);
+    (!q || `${e.name} ${e.goal} ${e.good.join(' ')} ${e.body.join(' ')} ${e.equip} ${e.cat}`.toLowerCase().includes(q)));
+  if (sn !== 'Alle') return list.sort((a, b) => b[1].season[sn] - a[1].season[sn]);
+  return bd === 'Alle' ? list : list.sort((a, b) => (a[1].body[0] !== bd) - (b[1].body[0] !== bd)); // øvelser, hvor kropsdelen er den vigtigste, først
 }
 /* Sæson-vurdering: tre små søjler pr. periode og hvor tæt på kamp øvelsen kan ligge */
 function seasonRowHTML(e) {
@@ -2180,6 +2183,8 @@ function renderLibrary(force) {
   const g = ST.settings.lib, sn = ST.settings.libSeason;
   $('libSeason').innerHTML = [{ k: 'Alle', t: 'Alle' }, ...SEASONS].map(s => `<button class="seg-btn" type="button" data-lseason="${s.k}" aria-pressed="${s.k === sn}">${s.t}</button>`).join('');
   $('libSeasonLegend').innerHTML = SEASONS.map(s => `<dt>${s.t}</dt><dd>${s.d}</dd>`).join('') + `<dt>Søjlerne</dt><dd>${SEASON_FIT.slice(1).map((t, i) => `${i + 1} = ${t.toLowerCase()}`).join(', ')}. Vælger du en sæson, vises kerneøvelserne først.</dd><dt>Tæt på kamp</dt><dd>Hvor tæt på kampen øvelsen kan ligge i en normal dosis. Tunge løft og hårde spring giver ømhed, så de skal ligge tidligt i ugen.</dd>`;
+  const bd = ST.settings.libBody;
+  $('libBody').innerHTML = ['Alle', ...BODY].map(b => `<button class="chip" type="button" data-lbody="${b}" aria-pressed="${b === bd}">${b === 'Alle' ? 'Alle kropsdele' : b}</button>`).join('');
   $('libChips').innerHTML = ['Alle', 'Fav', ...BENEFITS.map(b => b.k)].map(c => `<button class="chip" type="button" data-good="${c}" aria-pressed="${c === g}">${c === 'Fav' ? `★ Favoritter${ST.favs.length ? ' · ' + ST.favs.length : ''}` : c}</button>`).join('');
   $('libEquip').innerHTML = [['Alle', 'Alt udstyr'], ['home', 'Kan laves hjemme'], ...EQUIPS.map(x => [x, x])].map(([v, t]) => `<option value="${v}" ${v === ST.settings.libEquip ? 'selected' : ''}>${t}</option>`).join('');
   $('libCat').innerHTML = CATS.map(c => `<option value="${c}" ${c === ST.settings.libCat ? 'selected' : ''}>${c === 'Alle' ? 'Alle typer' : c}</option>`).join('');
@@ -2257,7 +2262,8 @@ function openSheet(ctx) {
   d.scrollTop = 0;
 }
 function goodTagsHTML(e) {
-  return `<div class="good-row"><span class="good-lbl">Godt til</span>${e.good.map(g => `<span class="tag lime">${g}</span>`).join('')}<span class="tag eq">${esc(e.equip)}</span></div>`;
+  return `<div class="good-row"><span class="good-lbl">Godt til</span>${e.good.map(g => `<span class="tag lime">${g}</span>`).join('')}<span class="tag eq">${esc(e.equip)}</span></div>`
+    + (e.body.length ? `<div class="good-row"><span class="good-lbl">Træner</span>${e.body.map(b => `<span class="tag">${b}</span>`).join('')}</div>` : '');
 }
 function openSwap() {
   const d = $('exSheet'), c = d._ctx, o = EX[c.origEx];
@@ -2618,7 +2624,7 @@ document.addEventListener('click', e => {
   if (ds.fav) { toggleFav(ds.fav); return; }
   if (ds.addto || ds.addback || ds.addnew || ds.addpick) { addToAction(ds); return; }
   if (ds.anim) { toggleAnim(ds.anim); return; }
-  if (Object.keys(ds).some(k => /^b(ses|add|delses|pickOpen|pgood|pmore|pick|step|move|delitem|cancel|save|edit|del)$/.test(k))) { builderAction(ds); return; }
+  if (Object.keys(ds).some(k => /^b(ses|add|delses|pickOpen|pgood|pbody|pmore|pick|step|move|delitem|cancel|save|edit|del)$/.test(k))) { builderAction(ds); return; }
   if (ds.load) { loadAction(ds); return; }
   if (ds.themeSet) { setTheme(ds.themeSet); return; }
   if (t.id === 'themeBtn') { setTheme(themeNow() === 'light' ? 'dark' : 'light'); return; }
@@ -2649,6 +2655,7 @@ document.addEventListener('click', e => {
     return;
   }
   if (ds.good) { ST.settings.lib = ds.good; save(); libShown = LIB_PAGE; renderLibrary(); return; }
+  if (ds.lbody) { ST.settings.libBody = ds.lbody; save(); libShown = LIB_PAGE; renderLibrary(); return; }
   if (ds.lseason) { ST.settings.libSeason = ds.lseason; save(); libShown = LIB_PAGE; renderLibrary(); return; }
   if ('swapOpen' in ds) { openSwap(); return; }
   if ('swapBack' in ds) { openSheet(sheetCtx); return; }
@@ -2683,7 +2690,7 @@ document.addEventListener('click', e => {
       const el = $(TM.src); if (el) el.scrollIntoView({ block: 'start' });
     } break;
     case 'libMore': libShown += LIB_PAGE; renderLibList(); break;
-    case 'libReset': ST.settings.lib = 'Alle'; ST.settings.libEquip = 'Alle'; ST.settings.libCat = 'Alle'; ST.settings.libSeason = 'Alle'; libQ = ''; $('libSearch').value = ''; save(); libShown = LIB_PAGE; renderLibrary(); break;
+    case 'libReset': ST.settings.lib = 'Alle'; ST.settings.libEquip = 'Alle'; ST.settings.libCat = 'Alle'; ST.settings.libSeason = 'Alle'; ST.settings.libBody = 'Alle'; libQ = ''; $('libSearch').value = ''; save(); libShown = LIB_PAGE; renderLibrary(); break;
     case 'homeStart': startSession('home|' + homeLevel()); break;
     case 'friStart': startSession('fri'); break;
     case 'navTrain': trainNow(); break;
@@ -4759,7 +4766,7 @@ function customBlock(items, id, p, n, ad) {
   return { id, icon: 'dumbbell', title: 'Øvelser', tags: [`${its.length} øvelser`, `Pause ${p.rest} sek`], items: its, restTimer: p.rest };
 }
 
-let bDraft = null, bSes = 0, bpQ = '', bpGood = 'Alle', bpShown = 30;
+let bDraft = null, bSes = 0, bpQ = '', bpGood = 'Alle', bpBody = 'Alle', bpShown = 30;
 const newItem = id => { const e = EX[id]; return { ex: id, sets: e.log ? 3 : 2, reps: defReps(e), secs: e.secs ? Math.min(600, e.secs) : 0 }; };
 /* "Føj til eget program" fra en øvelse i biblioteket eller programmet: vælg program og pas */
 function openAddTo(exId) {
@@ -4834,6 +4841,7 @@ function openPicker() {
   d.innerHTML = `<div class="sheet-in"><div class="grab" aria-hidden="true"></div>
     <div class="sheet-top"><div><p class="today-small">${esc(bDraft.sessions[bSes].t)}</p><h3 id="sheetTitle">Tilføj øvelse</h3></div><button class="sheet-close" type="button" data-sheet-close aria-label="Luk">${ICON.close}</button></div>
     <label class="lib-search"><span class="sr-only">Søg</span><input type="search" id="bpQ" placeholder="Søg øvelse" value="${esc(bpQ)}" autocomplete="off" enterkeyhint="search"></label>
+    <div class="chips lib-body" role="group" aria-label="Kropsdel">${['Alle', ...BODY].map(b => `<button class="chip" type="button" data-bpbody="${b}" aria-pressed="${b === bpBody}">${b === 'Alle' ? 'Alle kropsdele' : b}</button>`).join('')}</div>
     <div class="chips" role="group" aria-label="Godt til">${['Alle', 'Fav', ...BENEFITS.map(b => b.k)].map(c => `<button class="chip" type="button" data-bpgood="${c}" aria-pressed="${c === bpGood}">${c === 'Fav' ? '★ Favoritter' : c}</button>`).join('')}</div>
     <ul class="items" id="bpList"></ul></div>`;
   renderPickList();
@@ -4842,8 +4850,8 @@ function openPicker() {
 }
 function renderPickList() {
   const q = bpQ.trim().toLowerCase(), have = new Set(bDraft.sessions[bSes].items.map(i => i.ex));
-  const all = Object.entries(EX).filter(([id, e]) => (bpGood === 'Alle' || (bpGood === 'Fav' ? ST.favs.includes(id) : e.good.includes(bpGood))) && (!q || `${e.name} ${e.good.join(' ')} ${e.equip}`.toLowerCase().includes(q)))
-    .sort((a, b) => ST.favs.includes(b[0]) - ST.favs.includes(a[0])), list = all.slice(0, bpShown); // favoritter først
+  const all = Object.entries(EX).filter(([id, e]) => (bpGood === 'Alle' || (bpGood === 'Fav' ? ST.favs.includes(id) : e.good.includes(bpGood))) && (bpBody === 'Alle' || e.body.includes(bpBody)) && (!q || `${e.name} ${e.good.join(' ')} ${e.body.join(' ')} ${e.equip}`.toLowerCase().includes(q)))
+    .sort((a, b) => ST.favs.includes(b[0]) - ST.favs.includes(a[0]) || (bpBody !== 'Alle' && (a[1].body[0] !== bpBody) - (b[1].body[0] !== bpBody))), list = all.slice(0, bpShown); // favoritter først, så hovedøvelser for kropsdelen
   $('bpList').innerHTML = (list.map(([id, e]) => `<li class="item${have.has(id) ? ' is-done' : ''}"><button class="item-open" type="button" data-bpick="${id}"><span class="thumb" aria-hidden="true">${thumbIllu(id)}</span><span class="item-txt"><span class="nm">${esc(e.name)}${have.has(id) ? ' · tilføjet' : ''}</span><span class="nt good">${esc(e.good.slice(0, 3).join(' · '))}</span><span class="nt">${esc(e.equip)}</span></span></button></li>`).join('') || '<li class="empty">Ingen øvelser matcher.</li>')
     + (all.length > list.length ? `<li><button class="btn btn-block" type="button" data-bpmore>Vis flere (${all.length - list.length} mere)</button></li>` : '');
 }
@@ -4854,6 +4862,7 @@ function builderAction(ds) {
   if ('bdelses' in ds) { if (s.items.length && !confirm(`Fjern ${s.t} med ${s.items.length} øvelser?`)) return; d.sessions.splice(bSes, 1); bSes = 0; renderBuilder(); return; }
   if ('bpickOpen' in ds) { bpShown = 30; bpQ = ''; openPicker(); return; }
   if ('bpmore' in ds) { bpShown += 30; renderPickList(); return; }
+  if (ds.bpbody) { bpShown = 30; bpBody = ds.bpbody; document.querySelectorAll('[data-bpbody]').forEach(b => b.setAttribute('aria-pressed', b.dataset.bpbody === bpBody)); renderPickList(); return; }
   if (ds.bpgood) { bpShown = 30; bpGood = ds.bpgood; document.querySelectorAll('[data-bpgood]').forEach(b => b.setAttribute('aria-pressed', b.dataset.bpgood === bpGood)); renderPickList(); return; }
   if (ds.bpick) {
     const e = EX[ds.bpick]; if (!e) return;

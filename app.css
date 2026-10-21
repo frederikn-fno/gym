@@ -1423,3 +1423,8 @@ details.wp[open] > summary { margin-bottom: 4px; }
 .lib-more-info .lib-season { margin-bottom: 4px; }
 .lib-how { font-size: 14px; margin: 12px 0 4px; }
 .theme-panel { padding: 10px; }
+
+/* Kropsdele: filter i biblioteket og "Træner" på øvelseskortet */
+.good-row + .good-row { margin-top: 8px; }
+.lib-bar .lib-body .chip, #exSheet .lib-body .chip { min-height: 38px; font-size: 14.5px; }
+#exSheet .lib-body { margin-top: 8px; }
