@@ -1829,7 +1829,7 @@ const AREA_OF = { squat: ['knæ', 'hofte'], hinge: ['ryg', 'baglår', 'hofte'], 
 const KEY = 'gk8-goalkeeper-v1';
 const DEF = () => ({
   week: 1, start: '', done: {}, weeksDone: [], matches: [], tests: {}, logs: [], swaps: {}, run: {}, runDate: '', coach: DEF_COACH(),
-  prog: { id: '', match: 5, days: [], ball: [0, 1, 3], doneSeen: '', seasonSeen: '', repSeen: '' }, // aktivt færdigt program ('' = Målmand 8), kampdag (−1 = ingen), træningsdage og fodbolddage (0 = mandag)
+  prog: { id: '', match: 5, days: [], ball: [0, 1, 3], doneSeen: '', seasonSeen: '', repSeen: '', useCal: true, calOv: {} }, // useCal/calOv: kampprogram fra klubben og dine rettelser (kamp/træning/ignorér) // aktivt færdigt program ('' = Målmand 8), kampdag (−1 = ingen), træningsdage og fodbolddage (0 = mandag)
   checkins: [], // dagligt tjek: { date, sleep, sore, energy } på 1–5
   loads: [], // belastning pr. pas og kamp: { id, date, min, rpe, src }
   custom: [], // egne programmer fra "Byg selv"
@@ -1889,7 +1889,8 @@ function mergeState(d) {
   out.favs = Array.isArray(d.favs) ? [...new Set(d.favs.filter(id => EX[id]))].slice(0, 200) : [];
   const pg = isObj(d.prog) ? d.prog : {}, dayList = v => Array.isArray(v) ? [...new Set(v.map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 6))].sort((a, b) => a - b) : null;
   const known = id => (PROG_BY_ID[id] && !PROG_BY_ID[id].base) || out.custom.some(c => c.id === id);
-  out.prog = { id: known(pg.id) ? pg.id : '', match: Math.round(clampNum(pg.match, -1, 6, 5)), days: dayList(pg.days) || [], ball: dayList(pg.ball) || [0, 1, 3], doneSeen: str(pg.doneSeen, 12), seasonSeen: str(pg.seasonSeen, 12), repSeen: isISO(pg.repSeen) ? pg.repSeen : '' };
+  out.prog = { id: known(pg.id) ? pg.id : '', match: Math.round(clampNum(pg.match, -1, 6, 5)), days: dayList(pg.days) || [], ball: dayList(pg.ball) || [0, 1, 3], doneSeen: str(pg.doneSeen, 12), seasonSeen: str(pg.seasonSeen, 12), repSeen: isISO(pg.repSeen) ? pg.repSeen : '', useCal: pg.useCal !== false,
+    calOv: isObj(pg.calOv) ? Object.fromEntries(Object.entries(pg.calOv).filter(([k, v]) => /^[0-9a-f]{12}$/.test(k) && ['match', 'train', 'other'].includes(v)).slice(-300)) : {} };
   const lvl = v => Math.round(clampNum(v, 1, 5, 3));
   out.checkins = (Array.isArray(d.checkins) ? d.checkins : []).filter(c => isObj(c) && isISO(c.date)).slice(-LIM.checkins).map(c => ({ date: c.date, sleep: lvl(c.sleep), sore: lvl(c.sore), energy: lvl(c.energy) }));
   out.loads = (Array.isArray(d.loads) ? d.loads : []).filter(l => isObj(l) && isISO(l.date)).slice(-LIM.loads).map((l, i) => ({ id: Math.round(clampNum(l.id, 0, 9e15, Date.now() + i)), date: l.date, min: Math.round(clampNum(l.min, 1, 300, 60)), rpe: Math.round(clampNum(l.rpe, 1, 10, 6)), src: ['pas', 'fod', 'andet'].includes(l.src) ? l.src : 'pas', ...(l.gid ? { gid: String(l.gid).slice(0, 24) } : {}), ...(l.gid && l.x ? { x: 1 } : {}) })); // gid = aktivitet fra Garmin-uret, x = slettet (hentes ikke igen)
@@ -2249,8 +2250,9 @@ const DAY_FULL = ['mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag',
 function renderFriday(force) {
   checkFriWeek();
   if (deferred('rutiner', force)) return;
-  const m = progActive() ? ST.prog.match : 5, el = $('friWhen'); // Målmand 8 har fast kamp lørdag
-  if (el) el.textContent = m >= 0 ? `Kamp ${DAY_FULL[m]}, så aktiveringen er ${DAY_FULL[(m + 6) % 7]}. Let aktivering, så du er skarp og frisk til kampen.` : 'Let aktivering dagen før en kamp, så du er skarp og frisk. Sæt din kampdag under Programmer.';
+  const m = progActive() ? ST.prog.match : 5, el = $('friWhen'), nm = clubOn() ? nextMatch() : null; // Målmand 8 har fast kamp lørdag
+  if (el && clubOn()) el.textContent = nm ? `Næste kamp: ${matchWhen(nm)}${matchName(nm) ? ' · ' + matchName(nm) : ''}. Aktiveringen er dagen før: ${DAY_FULL[(isoWd(nm.date) + 6) % 7]}. Let aktivering, så du er skarp og frisk.` : 'Ingen kampe i kampprogrammet de næste uger. Aktiveringen laves dagen før en kamp.';
+  else if (el) el.textContent = m >= 0 ? `Kamp ${DAY_FULL[m]}, så aktiveringen er ${DAY_FULL[(m + 6) % 7]}. Let aktivering, så du er skarp og frisk til kampen.` : 'Let aktivering dagen før en kamp, så du er skarp og frisk. Sæt din kampdag under Programmer.';
   $('friItems').innerHTML = FRIDAY.items.map((it, i) => itemHTML(it, `fri|${i}`)).join('');
 }
 
@@ -2259,7 +2261,7 @@ const todayISO = () => localISO(new Date());
 const homeLevel = () => ST.settings.homeLevel || (curWeek() <= 4 ? 1 : 2);
 function checkHomeDay() { const t = todayISO(); if (ST.home.date !== t) { ST.home = { date: t, done: {} }; save(); } }
 /* Datoerne i denne uge, hvor du har fodboldtræning (og derfor laver rutinen før træning) */
-function weekDates() { const d = new Date(); const mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ST.prog.ball.map(o => { const x = new Date(mon); x.setDate(mon.getDate() + o); return localISO(x); }); }
+function weekDates() { const mon = mondayISO(); return ballWds(mon).map(o => addDays(mon, o)); }
 const listDays = ds => { const n = ds.map(d => DAY_FULL[d]); return n.length > 1 ? n.slice(0, -1).join(', ') + ' og ' + n[n.length - 1] : n[0] || ''; };
 function renderHome(force) {
   checkHomeDay();
@@ -2268,8 +2270,8 @@ function renderHome(force) {
   $('homeLevels').innerHTML = [1, 2].map(n => `<button class="chip" type="button" data-homelevel="${n}" aria-pressed="${n === L}">${HOME[n].label} · ${HOME[n].weeks}${auto && n === L ? ' (auto)' : ''}</button>`).join('');
   const wd = weekDates(), n = wd.length;
   const count = wd.filter(d => ST.homeLog.includes(d)).length;
-  $('homeLead').textContent = n ? `Ingen vægte, ingen maskiner. Ca. 12 minutter ${listDays(ST.prog.ball)}, inden du tager til fodbold.` : 'Ingen vægte, ingen maskiner. Ca. 12 minutter, inden du tager til fodbold. Vælg dine fodbolddage under Program › Programmer.';
-  $('homeWeek').innerHTML = n ? `<span class="hw-txt"><b>${count} af ${n}</b> før-træninger denne uge</span><span class="hw-pills">${wd.map((d, i) => `<span class="hw-pill ${ST.homeLog.includes(d) ? 'on' : ''} ${d === todayISO() ? 'now' : ''}">${ST.homeLog.includes(d) ? ICON.check : ''}${DAY_SHORT[ST.prog.ball[i]].toUpperCase()}</span>`).join('')}</span>` : '';
+  $('homeLead').textContent = n ? `Ingen vægte, ingen maskiner. Ca. 12 minutter ${listDays(ballWds())}, inden du tager til fodbold.` : 'Ingen vægte, ingen maskiner. Ca. 12 minutter, inden du tager til fodbold. Vælg dine fodbolddage under Program › Programmer.';
+  $('homeWeek').innerHTML = n ? `<span class="hw-txt"><b>${count} af ${n}</b> før-træninger denne uge</span><span class="hw-pills">${wd.map((d, i) => `<span class="hw-pill ${ST.homeLog.includes(d) ? 'on' : ''} ${d === todayISO() ? 'now' : ''}">${ST.homeLog.includes(d) ? ICON.check : ''}${DAY_SHORT[ballWds()[i]].toUpperCase()}</span>`).join('')}</span>` : '';
   $('homeBlocks').innerHTML = lv.blocks.map(b => {
     const its = b.items.map((it, i) => itemHTML(it, `home|${L}|${b.id}|${i}`)).join('');
     return `<article class="block" id="home-${b.id}"><header class="block-head"><span class="block-ic" aria-hidden="true">${ICON[b.icon]}</span><div><h4>${b.title}</h4><div class="tags">${b.tags.map((t, i) => `<span class="tag ${i === 0 ? 'lime' : ''}">${t}</span>`).join('')}</div></div></header>
@@ -2451,7 +2453,7 @@ function openSheet(ctx) {
     <p class="ex-goal">${e.goal}</p>
     <ol class="ex-steps">${['Start', 'Bevægelse', 'Slut'].map((l, i) => `<li><b>${l}</b><span>${e.how[i]}</span></li>`).join('')}</ol>
     <ul class="ex-tips">${e.tips.map(t => `<li>${ICON.tip}<span>${t}</span></li>`).join('')}</ul>
-    ${origItem ? `<button class="btn btn-ghost btn-block" type="button" data-swap-open>${ICON.repeat}${item.swapped ? 'Skift igen eller gendan original' : 'Skift øvelse'}</button>` : ''}
+    ${origItem ? `<button class="btn btn-ghost btn-block" type="button" data-busy-open>${ICON.repeat}Optaget? Vis øvelser med andet udstyr</button><button class="btn btn-ghost btn-block" type="button" data-swap-open>${ICON.repeat}${item.swapped ? 'Skift igen eller gendan original' : 'Skift øvelse'}</button>` : ''}
     <button class="btn btn-ghost btn-block" type="button" data-addto="${exId}">${ICON.plus}Føj til eget program</button>
     <div class="m-actions">${timerBtn || ''}${doneBtn}</div></div>`;
   if (!timerBtn) d.querySelector('.m-actions').style.gridTemplateColumns = '1fr';
@@ -2798,7 +2800,7 @@ function startEditMatch(id) {
 function renderTracker() {
   if (!document.querySelector('.tracker-grid').dataset.tab) setTrackerTab('new');
   $('mWeek').innerHTML = WEEKS.map(W => `<option value="${W.n}">Uge ${W.n}</option>`).join('');
-  if (!$('mDate').value || !mDateTouched) $('mDate').value = lastSaturday();
+  if (!$('mDate').value || !mDateTouched) $('mDate').value = lastMatchDate();
   syncMatchWeek();
   if ($('mRpe') && !$('mRpe').options.length) $('mRpe').innerHTML = Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}"${i + 1 === 7 ? ' selected' : ''}>${i + 1}</option>`).join('');
   renderChart(); renderHistory(); renderMatchInsight(); renderMatchWatch(true);
@@ -2823,6 +2825,10 @@ document.addEventListener('click', e => {
   if (ds.addto || ds.addback || ds.addnew || ds.addpick) { addToAction(ds); return; }
   if (ds.anim) { toggleAnim(ds.anim); return; }
   if (ds.gm) { gmAction(ds.gm); return; }
+  if (ds.club) { clubAction(ds); return; }
+  if (ds.wx) { wxAction(ds.wx); return; }
+  if ('busyOpen' in ds) { openBusy(); return; }
+  if (ds.busyPick) { pickBusy(ds.busyPick); return; }
   if (Object.keys(ds).some(k => /^b(ses|add|delses|pickOpen|pgood|pbody|pmore|pick|step|move|delitem|cancel|save|edit|del)$/.test(k))) { builderAction(ds); return; }
   if (ds.load) { loadAction(ds); return; }
   if (ds.themeSet) { setTheme(ds.themeSet); return; }
@@ -2934,7 +2940,7 @@ $('weekNav').addEventListener('keydown', e => {
 document.addEventListener('input', e => { if (e.target.matches('#rates input[type=range]')) syncRange(e.target); });
 $('mDate').addEventListener('input', () => { mDateTouched = true; renderMatchWatch(true); });
 $('coachBody').addEventListener('input', e => { if (e.target.closest('.ctest')) updateTestLive(); });
-$('mCancel').addEventListener('click', () => { setMatchEditing(null); mDateTouched = false; $('mNote').value = ''; $('mDate').value = lastSaturday(); $('mMin').value = 90; $('mRpe').value = 7; syncMatchWeek(); });
+$('mCancel').addEventListener('click', () => { setMatchEditing(null); mDateTouched = false; $('mNote').value = ''; $('mDate').value = lastMatchDate(); $('mMin').value = 90; $('mRpe').value = 7; syncMatchWeek(); });
 /* Programstart ligger i "Din uge" under Program › Programmer og tegnes dynamisk */
 document.addEventListener('change', e => {
   if (e.target.id !== 'startDate') return;
@@ -2951,7 +2957,7 @@ $('matchForm').addEventListener('submit', e => {
   if (!editMatchId) ST.matches.push(m);
   const wasEdit = !!editMatchId;
   save(); setMatchEditing(null); mDateTouched = false;
-  $('mNote').value = ''; $('mDate').value = lastSaturday(); $('mMin').value = 90; $('mRpe').value = 7; syncMatchWeek(); renderMatchWatch(true);
+  $('mNote').value = ''; $('mDate').value = lastMatchDate(); $('mMin').value = 90; $('mRpe').value = 7; syncMatchWeek(); renderMatchWatch(true);
   renderChart(); renderHistory(); renderMatchInsight(); renderMatchCard(); updateStatus(); updateBackupNote(); toast(wasEdit ? 'Kamp opdateret' : 'Kamp gemt');
   setTrackerTab('dev'); $('page-tracker').scrollTop = 0;
 });
@@ -2965,7 +2971,7 @@ document.addEventListener('visibilitychange', () => {
   if (k !== lastDayKey) {
     lastDayKey = k;
     renderDays(); renderToday(); renderHome(); renderFriday();
-    if (!mDateTouched && !editMatchId) $('mDate').value = lastSaturday();
+    if (!mDateTouched && !editMatchId) $('mDate').value = lastMatchDate();
     updateBackupNote();
   }
 });
@@ -3177,8 +3183,18 @@ const e1RM = exId => memo('e1', exId, () => e1RMRaw(exId));
 function e1RMRaw(exId) {
   const own = e1Direct(exId); if (own) return own;
   for (const [rel, f] of E1_REL[exId] || []) { const v = e1Direct(rel); if (v) return v * f * .95; }
-  return null;
+  /* Intet beslægtet løft: skøn ud fra det løft med samme bevægelse og kropsdel, du har logget mest, omregnet efter udstyr
+     (fx håndvægte ca. 40 % af stangen pr. hånd, kabel ca. 60 %). Sat 10 % ned, så første forslag er forsigtigt. */
+  const e = EX[exId], f = e && EQ_LOAD[e.equip]; if (!f) return null;
+  let best = null;
+  Object.keys(EX).forEach(id => {
+    const x = EX[id]; if (id === exId || x.pattern !== e.pattern || x.body[0] !== e.body[0] || !EQ_LOAD[x.equip]) return;
+    const n = ST.logs.filter(l => l.ex === id && l.kg > 0).length; if (!n || (best && best.n >= n)) return;
+    const v = e1Direct(id); if (v) best = { v: v * f / EQ_LOAD[x.equip], n };
+  });
+  return best ? best.v * .9 : null;
 }
+const EQ_LOAD = { Stang: 1, Maskine: 1, Kabel: .6, Håndvægte: .4, Kettlebell: .4 }; // belastning i forhold til en stang (håndvægte og kettlebells pr. hånd)
 function e1Direct(exId) {
   let pts = e1Points(exId); if (!pts.length) return null;
   const test = pts.find(p => p.src === 'test'), logs = pts.filter(p => p.src === 'log');
@@ -3519,7 +3535,7 @@ function dayAd(ad, n, day) {
   return ta ? { ...mergeAd(ad, ta), rounds: ta.rounds, light: true } : ad;
 }
 function genProgWeek(p, n, ad) {
-  const blocks = [], ses = progSessions(p), asg = progAssign(p), Ls = Object.keys(ses).sort((a, b) => (asg[a] ?? 9) - (asg[b] ?? 9) || a.localeCompare(b));
+  const mon = progMon(n), blocks = [], ses = progSessions(p, progDays(p, mon).length), asg = progAssign(p, mon), Ls = Object.keys(ses).sort((a, b) => (asg[a] ?? 9) - (asg[b] ?? 9) || a.localeCompare(b));
   Ls.forEach(L => {
     const T = ses[L], a2 = dayAd(ad, n, asg[L]), session = { id: L, title: `Pas ${L} · ${T.t}`, light: !!a2.light };
     T.blocks.forEach((spec, k) => { const b = progBlock(spec, `${T.pre}${L}${k}`, p, n, a2); if (b) { b.session = session; blocks.push(b); } });
@@ -3528,32 +3544,40 @@ function genProgWeek(p, n, ad) {
   return { n, phase: phaseOf(n), title: `UGE ${n} · ${THEMES[n - 1]}`, desc: `${p.name}. ${Ls.length} pas om ugen.${vary}${ad.msg ? ' ' + ad.msg : ''}`, blocks, plan: true };
 }
 /* ---------- Ugeplan: kampdag og træningsdage ----------
-   Dage før kamp: 0 = kampdag, 1 = dagen før, 6 = dagen efter kamp (restitution). */
-const daysBefore = d => ST.prog.match < 0 ? null : (ST.prog.match - d + 7) % 7;
-function autoDays(n) {
-  const m = ST.prog.match;
+   Dage før kamp: 0 = kampdag, 1 = dagen før, 6 = dagen efter kamp (restitution).
+   mon = mandagen i den uge, det gælder. Med kampprogram fra klubben regnes ud fra de rigtige kampdatoer (også ugen efter),
+   ellers ud fra den faste kampdag. */
+function daysBefore(d, mon = mondayISO()) {
+  if (!clubOn()) return ST.prog.match < 0 ? null : (ST.prog.match - d + 7) % 7;
+  const iso = addDays(mon, d), ms = clubMatches(), next = ms.map(e => dayDiff(iso, e.date)).filter(x => x >= 0).sort((a, b) => a - b)[0];
+  if (next != null && next <= 1) return next;
+  if (ms.some(e => e.date === addDays(iso, -1))) return 6;
+  return next != null && next <= 5 ? next : null;
+}
+function autoDays(n, mon = mondayISO()) {
+  const ms = matchWds(mon), m = ms.length ? ms[ms.length - 1] : -1;
   if (m < 0 || seasonNow() === 'off') return [[2], [1, 3], [0, 2, 4], [0, 1, 3, 4], [0, 1, 2, 3, 4]][Math.min(5, n) - 1];
   return [[3], [4, 2], [5, 4, 2], [5, 4, 3, 2], [5, 4, 3, 2, 1]][Math.min(5, n) - 1].map(b => (m - b + 7) % 7);
 }
 /* Dine valgte træningsdage. Antallet bestemmer, hvor mange pas programmet får.
    Har du ikke valgt nogen, foreslår appen programmets normale antal dage ud fra kampdagen. */
-function progDays(p = progActive()) {
+function progDays(p = progActive(), mon = mondayISO()) {
   if (!p) return [];
-  const m = ST.prog.match, own = ST.prog.days.filter(d => d !== m).slice(0, progMaxDays(p));
-  return (own.length ? own : autoDays(progBase(p)).filter(d => d !== m)).sort((a, b) => a - b);
+  const ms = matchWds(mon), own = ST.prog.days.filter(d => !ms.includes(d)).slice(0, progMaxDays(p)); // en kamp på en træningsdag fjerner passet den uge
+  return (own.length ? own : autoDays(progBase(p), mon).filter(d => !ms.includes(d))).sort((a, b) => a - b);
 }
 /* Det tungeste pas (højst md) lægges længst fra kampen. Dagen efter kamp er restitution og får det letteste. */
-function progAssign(p = progActive()) {
+function progAssign(p = progActive(), mon = mondayISO()) {
   if (!p) return {};
-  const away = d => { const b = daysBefore(d); return b == null ? 7 - d : b === 6 ? 0.5 : b; };
-  const ds = progDays(p).sort((a, b) => away(b) - away(a) || a - b), ses = progSessions(p);
+  const away = d => { const b = daysBefore(d, mon); return b == null ? 7 - d : b === 6 ? 0.5 : b; };
+  const ds = progDays(p, mon).sort((a, b) => away(b) - away(a) || a - b), ses = progSessions(p, ds.length);
   const ls = Object.keys(ses).sort((a, b) => (ses[b].md || 0) - (ses[a].md || 0) || a.localeCompare(b));
   const out = {}; ls.forEach((L, i) => { if (i < ds.length) out[L] = ds[i]; });
   return out;
 }
 /* Advarsler, hvis et pas ligger for tæt på kampen */
 function progWarnings(p = progActive()) {
-  if (!p || ST.prog.match < 0 || seasonNow() === 'off') return [];
+  if (!p || !matchWds().length || seasonNow() === 'off') return [];
   const asg = progAssign(p), ses = progSessions(p);
   return Object.entries(asg).filter(([L, d]) => { const b = daysBefore(d); return b != null && b < (ses[L].md || 0); })
     .map(([L, d]) => `Pas ${L} (${ses[L].t.toLowerCase()}) ligger ${daysBefore(d) === 0 ? 'på kampdagen' : daysBefore(d) === 1 ? 'dagen før kamp' : daysBefore(d) + ' dage før kamp'}. Det bør ligge mindst ${ses[L].md} dage før.`);
@@ -3867,20 +3891,24 @@ function weekPlanHTML() {
   const adapt = !p || days.length === n ? ''
     : days.length < n ? `<p class="notice">Programmet er lavet til ${n} dage. Med ${days.length} ${days.length === 1 ? 'dag samles det hele i ét helkropspas' : 'dage slås de lettere pas sammen'}: hovedløftene bevares, og der er færre ekstraøvelser.</p>`
     : `<p class="notice">Programmet er lavet til ${n} dage. Ekstra pas: ${Object.entries(ses).filter(([, T]) => T.extra).map(([L, T]) => `Pas ${L} · ${T.t.toLowerCase()}`).join(', ')}.</p>`;
+  const mw = matchWds(), bw = ballWds();
   const cell = i => { const L = Object.keys(asg).find(k => asg[k] === i), b = daysBefore(i);
-    const t = L ? `Pas ${L}` : i === m ? 'Kamp' : seasonNow() === 'in' && b === 1 ? 'Akt' : ST.prog.ball.includes(i) ? 'Fod' : 'Hvile';
-    return `<li class="${L ? 'fit' : i === m ? 'match' : ''}"><small>${DAY_SHORT[i]}</small><b>${t}</b></li>`; };
+    const t = L ? `Pas ${L}` : mw.includes(i) ? 'Kamp' : (seasonNow() === 'in' || clubOn()) && b === 1 ? 'Akt' : bw.includes(i) ? 'Fod' : 'Hvile';
+    return `<li class="${L ? 'fit' : mw.includes(i) ? 'match' : ''}"><small>${DAY_SHORT[i]}</small><b>${t}</b></li>`; };
   /* Foldet sammen til én linje: indstillingerne ændres sjældent, programlisten er det, man kommer for.
      Antallet af træningsdage følger af de valgte dage (højst programmets maks). */
   const dl = a => a.map(i => DAY_SHORT[i]).join(', ') || 'ingen';
-  const sum = `Kamp ${m < 0 ? 'ingen' : DAY_SHORT[m]} · Fodbold ${dl(ST.prog.ball)}${p ? ` · Træning ${dl(days)}` : ''}`;
+  const nm = clubOn() ? nextMatch() : null;
+  const sum = clubOn() ? `Kampprogram fra klubben · næste kamp ${nm ? matchWhen(nm) : 'ingen'}${p ? ` · Træning denne uge ${dl(days)}` : ''}` : `Kamp ${m < 0 ? 'ingen' : DAY_SHORT[m]} · Fodbold ${dl(ST.prog.ball)}${p ? ` · Træning ${dl(days)}` : ''}`;
   return `<details class="panel wp"${wpOpen ? ' open' : ''}><summary><span class="wp-sum"><b>Din uge</b><small>${sum}</small></span><span class="wp-edit">${wpOpen ? 'Luk' : 'Ret'}</span></summary>
-    <p class="t-sub">Kampdag</p><div class="chips wrap">${chip('data-pmatch', -1, m < 0, 'Ingen kamp')}${DAY_SHORT.map((d, i) => chip('data-pmatch', i, m === i, d)).join('')}</div>
+    <div class="club">${clubHTML()}</div>
+    <p class="t-sub">${clubOn() ? 'Fast kampdag <span class="muted">· bruges kun uden kampprogram</span>' : 'Kampdag'}</p><div class="chips wrap">${chip('data-pmatch', -1, m < 0, 'Ingen kamp')}${DAY_SHORT.map((d, i) => chip('data-pmatch', i, m === i, d)).join('')}</div>
     <p class="t-sub">Fodboldtræning</p>${row('data-pball', i => ST.prog.ball.includes(i))}
     ${p ? `<p class="t-sub">Træningsdage <span class="muted">· normalt ${n}, højst ${progMaxDays(p)}</span></p>${row('data-pday', i => days.includes(i))}
       <ol class="wp-days" aria-label="Din uge">${DAY_SHORT.map((_, i) => cell(i)).join('')}</ol>
       <p class="muted">${seasonNow() === 'in' ? 'Det tunge pas lægges længst fra kampen og det hurtige tættere på. Dagen før kamp er let aktivering.' : 'Ingen kampe: passene fordeles jævnt over ugen.'}</p>
-      ${adapt}` : `<p class="muted" style="margin-top:12px">${planOn() ? 'Dit tilpassede program har sine træningsdage under Min form.' : 'Målmand 8 har en fast uge: fitness onsdag, aktivering fredag og kamp lørdag. Din kampdag bruges, når du vælger et af de andre programmer.'}</p>`}</details>
+      ${adapt}` : `<p class="muted" style="margin-top:12px">${planOn() ? 'Dit tilpassede program har sine træningsdage under Min form.' : clubOn() ? 'Målmand 8: fitness onsdag. Kamp og aktivering følger kampprogrammet.' : 'Målmand 8 har en fast uge: fitness onsdag, aktivering fredag og kamp lørdag. Din kampdag bruges, når du vælger et af de andre programmer.'}</p>`}
+    ${wxHomeHTML()}</details>
     ${p ? progWarnings(p).map(w => `<p class="notice warn">${esc(w)}</p>`).join('') : ''}`;
 }
 function renderProgrammer() {
@@ -4021,16 +4049,22 @@ function renderDoneCard() {
 const matchDayIdx = () => progActive() ? ST.prog.match : 5;
 function renderMatchCard() {
   const el = $('matchCard'); if (!el) return;
-  const m = matchDayIdx(), idx = (new Date().getDay() + 6) % 7, yISO = addDays(todayISO(), -1);
-  if (m < 0 || seasonNow() !== 'in') { el.innerHTML = ''; return; }
+  const t = todayISO(), yISO = addDays(t, -1), tom = addDays(t, 1);
+  if (!clubOn() && (matchDayIdx() < 0 || seasonNow() !== 'in')) { el.innerHTML = ''; return; }
   let h = '';
-  if (idx === (m + 1) % 7) {
+  if (isMatchOn(yISO) && !isMatchOn(t)) {
     const a = GM.pass ? gmMatchAct(yISO) : null;
     if (!ST.matches.some(x => x.date === yISO)) h += `<button class="coach-row match-row" type="button" data-go="tracker" data-seg-open="new" data-mdate="${yISO}"><span class="cm-ic">${ICON.chart}</span><span class="cr-t"><b>Hvordan gik kampen?</b><small>${a ? `Uret har kampen (${a.min} min). Minutter og RPE er udfyldt, så du giver kun dine vurderinger.` : 'Registrér gårsdagens kamp. Det tager 30 sekunder og viser, hvordan træningen virker.'}</small></span><span class="lr-go">${ICON.chev}</span></button>`;
     h += matchRecoveryHTML(yISO);
-  } else if (idx === (m + 6) % 7) h += matchPrepHTML(false);
-  else if (idx === m) h += matchPrepHTML(true);
+  }
+  if (isMatchOn(t)) h += matchPrepHTML(true, matchOn(t));
+  else if (isMatchOn(tom)) h += matchPrepHTML(false, matchOn(tom));
+  else if (isMatchOn(addDays(t, 2))) { // to nætter før: sov godt allerede i aften
+    const m = matchOn(addDays(t, 2)), [b] = sleepRowTxt(m, 2);
+    h += `<div class="coach-row sleep-row"><span class="cm-ic">${ICON.moon}</span><span class="cr-t"><b>Kamp i overmorgen${/^\d\d:\d\d$/.test(m.time) ? ' kl. ' + m.time.replace(':', '.') : ''}</b><small>${esc(b)} i aften. Søvnen to nætter før tæller lige så meget som natten før.</small></span></div>`;
+  }
   el.innerHTML = h;
+  renderMatchWeather();
 }
 /* Første gang: vis et kort på forsiden, der hjælper med at vælge program */
 function renderStartCard() {
@@ -4055,16 +4089,16 @@ function planDays() {
 }
 const homeDaysSel = () => (ST.coach.homeDays || []).filter(d => !planDays().includes(d));
 /* Antal vægtdage styrer, hvilke pas der bruges: 1 dag giver det mest alsidige pas, 2 dage de to første */
-function gymSessions() {
-  const p = progActive(); if (p) return Object.keys(progSessions(p));
+function gymSessions(mon = mondayISO()) {
+  const p = progActive(); if (p) return Object.keys(progSessions(p, progDays(p, mon).length));
   const G = GOALS[ST.coach.goal]; if (!G) return [];
   const n = planDays().length, all = G.sessions;
   if (n >= all.length) return all;
   if (n === 1) return all.length >= 3 ? [all[all.length - 1]] : [all[0]];
   return all.slice(0, n);
 }
-function sessionDay(L) {
-  if (progActive()) return progAssign()[L] ?? null;
+function sessionDay(L, mon = mondayISO()) {
+  if (progActive()) return progAssign(undefined, mon)[L] ?? null;
   const k = gymSessions().indexOf(L), d = planDays();
   return k >= 0 && k < d.length ? d[k] : null;
 }
@@ -4089,16 +4123,20 @@ function nextOpenSession() {
   return { L: upcoming.L, title: sessionTitle(n, upcoming.L), day: upcoming.day, n };
 }
 /* Dagens type i et færdigt program: pas, kamp, aktivering dagen før kamp, fodbold eller hvile */
-function progDayKind(i) {
-  if (gymSessions().some(L => sessionDay(L) === i)) return 'fit';
-  const m = ST.prog.match;
-  if (m >= 0 && seasonNow() === 'in') { if (i === m) return 'match'; if (i === (m + 6) % 7) return 'fri'; }
-  return ST.prog.ball.includes(i) ? 'ball' : 'off';
+function progDayKind(i, mon = mondayISO()) {
+  if (gymSessions(mon).some(L => sessionDay(L, mon) === i)) return 'fit';
+  if (seasonNow() === 'in' || clubOn()) { if (matchWds(mon).includes(i)) return 'match'; if (daysBefore(i, mon) === 1) return 'fri'; }
+  return ballWds(mon).includes(i) ? 'ball' : 'off';
 }
+const DAY_KIND = { match: { label: 'Kamp', icon: 'glove' }, fri: { label: 'Aktivering', icon: 'bolt' }, ball: { label: 'Fodbold', icon: 'ball' }, off: { label: 'Fri', icon: 'moon' } };
 /* Hvad en ugedag er. Færdige programmer følger din ugeplan. Målmand 8 har fast fitness, aktivering og kamp,
    men fodbolddagene følger altid det, du har valgt. */
 function dayOf(i) {
   if (progActive()) return { ...DAYS[i], kind: progDayKind(i) };
+  if (clubOn()) { // Målmand 8 med kampprogram: fitness onsdag, resten følger klubbens kalender
+    const d = DAYS[i], k = matchWds().includes(i) ? 'match' : d.kind === 'fit' ? 'fit' : daysBefore(i) === 1 ? 'fri' : ballWds().includes(i) ? 'ball' : 'off';
+    return k === d.kind ? d : { ...d, kind: k, ...DAY_KIND[k] };
+  }
   const d = DAYS[i], ball = ST.prog.ball.includes(i);
   if (d.kind === 'ball' && !ball) return { ...d, kind: 'off', label: 'Fri', icon: 'moon' };
   if (d.kind === 'off' && ball) return { ...d, kind: 'ball', label: 'Fodbold', icon: 'ball' };
@@ -4136,7 +4174,7 @@ function renderToday() {
       case 'off': big = 'Fri'; text = 'Restitution. Sov godt, spis godt. ' + (planOn() ? nextSessionTxt() : 'Næste fitnesspas er onsdag.'); btn = 'Se programmet'; target = 'program'; break;
       default:
         big = 'Fodbold';
-        text = (planOn() ? nextSessionTxt() : idx === 1 ? `I morgen er det fitness: uge ${n}.` : idx === 3 ? 'Kamp lørdag. I morgen: let aktivering.' : 'Næste fitnesspas er onsdag.') + ' Lav hjemmerutinen inden træning: ca. 12 min uden udstyr.';
+        text = (planOn() ? nextSessionTxt() : idx === 1 ? `I morgen er det fitness: uge ${n}.` : clubOn() ? (nextMatch() ? `Næste kamp: ${matchWhen(nextMatch())}.` : 'Ingen kampe i kampprogrammet de næste uger.') : idx === 3 ? 'Kamp lørdag. I morgen: let aktivering.' : 'Næste fitnesspas er onsdag.') + ' Lav hjemmerutinen inden træning: ca. 12 min uden udstyr.';
         btn = 'Før træning · hjemme'; target = 'hjemme';
     }
     if (!act) act = `data-go="${target}"`;
@@ -4325,8 +4363,9 @@ function setStepHTML(st) {
     ${canLog ? `<div class="s-inputs"><div class="s-in"><span>Vægt (kg)</span>${stepperHTML('sKg', SES.in.kg === '' ? '' : fmtNum(SES.in.kg), 'kg-', 'kg+', 'Vægt i kg', '0')}</div>
       <div class="s-in"><span>Gentagelser</span>${stepperHTML('sReps', SES.in.reps === '' ? '' : fmtNum(SES.in.reps), 'reps-', 'reps+', 'Gentagelser', '0')}</div>
       <div class="s-in"><span>RPE (hvor hårdt)</span><div class="chips rpe-chips" role="group" aria-label="RPE">${[6, 7, 8, 9, 10].map(v => `<button class="chip" type="button" data-ses="rpe" data-v="${v}" aria-pressed="${SES.in.rpe === v}">${v}</button>`).join('')}</div></div></div>` : ''}
+    ${SES.busy === st.ctx ? `<div class="s-alts" role="group" aria-label="Alternativer med andet udstyr"><p class="t-sub">Optaget? Samme bevægelse med andet udstyr</p>${busyListHTML(st.ctx, st.b.items[st.i], it, 'data-ses="busypick" data-v')}</div>` : ''}
     <div class="s-dock"><button class="btn btn-lime btn-block s-main" type="button" data-ses="save">${canLog ? 'Gem sæt' : 'Sæt gjort'}</button>
-    <div class="s-sec"><button class="btn btn-ghost" type="button" data-ses="skip">Spring over</button><button class="btn btn-ghost" type="button" data-open="${st.ctx}">Se øvelsen</button></div></div>`;
+    <div class="s-sec s-sec3"><button class="btn btn-ghost" type="button" data-ses="skip">Spring over</button><button class="btn btn-ghost" type="button" data-ses="busy" aria-pressed="${SES.busy === st.ctx}">Optaget?</button><button class="btn btn-ghost" type="button" data-open="${st.ctx}">Se øvelsen</button></div></div>`;
 }
 function blockStepHTML(st) {
   const b = st.b, rows = b.items.map((it0, i) => { if (!it0.ex) return ''; const it = resolveItem(it0, st.ictx(i)); return `<li class="s-row"><span class="thumb" aria-hidden="true">${thumbIllu(it.ex)}</span><span><b>${it.name || EX[it.ex].name}</b><small>${esc(it.dose)}</small></span></li>`; }).join('');
@@ -4411,7 +4450,9 @@ function sesAction(a, ds) {
     case 'reps-': case 'reps+': bump('sReps', a === 'reps+' ? 1 : -1); break;
     case 'rpe': SES.in.rpe = SES.in.rpe === +ds.v ? 0 : +ds.v; document.querySelectorAll('[data-ses=rpe]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.v === SES.in.rpe)); break;
     case 'save': sesSave(); break;
-    case 'skip': SES.i++; SES.in = null; renderSession(); break;
+    case 'skip': SES.i++; SES.in = null; SES.busy = null; renderSession(); break;
+    case 'busy': SES.busy = SES.busy === st.ctx ? null : st.ctx; renderSession(); if (SES.busy) { const a = document.querySelector('.s-alts'); if (a) a.scrollIntoView({ block: 'nearest' }); } break;
+    case 'busypick': { setBusy(st.ctx, ds.v, st.b.items[st.i].ex); SES.busy = null; SES.in = null; renderSession(); break; }
     case 'skiprest': tReset(); SES.resting = false; renderSession(); break;
     case 'rest30': if (TM.src === 'session' && curSeg()) { TM.left += 30; curSeg().secs += 30; tRender(); } break;
     case 'timer': startProgramTimer(`${SES.title} · ${st.b.title}`, swappedSegs(st.b, st.base), 'session', false, blockCtxs(st.base, st.b.items)); break;
@@ -4737,6 +4778,7 @@ function saveProfileFields() {
   if (kg !== '' && kg !== curWeight()) pushWeight(kg, c.bf);
 }
 document.addEventListener('change', e => { if (e.target.id && /^cp(Sex|Birth|Height|Weight|Bf|TKg|TBf)$/.test(e.target.id)) { saveProfileFields(); save(); } });
+document.addEventListener('change', e => { if (e.target.matches('[data-clubuse]')) { ST.prog.useCal = e.target.checked; save(); clubChanged(); toast(ST.prog.useCal ? 'Kampprogrammet bruges' : 'Den faste kampdag bruges'); } });
 document.addEventListener('change', e => { if (e.target.matches('[data-gmauto]')) { GM.auto = e.target.checked; gmSave(); toast(GM.auto ? 'Nye pas sendes automatisk' : 'Automatisk afsendelse slået fra'); } });
 function afterCoachChange() { if (planOn()) refreshPlan(); else { updateStatus(); renderCoach(); renderCoachCard(); } }
 
@@ -4829,16 +4871,15 @@ function calendarEvents() {
     const wd = (new Date(iso + 'T12:00:00').getDay() + 6) % 7, n = weekOf(iso), W = WEEKS[n - 1];
     const exList = blocks => blocks.flatMap(b => b.items.filter(i => i.ex).map(i => `${EX[i.ex].name}: ${String(i.dose).replace(/^× /, '')}`)).join('\n');
     if (planOn()) {
-      gymSessions().filter(L => sessionDay(L) === wd).forEach(L => {
+      const mon = mondayOf(iso);
+      gymSessions(mon).filter(L => sessionDay(L, mon) === wd).forEach(L => {
         const bl = W.blocks.filter(b => b.session && b.session.id === L), t = bl.length ? bl[0].session.title : `Pas ${L}`;
         ev.push({ uid: `${iso}-pas-${L}`, date: iso, time: s.calTime, min: p ? p.mins : 60, title: `${t} · uge ${n}`, desc: `${p ? p.name : 'Tilpasset program'}, uge ${n}.\n\n${exList(bl)}\n\nÅbn appen og tryk Træn for at starte passet.` });
       });
     } else if (DAYS[wd].kind === 'fit') ev.push({ uid: `${iso}-fit`, date: iso, time: s.calTime, min: 60, title: `Målmand 8 · fitness uge ${n}`, desc: `${W.title}.\n\n${exList(W.blocks)}` });
-    const m = matchDayIdx();
-    if (m >= 0 && seasonNow() === 'in') {
-      if (wd === (m + 6) % 7) ev.push({ uid: `${iso}-akt`, date: iso, time: s.calTime, min: 15, title: 'Aktivering før kamp', desc: 'Let aktivering, ca. 10 min. Du skal føle dig frisk bagefter. Se Rutiner › Før kamp i appen.' });
-      if (wd === m) ev.push({ uid: `${iso}-kamp`, date: iso, time: s.calMatchTime, min: 105, title: 'Kamp', desc: 'Husk at registrere kampen i appen bagefter (30 sek).' });
-    }
+    if (isMatchOn(addDays(iso, 1)) && !isMatchOn(iso)) ev.push({ uid: `${iso}-akt`, date: iso, time: s.calTime, min: 15, title: 'Aktivering før kamp', desc: 'Let aktivering, ca. 10 min. Du skal føle dig frisk bagefter. Se Rutiner › Før kamp i appen.' });
+    const mt = matchOn(iso); // med kampprogram står kampene allerede i klubbens kalender, så kun aktiveringen lægges ind
+    if (mt && !clubOn()) ev.push({ uid: `${iso}-kamp`, date: iso, time: s.calMatchTime, min: 105, title: 'Kamp', desc: 'Husk at registrere kampen i appen bagefter (30 sek).' });
   }
   return ev;
 }
@@ -5314,7 +5355,9 @@ function gmApply() {
   const sets = gmImportSets(acts), kg = gmImportWeights();
   if (added || changed || sets || kg) { ST.loads = ST.loads.slice(-LIM.loads); save(); }
   updateStatus(); // hvilepuls og HRV indgår i statussen
-  if (planOn()) rebuildWeeks(); // urets restitution kan gøre dagens pas lettere
+  if (planOn()) rebuildWeeks(); // urets restitution og kampprogrammet kan ændre ugen
+  if (GM.data && Array.isArray(GM.data.cal) && GM.data.cal.length) GM.club = true;
+  renderFriday(); renderMatchCard(); renderWeekSummary();
   if (!todayCheck() && (!chkDraft || chkDraft.fromG || !Object.keys(chkDraft).length)) chkDraft = null; // nyt forslag, hvis du ikke selv har trykket
   renderToday(); renderGarminPanel(); renderWeek(); if (curPage === 'coach') renderCoach();
   if (sets) toast(`${sets} sæt fra uret er logget`);
@@ -5409,7 +5452,7 @@ function gmPlanWorkouts() {
   const out = [], today = todayISO(), mon = mondayISO(), cw = curWeek();
   for (let k = 0; k < 2 && cw + k <= 8; k++) {
     const n = cw + k, W = WEEKS[n - 1]; if (!W) continue;
-    const ses = planOn() ? gymSessions().map(L => ({ L, day: sessionDay(L) })).filter(s => s.day != null) : [{ L: '', day: DAYS.findIndex(d => d.kind === 'fit') }];
+    const wMon = addDays(mon, 7 * k), ses = planOn() ? gymSessions(wMon).map(L => ({ L, day: sessionDay(L, wMon) })).filter(s => s.day != null) : [{ L: '', day: DAYS.findIndex(d => d.kind === 'fit') }];
     ses.forEach(({ L, day }) => {
       const date = addDays(mon, 7 * k + day); if (date < today) return;
       const steps = W.blocks.filter(b => !b.link && (!L || (b.session && b.session.id === L))).flatMap(b => gmBlockSteps(b, `week|${n}|${b.id}`));
@@ -5437,12 +5480,17 @@ async function gmRefresh() {
   const before = GM.data && GM.data.updated;
   try { await ghPut('garmin/refresh.json', JSON.stringify({ at: new Date().toISOString() }), 'Hent data fra uret'); }
   catch (e) { toast(e.message || 'Kunne ikke starte hentningen'); return; }
-  gmWaiting = Date.now(); renderGarminPanel(); toast('GitHub henter nye data fra Garmin. Det tager 1–3 minutter.');
+  return gmAwait(() => GM.data.updated !== before, 'GitHub henter nye data fra Garmin. Det tager 1–3 minutter.', 'Nye data fra uret');
+}
+/* Spørger hvert 20. sekund i op til 5 minutter, til test() er sand (fx nye data efter en kørsel af workflowet) */
+async function gmAwait(test, start, done) {
+  gmWaiting = Date.now(); renderGarminPanel(); toast(start);
   while (Date.now() - gmWaiting < 5 * 60e3) {
     await new Promise(r => setTimeout(r, 20e3));
-    if (await gmFetch(true) && GM.data.updated !== before) { gmWaiting = 0; renderGarminPanel(); renderGarminCard(); toast('Nye data fra uret'); return; }
+    if (await gmFetch(true) && test()) { gmWaiting = 0; renderGarminPanel(); renderGarminCard(); clubChanged(); toast(done); return true; }
   }
   gmWaiting = 0; renderGarminPanel(); toast('Ingen nye data endnu. Se Actions › Garmin på GitHub.');
+  return false;
 }
 async function gmSend(auto) {
   const ws = gmPlanWorkouts(); if (!ws.length) { if (!auto) toast('Ingen kommende pas at sende'); return; }
@@ -5629,19 +5677,17 @@ function matchProfileHTML(date) {
   return a ? `<div class="hist-watch"><small>${ICON.watch}${esc(actLine(a))}</small>${zoneBarHTML(a.zones)}</div>` : '';
 }
 /* Forsiden: kort dagen før kamp, på kampdagen og dagen efter */
-function matchPrepHTML(today) {
+function matchPrepHTML(today, m) {
   const rows = [], d = gmDay(todayISO()), ls = loadStats();
-  if (GM.pass) {
-    const sl = gmRecent(3).map(x => gmNum(x.sleepMin)).filter(Boolean);
-    if (today) { if (d && gmNum(d.sleepMin)) rows.push(['moon', `Søvn i nat: ${fmtHM(d.sleepMin)}${gmNum(d.sleepScore) ? ` · score ${d.sleepScore}` : ''}`, d.sleepMin >= 450 ? 'Godt udgangspunkt.' : 'Lidt kort. En kort lur (20 min) før kampen kan hjælpe.']); }
-    else rows.push(['moon', 'Sov 8–9 timer i nat', sl.length ? `Snit de sidste nætter: ${fmtHM(Math.round(avg(sl)))}.` : 'Gå tidligt i seng, og drop skærmen den sidste halve time.']);
-    const sc = gmScore(); if (sc) rows.push(['gauge', `Parathed: ${sc.score} · ${SCORE_TXT[sc.level].toLowerCase()}`, sc.level === 'low' ? 'Hold resten af dagen helt rolig, og spis og drik godt.' : 'Du er klar.']);
-  }
+  if (today) { if (GM.pass && d && gmNum(d.sleepMin)) rows.push(['moon', `Søvn i nat: ${fmtHM(d.sleepMin)}${gmNum(d.sleepScore) ? ` · score ${d.sleepScore}` : ''}`, d.sleepMin >= 450 ? 'Godt udgangspunkt.' : 'Lidt kort. En kort lur (20 min) før kampen kan hjælpe.']); }
+  else { const [b, s] = sleepRowTxt(m, 1); rows.push(['moon', b, s + ' Drop skærmen den sidste halve time.']); }
+  if (GM.pass) { const sc = gmScore(); if (sc) rows.push(['gauge', `Parathed: ${sc.score} · ${SCORE_TXT[sc.level].toLowerCase()}`, sc.level === 'low' ? 'Hold resten af dagen helt rolig, og spis og drik godt.' : 'Du er klar.']); }
   if (ls && ls.zone) rows.push(['pulse', `Ugens belastning: ${ZONE[ls.zone][0].toLowerCase()}`, ls.zone === 'low' ? 'Lettere uge end normalt. Godt før en kamp.' : ls.zone === 'ok' ? 'Normal uge.' : 'Hård uge. Hold det helt let indtil kampen.']);
   if (!today) rows.push(['bolt', 'Let aktivering i dag', 'Ca. 10 min. Du skal føle dig frisk bagefter.']);
   else rows.push(['ball', 'Efter kampen', GM.pass ? 'Uret henter kampen, så minutter og RPE er udfyldt, når du registrerer den.' : 'Registrér kampen bagefter. Det tager 30 sekunder.']);
-  return `<div class="panel match-prep"><p class="eyebrow">${today ? 'Kampdag' : 'Kamp i morgen'}</p><h3>${today ? 'Gør dig klar til kampen' : 'Forbered dig i dag'}</h3>
-    <ul class="mp-list">${rows.map(([ic, b, s]) => `<li><span class="mp-ic" aria-hidden="true">${ICON[ic]}</span><span><b>${esc(b)}</b><small>${esc(s)}</small></span></li>`).join('')}</ul>
+  const when = m && /^\d\d:\d\d$/.test(m.time) ? ' kl. ' + m.time.replace(':', '.') : '', vs = matchName(m);
+  return `<div class="panel match-prep"><p class="eyebrow">${today ? 'Kampdag' : 'Kamp i morgen'}${when}</p><h3>${vs ? esc(vs) : today ? 'Gør dig klar til kampen' : 'Forbered dig i dag'}</h3>
+    <ul class="mp-list">${rows.map(([ic, b, s]) => `<li><span class="mp-ic" aria-hidden="true">${ICON[ic]}</span><span><b>${esc(b)}</b><small>${esc(s)}</small></span></li>`).join('')}<li class="mp-wx" id="mpWx" data-date="${m ? m.date : ''}"><span class="mp-ic" aria-hidden="true">${ICON.sun}</span><span><b>Vejret</b><small>Henter vejrudsigten …</small></span></li></ul>
     ${today ? '' : '<button class="btn btn-block" type="button" data-go="kampklar">Åbn aktiveringen</button>'}</div>`;
 }
 function matchRecoveryHTML(yISO) {
@@ -5701,7 +5747,7 @@ function weekReport(mon) {
   const n = curWeek() - Math.round((daysSince(mon) - daysSince(mondayISO())) / 7);
   let ses = null;
   if (n >= 1 && n <= 8 && WEEKS[n - 1]) {
-    if (planOn()) { const gs = gymSessions(); ses = { done: gs.filter(L => { const s = sessionStats(n, L); return s.total && s.done >= s.total; }).length, total: gs.length }; }
+    if (planOn()) { const gs = gymSessions(mon); ses = { done: gs.filter(L => { const s = sessionStats(n, L); return s.total && s.done >= s.total; }).length, total: gs.length }; }
     else { const s = weekStats(n); ses = { done: s.total && s.done >= s.total ? 1 : 0, total: 1 }; }
   }
   const metric = k => ({ now: m(inW, k), before: m(inP, k) });
@@ -5798,6 +5844,246 @@ async function gmAutoSend() {
   if (!gmPlanWorkouts().some(w => !sent.has(w.key))) return;
   GM.autoDay = todayISO(); gmSave();
   await gmSend(true);
+}
+
+/* ===== Kampprogram fra klubben =====
+   GitHub Action'en henter klubbens kalender (iCal fra Spond, Holdsport, DBU m.fl.) og gemmer kampe og træninger krypteret i
+   garmin/data.json som cal. Med et kampprogram følger ugen de rigtige datoer: uger uden kamp, uger med to kampe, aktivering dagen
+   før, fodboldtræningen og kampkortene. Uden kampprogram bruges den faste kampdag og fodbolddagene fra Din uge. */
+const isoWd = iso => (new Date(iso + 'T12:00:00').getDay() + 6) % 7;
+const mondayOf = iso => addDays(iso, -isoWd(iso));
+const dayDiff = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5);
+/* Mandagen i programuge n: følger programstarten, ellers den nuværende uge */
+const progMon = n => ST.start ? addDays(mondayOf(ST.start), 7 * (n - 1)) : addDays(mondayISO(), 7 * (n - curWeek()));
+const CAL_KIND = ['match', 'train', 'other'], CAL_TXT = { match: 'Kamp', train: 'Træning', other: 'Ignoreres' };
+let CLUB = { data: null, ov: null, list: [] };
+function clubAll() {
+  const data = GM.pass ? GM.data : null;
+  if (CLUB.data !== data || CLUB.ov !== ST.prog.calOv) {
+    const cal = data && Array.isArray(data.cal) ? data.cal : [];
+    CLUB = { data, ov: ST.prog.calOv, list: cal.filter(e => isObj(e) && isISO(e.date) && e.uid).map(e => ({ ...e, kind: ST.prog.calOv[e.uid] || (CAL_KIND.includes(e.kind) ? e.kind : 'other') })) };
+  }
+  return CLUB.list;
+}
+const clubOn = () => ST.prog.useCal !== false && clubAll().length > 0;
+const clubMatches = () => clubAll().filter(e => e.kind === 'match');
+const clubTrains = () => clubAll().filter(e => e.kind === 'train');
+const inWeek = (e, mon) => e.date >= mon && e.date <= addDays(mon, 6);
+/* Ugedagene med kamp i ugen, der starter mandag mon */
+function matchWds(mon = mondayISO()) {
+  if (clubOn()) return [...new Set(clubMatches().filter(e => inWeek(e, mon)).map(e => isoWd(e.date)))].sort((a, b) => a - b);
+  const m = progActive() ? ST.prog.match : 5;
+  return m >= 0 ? [m] : [];
+}
+/* Ugedagene med fodboldtræning: fra kampprogrammet, hvis klubbens kalender har træninger, ellers dem, du har valgt */
+function ballWds(mon = mondayISO()) {
+  if (clubOn() && clubTrains().length) return [...new Set(clubTrains().filter(e => inWeek(e, mon)).map(e => isoWd(e.date)))].sort((a, b) => a - b);
+  return ST.prog.ball;
+}
+const isMatchOn = iso => clubOn() ? clubMatches().some(e => e.date === iso) : seasonNow() === 'in' && matchDayIdx() >= 0 && isoWd(iso) === matchDayIdx();
+const matchOn = iso => clubOn() ? clubMatches().filter(e => e.date === iso).sort((a, b) => (a.time || '99').localeCompare(b.time || '99'))[0] || null
+  : isMatchOn(iso) ? { date: iso, time: '', title: 'Kamp', loc: '' } : null;
+function nextMatch(from = todayISO()) {
+  if (clubOn()) return clubMatches().find(e => e.date >= from) || null;
+  for (let i = 0; i < 7; i++) { const d = addDays(from, i); if (isMatchOn(d)) return matchOn(d); }
+  return null;
+}
+/* Seneste kamp til kampformularen: fra kampprogrammet, ellers seneste lørdag */
+function lastMatchDate() {
+  if (clubOn()) { const p = clubMatches().filter(e => e.date <= todayISO()); if (p.length) return p[p.length - 1].date; }
+  return lastSaturday();
+}
+const matchTime = m => (m && /^\d\d:\d\d$/.test(m.time) ? m.time : ST.settings.calMatchTime);
+const matchWhen = m => `${daDate(m.date)}${m && /^\d\d:\d\d$/.test(m.time) ? ' kl. ' + m.time.replace(':', '.') : ''}`;
+const matchName = m => m && m.title && !/^kamp$/i.test(m.title) ? m.title.replace(/^kamp(\s*[:\-–]\s*|\s+)/i, '') : '';
+/* Panel i Program › Din uge */
+function clubHTML() {
+  const head = '<p class="t-sub">Kampprogram fra klubben</p>';
+  const where = '<p class="muted">Spond, Holdsport, DBU og de fleste klubkalendere kan deles som et kalenderlink (kaldes fx "Abonnér på kalender", "Kalender-feed" eller "iCal"). Kopiér linket, der starter med <b>webcal://</b> eller <b>https://</b>.</p>';
+  if (!GM.pass) return `${head}<p class="muted">Hent kampe og træninger direkte fra klubbens kalender, så ugen følger de rigtige datoer. Det bruger forbindelsen til GitHub: opsæt først Garmin-uret under Mere › Garmin-ur.</p>`;
+  const all = clubAll(), err = GM.data && GM.data.calErr;
+  if (!all.length && !GM.club) return `${head}<p class="muted">Hent kampe og træninger fra klubbens kalender, så programmet følger de rigtige kampdage, også uger uden kamp eller med to kampe.</p>${where}
+    ${GM.tok ? `<label class="field">Link til klubbens kalender<input id="clubUrl" autocomplete="off" autocapitalize="none" inputmode="url" placeholder="webcal://… eller https://…"></label><button class="btn btn-block" type="button" data-club="save">Hent kampprogrammet</button>`
+      : '<p class="muted">Kræver en GitHub-token: læg den ind under Mere › Garmin-ur › Send pas til uret.</p>'}`;
+  const up = all.filter(e => e.date >= todayISO()).slice(0, 10), m4 = clubMatches().filter(e => e.date >= todayISO() && dayDiff(todayISO(), e.date) < 28).length;
+  return `${head}<label class="gm-auto"><input type="checkbox" data-clubuse${ST.prog.useCal === false ? '' : ' checked'}><span>Brug kampprogrammet (${m4} ${m4 === 1 ? 'kamp' : 'kampe'} de næste 4 uger)</span></label>
+    ${err ? `<p class="gm-err">${esc(err)}. Det forrige kampprogram bruges.</p>` : ''}
+    ${!all.length ? '<p class="muted">Venter på kampprogrammet. Tryk "Hent nye data fra uret" under Mere › Garmin-ur om lidt.</p>' : `<p class="muted">Tryk på en begivenhed for at ændre, om den er en kamp, en træning eller skal ignoreres.</p>
+    <ul class="cal-list">${up.map(e => `<li><button class="cal-ev ${e.kind}" type="button" data-club="kind" data-uid="${esc(e.uid)}"><b>${esc(DAY_SHORT[isoWd(e.date)])} ${esc(e.date.slice(8, 10) + '/' + e.date.slice(5, 7))}${e.time ? ' · ' + esc(e.time.replace(':', '.')) : ''}</b><span>${esc(e.title || '–')}</span><em>${CAL_TXT[e.kind]}</em></button></li>`).join('') || '<li class="muted">Ingen kommende begivenheder.</li>'}</ul>`}
+    <div class="foot-actions">${GM.tok ? '<button class="btn btn-ghost btn-sm" type="button" data-club="change">Skift link</button><button class="btn btn-ghost btn-sm" type="button" data-club="remove">Fjern kampprogrammet</button>' : ''}</div>
+    ${GM.clubEdit ? `<label class="field">Nyt link<input id="clubUrl" autocomplete="off" autocapitalize="none" inputmode="url" placeholder="webcal://… eller https://…"></label><button class="btn btn-block" type="button" data-club="save">Gem linket</button>` : ''}`;
+}
+/* Linket krypteres med samme adgangskode som urdataene og gemmes som garmin/club.json. Det starter hentningen. */
+async function clubAction(ds) {
+  const a = ds.club;
+  if (a === 'kind') {
+    const e = clubAll().find(x => x.uid === ds.uid); if (!e) return;
+    const next = CAL_KIND[(CAL_KIND.indexOf(e.kind) + 1) % CAL_KIND.length], ov = { ...ST.prog.calOv };
+    const orig = ((GM.data.cal || []).find(x => x.uid === e.uid) || {}).kind;
+    if (next === orig) delete ov[e.uid]; else ov[e.uid] = next;
+    ST.prog.calOv = ov; save(); clubChanged(); return;
+  }
+  if (a === 'change') { GM.clubEdit = !GM.clubEdit; renderProgrammer(); return; }
+  if (a === 'save' || a === 'remove') {
+    const url = a === 'save' ? ($('clubUrl').value || '').trim() : '';
+    if (a === 'save' && !/^(webcal|https?):\/\/\S+$/i.test(url)) { toast('Indsæt linket til kalenderen (webcal:// eller https://)'); return; }
+    if (a === 'remove' && !confirm('Fjern kampprogrammet? Appen bruger så igen den faste kampdag fra Din uge.')) return;
+    try {
+      const before = GM.data && GM.data.updated;
+      await ghPut('garmin/club.json', JSON.stringify(await gmEncrypt({ url }, GM.pass)), a === 'save' ? 'Kalender fra klubben' : 'Kalender fra klubben fjernet');
+      GM.club = a === 'save'; GM.clubEdit = false;
+      if (a === 'remove' && GM.data) { GM.data = { ...GM.data, cal: [] }; ST.prog.calOv = {}; save(); }
+      gmSave(); clubChanged();
+      if (a === 'save') gmAwait(() => GM.data.updated !== before, 'GitHub henter kampprogrammet. Det tager 1–3 minutter.', 'Kampprogrammet er hentet');
+      else toast('Kampprogrammet er fjernet');
+    } catch (e) { toast(e.message || 'Kunne ikke gemme linket'); }
+  }
+}
+function clubChanged() { refreshPlan(); renderCurrent(); renderFriday(); renderTiles(); renderMatchCard(); if (curPage === 'program' && progView === 'vaelg') renderProgrammer(); }
+
+/* ===== Sengetid før kamp =====
+   Ud fra kamptidspunktet og din søvn fra uret: hvor meget du normalt sover, og hvornår du normalt står op.
+   Natten før kamp: stå op senest 3 timer før kampen (mad og transport). Sigt efter din normale søvn + 30 min, mindst 8 timer.
+   15 minutter til at falde i søvn. Uden ur: 8 t 30 og opvågning kl. 07.30. */
+const toMin = s => { const m = /^(\d{1,2})[:.](\d{2})$/.exec(s || ''); return m ? +m[1] * 60 + +m[2] : null; };
+const clock = v => { v = ((Math.round(v / 5) * 5) % 1440 + 1440) % 1440; return `${String(Math.floor(v / 60)).padStart(2, '0')}.${String(v % 60).padStart(2, '0')}`; };
+function sleepPlan(m, night = 1) {
+  const ds = GM.pass ? gmRecent(28) : [], sl = ds.map(d => gmNum(d.sleepMin)).filter(Boolean), wk = ds.map(d => toMin(d.wake)).filter(v => v != null && v >= 240 && v <= 720);
+  const usual = sl.length >= 5 ? median(sl) : null, need = Math.max(480, Math.min(570, Math.round((usual || 480) + 30)));
+  const wakeN = wk.length >= 3 ? median(wk) : 450, kick = toMin(matchTime(m)) ?? 780;
+  const wake = night === 1 ? Math.min(wakeN, kick - 180) : wakeN;
+  return { bed: clock(wake - need - 15), wake: clock(wake), need, usual, early: night === 1 && kick - 180 < wakeN - 20, kick: clock(kick) };
+}
+function sleepRowTxt(m, night) {
+  const p = sleepPlan(m, night);
+  return [`Gå i seng senest kl. ${p.bed}`, `Sigt efter ${fmtHM(p.need)} søvn${p.usual ? ` (du sover normalt ${fmtHM(Math.round(p.usual))})` : ''}, og stå op kl. ${p.wake}${p.early ? `: tidligere end normalt, fordi kampen er kl. ${p.kick}` : ''}.`];
+}
+
+/* ===== Vejret på kampdagen (Open-Meteo: gratis, ingen nøgle) =====
+   Stedet findes ud fra kampens adresse i kampprogrammet, ellers din hjemmebane (Program › Din uge). Prognosen gemmes i 2 timer. */
+const WXK = 'gk8-wx-v1';
+let WX = { home: null, geo: {}, fc: {} };
+try { const v = JSON.parse(localStorage.getItem(WXK) || 'null'); if (isObj(v)) WX = { ...WX, ...v }; } catch (e) { }
+const wxSave = () => { try { localStorage.setItem(WXK, JSON.stringify(WX)); } catch (e) { } };
+const wxGeoBusy = {};
+function wxGeo(name) {
+  const k = name.toLowerCase();
+  if (k in WX.geo) return Promise.resolve(WX.geo[k]);
+  return wxGeoBusy[k] || (wxGeoBusy[k] = wxGeoFetch(name, k).finally(() => { delete wxGeoBusy[k]; }));
+}
+async function wxGeoFetch(name, k) {
+  const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=da&countryCode=DK`);
+  if (!r.ok) throw new Error('geo');
+  const x = ((await r.json()).results || [])[0];
+  WX.geo[k] = x ? { lat: x.latitude, lon: x.longitude, name: x.name } : null; wxSave();
+  return WX.geo[k];
+}
+async function wxPlace(loc) {
+  const parts = String(loc || '').split(',').map(s => s.replace(/\b\d{4}\b/g, '').trim()).filter(s => s.length > 2).reverse(); // "Ved Stadion 3, 4600 Køge" → Køge først
+  for (const p of parts.slice(0, 3)) { try { const g = await wxGeo(p); if (g) return g; } catch (e) { } }
+  return WX.home;
+}
+const wxBusy = {}; // samtidige opslag af samme sted deler én hentning
+function wxForecast(g) {
+  const k = `${g.lat.toFixed(2)},${g.lon.toFixed(2)}`, c = WX.fc[k];
+  if (c && Date.now() - c.at < 2 * 3600e3) return Promise.resolve(c.h);
+  return wxBusy[k] || (wxBusy[k] = wxFetch(g, k).finally(() => { delete wxBusy[k]; }));
+}
+async function wxFetch(g, k) {
+  const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${g.lat}&longitude=${g.lon}&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m,weather_code&wind_speed_unit=ms&timezone=Europe%2FCopenhagen&forecast_days=10`);
+  if (!r.ok) throw new Error('vejr');
+  const h = (await r.json()).hourly;
+  WX.fc = Object.fromEntries([...Object.entries(WX.fc).filter(([, v]) => Date.now() - v.at < 2 * 3600e3).slice(-2), [k, { at: Date.now(), h }]]); wxSave();
+  return h;
+}
+/* Vejret i kampens to timer: gennemsnitstemperatur, mest regn og mest vind */
+function wxAt(h, iso, hhmm) {
+  const i = h.time.indexOf(`${iso}T${String(Math.floor((toMin(hhmm) ?? 780) / 60)).padStart(2, '0')}:00`); if (i < 0) return null;
+  const sl = k => h[k].slice(i, i + 2).filter(v => v != null);
+  return { temp: avg(sl('temperature_2m')), feel: Math.min(...sl('apparent_temperature')), prob: Math.max(0, ...sl('precipitation_probability')), rain: sl('precipitation').reduce((a, b) => a + b, 0),
+    wind: Math.max(0, ...sl('wind_speed_10m')), gust: Math.max(0, ...sl('wind_gusts_10m')), code: h.weather_code[i] };
+}
+const WMO = c => c === 0 ? 'klart' : c <= 2 ? 'let skyet' : c === 3 ? 'overskyet' : c <= 48 ? 'tåge' : c <= 57 ? 'støvregn' : c <= 67 ? 'regn' : c <= 77 ? 'sne' : c <= 82 ? 'regnbyger' : c <= 86 ? 'snebyger' : 'torden';
+/* Råd til en målmand ud fra vejret */
+function wxAdvice(w) {
+  const out = [], wet = w.rain >= 0.3 || w.prob >= 60;
+  if (w.feel <= 3) out.push('Koldt: lange ærmer og tights, varm 5 min længere op, og hold hænderne varme mellem aktionerne');
+  else if (w.temp <= 10) out.push('Køligt: lange ærmer, og varm grundigt op');
+  else if (w.temp >= 25) out.push('Varmt: drik 0,5–1 liter ekstra i timerne før, og stil en flaske ved målet');
+  else if (w.temp >= 20) out.push('Lunt: drik godt før kampen');
+  if (wet) out.push('Regn: våd bold og glat græs. Tag ekstra handsker med, fugt latexen, og få kroppen bag bolden. Slå skud ud til siden frem for at gribe, hvis den er glat');
+  if (w.wind >= 8 || w.gust >= 14) out.push(`Blæst (${Math.round(w.wind)} m/s, stød ${Math.round(w.gust)}): høje bolde og udspark driver. Vent et øjeblik længere med at gå ud på indlæg, og spark lavt i modvind`);
+  if (w.code <= 1 && !wet) out.push('Klart vejr: tag en kasket med til lav sol');
+  if (w.code >= 95) out.push('Torden: kampen kan blive udsat');
+  return out;
+}
+/* Udfylder vejret i kampkortet (dagen før og på kampdagen) */
+async function renderMatchWeather() {
+  const el = $('mpWx'); if (!el) return;
+  const iso = el.dataset.date, m = matchOn(iso); if (!m) { el.hidden = true; return; }
+  try {
+    const g = await wxPlace(m.loc);
+    if (!g) { el.innerHTML = `<span class="mp-ic" aria-hidden="true">${ICON.sun}</span><span><b>Vejret</b><small>Skriv din hjemmebane under Program › Din uge, så vises vejret til kampen.</small></span>`; return; }
+    const w = wxAt(await wxForecast(g), iso, matchTime(m));
+    if (!w || !$('mpWx')) { el.hidden = true; return; }
+    const adv = wxAdvice(w);
+    $('mpWx').innerHTML = `<span class="mp-ic" aria-hidden="true">${ICON.sun}</span><span><b>Vejret kl. ${clock(toMin(matchTime(m)))} i ${esc(g.name)}: ${Math.round(w.temp)}° · ${WMO(w.code)}${w.prob ? ` · regn ${Math.round(w.prob)} %` : ''} · vind ${Math.round(w.wind)} m/s</b>${adv.length ? `<small>${esc(adv.join('. '))}.</small>` : '<small>Fint fodboldvejr.</small>'}</span>`;
+  } catch (e) { el.hidden = true; }
+}
+function wxHomeHTML() {
+  return `<p class="t-sub">Hjemmebane <span class="muted">· til vejret på kampdagen</span></p>
+    <div class="wx-home"><input id="wxHome" autocomplete="off" placeholder="By, fx Køge" value="${esc(WX.home ? WX.home.name : '')}" aria-label="Hjemmebane"><button class="btn btn-sm" type="button" data-wx="find">Gem</button><button class="btn btn-ghost btn-sm" type="button" data-wx="geo">Brug min placering</button></div>`;
+}
+async function wxAction(a) {
+  if (a === 'find') {
+    const q = ($('wxHome').value || '').trim(); if (!q) { WX.home = null; wxSave(); toast('Hjemmebane fjernet'); return; }
+    try { const g = await wxGeo(q); if (!g) { toast('Byen blev ikke fundet'); return; } WX.home = g; wxSave(); toast(`Hjemmebane: ${g.name}`); renderProgrammer(); renderMatchCard(); }
+    catch (e) { toast('Kunne ikke slå byen op'); }
+  } else if (a === 'geo') {
+    if (!navigator.geolocation) { toast('Telefonen kan ikke dele placering'); return; }
+    navigator.geolocation.getCurrentPosition(p => { WX.home = { lat: Math.round(p.coords.latitude * 100) / 100, lon: Math.round(p.coords.longitude * 100) / 100, name: 'din placering' }; wxSave(); toast('Hjemmebane gemt'); renderProgrammer(); renderMatchCard(); },
+      () => toast('Placering blev ikke delt'), { timeout: 10000, maximumAge: 3600e3 });
+  }
+}
+
+/* ===== Optaget? =====
+   Er maskinen eller stangen optaget, foreslår appen øvelser med samme bevægelse og andet udstyr. Byttet gælder kun dette pas
+   (det tæller ikke som en vane, der ændrer programmet), og vægten følger med: fra dine egne sæt, et beslægtet løft eller et
+   skøn ud fra udstyret (se e1RMRaw). */
+function busyOptions(ctx, origEx, curEx) {
+  const o = EX[origEx], cur = EX[curEx], kind = ctx.split('|')[0], rel = id => (E1_REL[origEx] || []).some(r => r[0] === id) || (E1_REL[id] || []).some(r => r[0] === origEx);
+  const score = ([id, e]) => (e.body[0] === o.body[0] ? 8 : 0) + (rel(id) ? 4 : 0) + (lastSession(id) ? 3 : 0) + (e.log ? 2 : 0) + (ST.favs.includes(id) ? 1 : 0);
+  return Object.entries(EX).filter(([id, e]) => id !== curEx && id !== origEx && e.pattern === o.pattern && e.equip !== cur.equip && (kind === 'week' || isHomeEx(e)) && (kind !== 'fri' || !e.hard))
+    .sort((a, b) => score(b) - score(a) || a[1].name.localeCompare(b[1].name, 'da')).slice(0, 5).map(([id]) => id);
+}
+/* Dosis for et alternativ: med recept (sæt, gentagelser, % af maks) regnes vægten ud. Ellers øvelsens egen dosis. */
+const busyDose = (it0, id) => it0.rx ? rxDose(id, it0.rx) : (String(it0.dose).match(/^\d+ × /) || [''])[0] + EX[id].dose;
+function busyListHTML(ctx, it0, cur, attr) {
+  const ids = busyOptions(ctx, it0.ex, cur.ex);
+  return `${cur.ex !== it0.ex ? `<button class="s-alt orig" type="button" ${attr}="${it0.ex}">${ICON.reset}<span><b>Tilbage til ${esc(EX[it0.ex].name)}</b><small>${esc(it0.dose)}</small></span></button>` : ''}
+    ${ids.map(id => `<button class="s-alt" type="button" ${attr}="${id}"><span class="thumb" aria-hidden="true">${thumbIllu(id)}</span><span><b>${esc(EX[id].name)}</b><small>${esc(EX[id].equip)} · ${esc(busyDose(it0, id))}</small></span></button>`).join('') || '<p class="muted">Ingen alternativer med andet udstyr.</p>'}`;
+}
+function setBusy(ctx, id, orig) {
+  if (id === orig) delete ST.swaps[ctx]; else ST.swaps[ctx] = id; // ingen præference-optælling: det er et midlertidigt bytte
+  save();
+  toast(id === orig ? `Tilbage til ${EX[id].name}` : `Skiftet til ${EX[id].name}`);
+}
+function openBusy() {
+  const d = $('exSheet'), c = d._ctx, p = sheetCtx.split('|'), it0 = p[0] === 'week' ? WEEKS[+p[1] - 1].blocks.find(b => b.id === p[2]).items[+p[3]] : p[0] === 'fri' ? FRIDAY.items[+p[1]] : HOME[+p[1]].blocks.find(b => b.id === p[2]).items[+p[3]];
+  d.innerHTML = `<div class="sheet-in"><div class="grab" aria-hidden="true"></div>
+    <div class="sheet-top"><div><p class="today-small">Optaget?</p><h3 id="sheetTitle">${esc(EX[c.exId].name)}</h3></div><button class="sheet-close" type="button" data-sheet-close aria-label="Luk">${ICON.close}</button></div>
+    <p class="sec-lead">Samme bevægelse med andet udstyr. Vægten er regnet ud for dig, og byttet gælder kun dette pas.</p>
+    <div class="s-alts">${busyListHTML(sheetCtx, it0, { ex: c.exId }, 'data-busy-pick')}</div>
+    <div class="m-actions" style="grid-template-columns:1fr"><button class="btn" type="button" data-swap-back>Tilbage</button></div></div>`;
+  d._ctx = { ...c, busyOrig: it0.ex };
+  d.scrollTop = 0;
+}
+function pickBusy(id) {
+  const ctx = sheetCtx, c = $('exSheet')._ctx; if (!EX[id]) return;
+  setBusy(ctx, id, c.busyOrig);
+  const k = ctx.split('|')[0];
+  if (k === 'week') renderWeek(); else if (k === 'fri') renderFriday(); else if (k === 'home') renderHome();
+  openSheet(ctx);
 }
 
 /* ===== Start ===== */

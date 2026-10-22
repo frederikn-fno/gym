@@ -56,9 +56,33 @@ Derefter henter GitHub data automatisk kl. 08, 12 og 21 dansk tid, og appen hent
 - **Belastning:** Træning fra uret bliver lagt i belastningen som minutter × RPE. RPE skønnes ud fra Garmins Training Effect (ellers pulsen, og RPE 6 for styrketræning). Har du selv registreret det samme (en kamp, et pas eller fodbold med omtrent samme varighed), tæller urets version ikke, uanset hvilken der kom først. Under Min form › Belastning › Seneste registreringer kan du se alt og slette det, der er forkert.
 - **Kondition:** Har du ikke taget konditionstesten, bruges urets VO2max til din konditionsscore.
 - **Vægt:** Bruger du en Garmin-vægt, bliver vægten udfyldt på de dage, hvor du ikke selv har skrevet den.
-- **Min form:** 7 dages søjler for søvnscore, hvilepuls, HRV, Training Readiness, skridt og Body Battery.
+- **Parathed:** Forsiden viser én score fra 0 til 100 ud fra Training Readiness, søvn, Body Battery, HRV og hvilepuls (mod dit normale) og dit eget tjek. Tryk "Det bygger scoren på" for at se delene.
+- **Trends:** Under Min form er der grafer over 4 eller 8 uger for HRV, hvilepuls, søvn, Training Readiness, Body Battery, stress og skridt, med dit normale niveau som et bånd. `data.json` gemmer op til 120 dages historik, og de første 8 uger fyldes op lidt ad gangen.
+- **Kampdag:** Dagen før kamp, på kampdagen og dagen efter står der et kort med søvn, parathed, ugens belastning og restitution. Kampen fra uret (minutter, puls, pulszoner og din egen RPE fra uret) udfylder kampregistreringen, og pulsprofilen vises under dine kampe.
+- **Opsummering:** Når uret har et styrkepas fra i dag eller i går, viser forsiden tid, Training Effect og dine sæt med fremgang siden sidst. Den kan deles.
+- **Ugerapport:** Søndag (denne uge) og mandag (sidste uge) ligger en ugerapport på forsiden. Begge uger kan også ses under Min form.
+- **Sammenhænge:** Når der er data nok, viser Min form, hvad der påvirker din form: fx søvn de to nætter før kamp, skridt dagen før, HRV efter pas og tid i høje pulszoner.
 
 HRV og Training Readiness kræver et nyere ur (fx Forerunner 255/265/955/965, Fenix 7, Venu 3). Har dit ur dem ikke, bliver de bare ikke vist.
+
+### Kampprogram fra klubben
+
+Appen kan hente kampe og træninger fra klubbens kalender (Spond, Holdsport, DBU og de fleste andre). Så følger ugen de rigtige datoer: uger uden kamp, uger med to kampe, aktivering dagen før, fodboldtræningen, kampkortene på forsiden, kampformularen og kalenderfilen. En kamp på en af dine træningsdage fjerner passet den uge, og programmet slår passene sammen.
+
+1. Find klubbens kalenderlink. Det hedder fx "Abonnér på kalender", "Kalender-feed" eller "iCal" og starter med `webcal://` eller `https://`.
+2. Gå til **Program › Programmer › Din uge › Kampprogram fra klubben**, indsæt linket, og tryk **Hent kampprogrammet**. Det kræver GitHub-tokenen fra "Send pas til uret".
+3. Linket gemmes krypteret i `garmin/club.json`, og workflowet henter kalenderen hver gang, det henter data fra uret.
+
+Appen gætter ud fra titlen, om en begivenhed er en kamp (fx "Kamp mod …", "Hold A - Hold B", "Pokal") eller en træning. Tryk på en begivenhed for at ændre det. Du kan også lægge linket som hemmeligheden `CLUB_ICAL_URL` i stedet.
+
+### Sengetid og vejr før kamp
+
+- **Sengetid:** Dagen før kamp og to dage før står der, hvornår du senest skal i seng. Det regnes ud fra kamptidspunktet, hvor meget du normalt sover, og hvornår du normalt står op (fra uret). Natten før kamp skal du stå op senest 3 timer før kampen.
+- **Vejret:** Kampkortet viser vejret i kamptimerne fra Open-Meteo (gratis, ingen nøgle) og giver råd til en målmand ved kulde, regn, blæst og lav sol. Stedet findes ud fra kampens adresse i kampprogrammet, ellers din hjemmebane under **Din uge**.
+
+### Optaget?
+
+Er maskinen eller stangen optaget, så tryk **Optaget?** i træningstilstanden eller i øvelsen. Appen foreslår øvelser med samme bevægelse og andet udstyr, med vægten regnet ud: fra dine egne sæt, et beslægtet løft eller et skøn ud fra udstyret (fx håndvægte ca. 40 % af stangen pr. hånd). Byttet gælder kun dette pas og ændrer ikke programmet.
 
 ### Send pas til uret
 
@@ -75,7 +99,7 @@ Når du trykker **Send pas til uret**, gemmer appen passene krypteret i `garmin/
 
 **Sæt fra uret:** Laver du et sendt pas på uret, tæller uret dine sæt. Ved næste hentning logger appen dem på de rigtige øvelser i rækkefølge (gentagelser og vægt), så du ikke skal taste dem. Øvelser, du selv har logget den dag, bliver ikke rørt.
 
-Send igen, hvis du har ændret programmet, eller når en ny uge starter, så vægtene følger dine seneste sæt.
+**Automatisk:** Med "Send nye pas automatisk" slået til (standard) sender appen selv nye pas, når den henter data og der er kommende pas, som ikke er sendt, fx når en ny uge begynder. Højst én gang om dagen. Send selv igen, hvis du har ændret programmet.
 
 ### Sikkerhed
 
