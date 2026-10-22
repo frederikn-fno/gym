@@ -10,10 +10,10 @@ on:
     - cron: '0 11 * * *'   # 12 vintertid
     - cron: '0 19 * * *'   # 21 sommertid
     - cron: '0 20 * * *'   # 21 vintertid
-  # Appen gemmer garmin/plan.json, når du trykker "Send pas til uret". Så lægges passene i Garmin-kalenderen.
+  # Appen gemmer garmin/plan.json ("Send pas til uret") eller garmin/refresh.json ("Hent nye data fra uret").
   push:
     branches: [main]
-    paths: ['garmin/plan.json']
+    paths: ['garmin/plan.json', 'garmin/refresh.json']
   workflow_dispatch:
     inputs:
       mode:
@@ -64,7 +64,7 @@ jobs:
       - name: Garmin Connect
         if: steps.tid.outputs.run == 'true'
         env:
-          MODE: ${{ github.event_name == 'push' && 'send-plan' || inputs.mode || 'hent-data' }}
+          MODE: ${{ github.event_name == 'push' && (contains(github.event.head_commit.message, 'Pas til uret') && 'send-plan' || 'hent-data') || inputs.mode || 'hent-data' }}
           GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}
           GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
           GARMIN_PASSPHRASE: ${{ secrets.GARMIN_PASSPHRASE }}
