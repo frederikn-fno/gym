@@ -8,9 +8,13 @@ Scriptet skriver aldrig helbredstal i loggen, da Action-loggen er offentlig.
 """
 import base64
 import datetime as dt
+import hashlib
 import json
 import os
+import re
 import sys
+import urllib.request
+from zoneinfo import ZoneInfo
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives import hashes
@@ -25,7 +29,8 @@ ACT_DAYS = 14  # aktiviteter hentes for de sidste 14 dage (første gang 8 uger)
 ZONE_TYPES = ('soccer', 'football', 'running', 'cardio', 'hiit', 'indoor_cycling', 'cycling')
 ITER = 250_000
 ROOT = os.path.join(os.path.dirname(__file__), '..', 'garmin')
-OUT, PLAN, SENT = (os.path.join(ROOT, f) for f in ('data.json', 'plan.json', 'sent.json'))
+OUT, PLAN, SENT, CLUB = (os.path.join(ROOT, f) for f in ('data.json', 'plan.json', 'sent.json', 'club.json'))
+CPH = ZoneInfo('Europe/Copenhagen')
 FAILS = {}  # funktioner, der fejler gentagne gange (fx HRV på et ældre ur), kaldes ikke mere i denne kørsel
 
 
@@ -62,12 +67,15 @@ def day(api, iso):
     sl = (call(api, 'get_sleep_data', iso) or {}).get('dailySleepDTO') or {}
     score = ((sl.get('sleepScores') or {}).get('overall') or {}).get('value')
     secs = num(sl.get('sleepTimeSeconds'))
+    clock = lambda ms: dt.datetime.fromtimestamp(ms / 1000, dt.timezone.utc).strftime('%H:%M') if num(ms) else None  # Garmins "Local"-tider er lokal tid gemt som UTC
     hrv = (call(api, 'get_hrv_data', iso) or {}).get('hrvSummary') or {}
     tr = first(call(api, 'get_training_readiness', iso))
     return {
         'date': iso,
         'sleepScore': num(score),
         'sleepMin': round(secs / 60) if secs else None,
+        'bed': clock(sl.get('sleepStartTimestampLocal')),  # sengetid og opvågning (til appens forslag til sengetid før kamp)
+        'wake': clock(sl.get('sleepEndTimestampLocal')),
         'bbWake': num(s.get('bodyBatteryAtWakeTime')),
         'bbHigh': num(s.get('bodyBatteryHighestValue')),
         'rhr': num(s.get('restingHeartRate')),
@@ -156,6 +164,127 @@ def weights(api, start, end):
     return out
 
 
+# ---------- Kampprogram fra klubben (iCal fra Spond, Holdsport, DBU m.fl.) ----------
+# Linket ligger enten som hemmeligheden CLUB_ICAL_URL eller krypteret i garmin/club.json (gemt fra appen).
+# Begivenhederne gemmes krypteret i data.json som cal: [{uid, date, time, title, loc, kind}], kind = match, train eller other.
+CAL_PAST, CAL_AHEAD = 35, 120
+TRAIN_RE = re.compile(r'træning|training|practice|keepertræning|målmandstræning|øvetid', re.I)
+MATCH_RE = re.compile(r'kamp|match|turnering|stævne|pokal|\bcup\b|liga|serie|\bvs\.?(\s|$)|\bmod\b|\s[-–]\s', re.I)
+
+
+def club_url(passphrase):
+    url = os.environ.get('CLUB_ICAL_URL', '').strip()
+    if not url and os.path.exists(CLUB):
+        try:
+            with open(CLUB) as f:
+                url = (decrypt(json.load(f), passphrase) or {}).get('url', '').strip()
+        except Exception:
+            print('Kunne ikke låse garmin/club.json op')
+    return re.sub(r'^webcal://', 'https://', url, flags=re.I)
+
+
+def ical_text(v):
+    return re.sub(r'\\([\\,;nN])', lambda m: ' ' if m.group(1) in 'nN' else m.group(1), v).strip()
+
+
+def ical_dt(value, params):
+    """Tidspunkt i dansk tid: (dato, 'HH:MM' eller '')."""
+    v = value.strip()
+    if 'VALUE=DATE' in params.upper() or re.fullmatch(r'\d{8}', v):
+        return dt.date(int(v[:4]), int(v[4:6]), int(v[6:8])), ''
+    t = dt.datetime.strptime(v[:15], '%Y%m%dT%H%M%S')
+    if v.endswith('Z'):
+        t = t.replace(tzinfo=dt.timezone.utc)
+    else:
+        m = re.search(r'TZID=("?)([^;:"]+)\1', params)
+        try:
+            t = t.replace(tzinfo=ZoneInfo(m.group(2)) if m else CPH)
+        except Exception:
+            t = t.replace(tzinfo=CPH)
+    t = t.astimezone(CPH)
+    return t.date(), t.strftime('%H:%M')
+
+
+def ical_events(text):
+    lines = re.sub(r'\r*\n[ \t]', '', text).splitlines()  # foldede linjer samles
+    out, cur = [], None
+    for line in lines:
+        if line == 'BEGIN:VEVENT':
+            cur = {'EXDATE': []}
+        elif line == 'END:VEVENT' and cur is not None:
+            out.append(cur)
+            cur = None
+        elif cur is not None:
+            m = re.match(r'([A-Za-z-]+)((?:;[^:]*)?):(.*)', line)
+            if m:
+                name, params, value = m.group(1).upper(), m.group(2), m.group(3)
+                if name == 'EXDATE':
+                    cur['EXDATE'] += [(x, params) for x in value.split(',')]
+                else:
+                    cur[name] = (value, params)
+    return out
+
+
+def ical_dates(ev, lo, hi):
+    """Datoer for en begivenhed i perioden, med gentagelser (RRULE: DAILY og WEEKLY, INTERVAL, COUNT, UNTIL, BYDAY)."""
+    start, time = ical_dt(*ev['DTSTART'])
+    rule = dict(x.split('=', 1) for x in ev.get('RRULE', ('', ''))[0].split(';') if '=' in x)
+    if not rule:
+        return [(start, time)]
+    ex = {ical_dt(v, p)[0] for v, p in ev['EXDATE']}
+    freq, step, count = rule.get('FREQ', ''), int(rule.get('INTERVAL', '1') or 1), int(rule['COUNT']) if 'COUNT' in rule else None
+    until = ical_dt(rule['UNTIL'], '')[0] if 'UNTIL' in rule else hi
+    days = {'MO': 0, 'TU': 1, 'WE': 2, 'TH': 3, 'FR': 4, 'SA': 5, 'SU': 6}
+    byday = sorted({days[d[-2:]] for d in rule.get('BYDAY', '').split(',') if d[-2:] in days}) or [start.weekday()]
+    out, n, d = [], 0, start
+    while d <= min(until, hi) and n < 2000:
+        if freq == 'WEEKLY':
+            week = d - dt.timedelta(days=d.weekday())
+            cands = [week + dt.timedelta(days=w) for w in byday]
+            d = week + dt.timedelta(weeks=step)
+        elif freq == 'DAILY':
+            cands, d = [d], d + dt.timedelta(days=step)
+        else:
+            return [(start, time)]
+        for c in cands:
+            if c < start or c > until or (count is not None and n >= count):
+                continue
+            n += 1
+            if c not in ex and lo <= c <= hi:
+                out.append((c, time))
+        if count is not None and n >= count:
+            break
+    return out
+
+
+def club_calendar(passphrase):
+    """Kampprogrammet. None, hvis der ikke er noget link, og en undtagelse, hvis kalenderen ikke kunne hentes."""
+    url = club_url(passphrase)
+    if not url:
+        return None
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Maalmand8 kalender)'})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        text = r.read().decode('utf-8', errors='replace')
+    if 'BEGIN:VCALENDAR' not in text:
+        raise ValueError('Linket gav ikke en kalender (iCal)')
+    today = dt.date.today()
+    lo, hi = today - dt.timedelta(days=CAL_PAST), today + dt.timedelta(days=CAL_AHEAD)
+    evs = ical_events(text)
+    moved = {(ev.get('UID', ('',))[0], ical_dt(*ev['RECURRENCE-ID'])[0]) for ev in evs if 'RECURRENCE-ID' in ev and 'DTSTART' in ev}
+    out = {}
+    for ev in evs:
+        if 'DTSTART' not in ev or ev.get('STATUS', ('',))[0].upper() == 'CANCELLED':
+            continue
+        title, loc, uid = ical_text(ev.get('SUMMARY', ('',))[0]), ical_text(ev.get('LOCATION', ('',))[0]), ev.get('UID', ('',))[0]
+        kind = 'match' if re.search(r'træningskamp|testkamp', title, re.I) else 'train' if TRAIN_RE.search(title) else 'match' if MATCH_RE.search(title) else 'other'
+        for d, time in ical_dates(ev, lo, hi):
+            if 'RECURRENCE-ID' not in ev and (uid, d) in moved:
+                continue  # denne gentagelse er flyttet og står som sin egen begivenhed
+            key = hashlib.sha1(f'{uid}|{title}|{d}'.encode()).hexdigest()[:12]
+            out[key] = {'uid': key, 'date': d.isoformat(), 'time': time, 'title': title[:80], 'loc': loc[:120], 'kind': kind}
+    return sorted(out.values(), key=lambda e: (e['date'], e['time']))
+
+
 def key_for(passphrase, salt, iters):
     return PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=iters).derive(passphrase.encode())
 
@@ -212,6 +341,14 @@ def fetch_data(api, passphrase):
         'vo2': vo2(api, fresh) or prev.get('vo2'),
         'weights': sorted(ws.values(), key=lambda w: w['date']),
     }
+    try:
+        cal = club_calendar(passphrase)
+        data['cal'] = cal or []
+        if cal is not None:
+            print(f'Kampprogram: {sum(e["kind"] == "match" for e in cal)} kampe og {sum(e["kind"] == "train" for e in cal)} træninger')
+    except Exception as e:  # behold det forrige kampprogram, hvis klubbens kalender ikke svarer
+        data['cal'], data['calErr'] = prev.get('cal') or [], 'Kampprogrammet kunne ikke hentes'
+        print(f'Kampprogrammet kunne ikke hentes: {type(e).__name__}')
     print(f'Hentet {len(fresh) + len(missing)} dage ({len(days)} i historikken) og {len(new or [])} aktiviteter ({len(data["acts"])} i alt)')
     os.makedirs(ROOT, exist_ok=True)
     with open(OUT, 'w') as f:
