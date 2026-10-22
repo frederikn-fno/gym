@@ -10,10 +10,11 @@ on:
     - cron: '0 11 * * *'   # 12 vintertid
     - cron: '0 19 * * *'   # 21 sommertid
     - cron: '0 20 * * *'   # 21 vintertid
-  # Appen gemmer garmin/plan.json ("Send pas til uret") eller garmin/refresh.json ("Hent nye data fra uret").
+  # Appen gemmer garmin/plan.json ("Send pas til uret"), garmin/refresh.json ("Hent nye data fra uret")
+  # eller garmin/club.json (link til klubbens kampprogram).
   push:
     branches: [main]
-    paths: ['garmin/plan.json', 'garmin/refresh.json']
+    paths: ['garmin/plan.json', 'garmin/refresh.json', 'garmin/club.json']
   workflow_dispatch:
     inputs:
       mode:
@@ -68,6 +69,7 @@ jobs:
           GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}
           GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
           GARMIN_PASSPHRASE: ${{ secrets.GARMIN_PASSPHRASE }}
+          CLUB_ICAL_URL: ${{ secrets.CLUB_ICAL_URL }}  # valgfri: link til klubbens kalender (ellers garmin/club.json fra appen)
         run: python scripts/garmin_sync.py
 
       # Kører også, hvis afsendelsen fejlede, så appen kan vise fejlen (garmin/sent.json)
