@@ -1927,10 +1927,17 @@ function load() {
   } catch (e) { return DEF(); }
 }
 let ST = load();
+/* Synkronisering: on, dev (denne enheds id), mod (seneste ændring her), base (den gemte version ved sidste synk), sha, dirty, at */
+const SKEY = 'gk8-sync-v1';
+let SYNC = { on: true, dev: '', mod: 0, base: null, sha: null, dirty: false, at: 0, mute: false };
+try { const v = JSON.parse(localStorage.getItem(SKEY) || 'null'); if (isObj(v)) SYNC = { ...SYNC, ...v, mute: false }; } catch (e) { }
+if (!SYNC.dev) SYNC.dev = (/iphone|ipad/i.test(navigator.userAgent) ? 'iPhone' : /android/i.test(navigator.userAgent) ? 'Android' : 'computer') + '-' + Math.random().toString(36).slice(2, 7);
+function syncSaveMeta() { try { const { mute, ...m } = SYNC; localStorage.setItem(SKEY, JSON.stringify(m)); } catch (e) { } }
 let saveWarned = false;
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(ST)); }
   catch (e) { if (!saveWarned) { saveWarned = true; toast('Kunne ikke gemme på enheden. Eksportér dine data som backup.'); } }
+  syncDirty();
 }
 /* Bed browseren om at beskytte data mod automatisk oprydning */
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => { }); } catch (e) { }
@@ -2826,6 +2833,7 @@ document.addEventListener('click', e => {
   if (ds.anim) { toggleAnim(ds.anim); return; }
   if (ds.gm) { gmAction(ds.gm); return; }
   if (ds.club) { clubAction(ds); return; }
+  if (ds.sync) { syncNow(); return; }
   if (ds.wx) { wxAction(ds.wx); return; }
   if ('busyOpen' in ds) { openBusy(); return; }
   if (ds.busyPick) { pickBusy(ds.busyPick); return; }
@@ -2907,7 +2915,7 @@ document.addEventListener('click', e => {
     case 'homeDone': toggleHomeDone(); break;
     case 'friReset': ST.fri.done = {}; save(); renderFriday(); toast('Aktiveringen er nulstillet'); break;
     case 'resetAll':
-      if (confirm('Slet alle gemte data? Afkrydsninger, uger, kampe og indstillinger forsvinder.')) {
+      if (confirm(syncReady() ? 'Slet alle gemte data? Afkrydsninger, uger, kampe og indstillinger forsvinder, også på dine andre enheder, fordi synkroniseringen er slået til.' : 'Slet alle gemte data? Afkrydsninger, uger, kampe og indstillinger forsvinder.')) {
         try { localStorage.removeItem(KEY); } catch (err) { }
         ST = DEF(); $('mDate').value = ''; mDateTouched = false; setMatchEditing(null); renderAll(); loadPreset('p1'); toast('Alle data er nulstillet');
       }
@@ -2963,9 +2971,10 @@ $('matchForm').addEventListener('submit', e => {
 });
 let lastDayKey = localISO(new Date());
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState !== 'visible') return;
+  if (document.visibilityState !== 'visible') { if (SYNC.dirty && syncReady()) { clearTimeout(syncTimer); syncNow(true); } return; } // send ændringer, før appen lukkes
   if (TM.running) { keepAwake(true); unlockAudio(); tTick(); } else if (SES) keepAwake(true);
   gmFetch(); // nye Garmin-data, hvis det er mere end en halv time siden
+  if (Date.now() - SYNC.at > 60e3) syncNow(true); // dine data fra de andre enheder
   // En installeret app kan stå åben i dagevis: opdatér dato-afhængige visninger
   const k = localISO(new Date());
   if (k !== lastDayKey) {
@@ -5539,11 +5548,11 @@ async function gmAction(a) {
     if (!pass || !/^[\w.-]+\/[\w.-]+$/.test(repo)) { toast('Udfyld adgangskode og repo (bruger/repo)'); return; }
     GM = { ...GM, pass, repo, err: '' }; gmSave(); renderGarminPanel();
     const ok = await gmFetch(true);
-    if (ok) toast('Garmin forbundet'); else { const e = GM.err; GM = { ...GM, pass: '' }; gmSave(); renderGarminPanel(); toast(e); }
+    if (ok) { toast('Garmin forbundet'); syncNow(); } else { const e = GM.err; GM = { ...GM, pass: '' }; gmSave(); renderGarminPanel(); toast(e); }
   } else if (a === 'refresh') gmRefresh();
   else if (a === 'fetch') { toast('Henter …'); if (await gmFetch(true)) toast('Garmin-data opdateret'); else toast(GM.err); }
-  else if (a === 'tok') { const t = $('gmTok').value.trim(); if (!/^(github_pat_|ghp_)\w+$/.test(t)) { toast('Det ligner ikke en GitHub-token'); return; } GM.tok = t; gmSave(); renderGarminPanel(); toast('Token gemt på telefonen'); }
-  else if (a === 'tokforget') { GM.tok = ''; gmSave(); renderGarminPanel(); toast('Token glemt'); }
+  else if (a === 'tok') { const t = $('gmTok').value.trim(); if (!/^(github_pat_|ghp_)\w+$/.test(t)) { toast('Det ligner ikke en GitHub-token'); return; } GM.tok = t; gmSave(); renderGarminPanel(); renderSyncPanel(); toast('Token gemt på telefonen'); syncNow(); }
+  else if (a === 'tokforget') { GM.tok = ''; gmSave(); renderGarminPanel(); renderSyncPanel(); toast('Token glemt'); }
   else if (a === 'send') gmSend();
   else if (/^range\d+$/.test(a)) { gmRange = +a.slice(5); renderCoach(); }
   else if (a === 'mfill') gmMatchFill();
@@ -6086,6 +6095,138 @@ function pickBusy(id) {
   openSheet(ctx);
 }
 
+/* ===== Synkronisering mellem enheder =====
+   Alle dine data (pas, sæt, kampe, tjek, belastning, programmer og indstillinger) gemmes krypteret med din adgangskode i
+   dit GitHub-repo som sync/state.json på grenen "data". En separat gren, så siden ikke udgives igen, hver gang du gemmer.
+   - Ved start, når appen åbnes igen, og efter "Synkronisér nu" hentes den nyeste version.
+   - 10 sekunder efter en ændring (og når appen lukkes) sendes din version.
+   - Har både denne og en anden enhed ændret noget siden sidst, flettes de: sæt, kampe, registreringer, vejninger, tests,
+     tjek og afkrydsninger lægges sammen (intet går tabt). Enkeltindstillinger tages fra den nyeste.
+   Urdataene (garmin/data.json) synkroniseres ikke her: de hentes på hver enhed fra GitHub. */
+const SYNC_BRANCH = 'data', SYNC_PATH = 'sync/state.json';
+const syncReady = () => !!(GM.pass && GM.tok && gmRepo() && SYNC.on !== false && window.crypto && crypto.subtle);
+const ghH = () => ({ Authorization: `Bearer ${GM.tok}`, Accept: 'application/vnd.github+json' });
+const ghApi = p => `https://api.github.com/repos/${gmRepo()}/${p}`;
+let syncLock = Promise.resolve(), syncTimer = null, syncErr = '';
+const syncQueue = fn => (syncLock = syncLock.then(fn, fn));
+/* Laver grenen "data" ud fra main, hvis den ikke findes */
+async function ghBranch() {
+  const r = await fetch(ghApi(`git/ref/heads/${SYNC_BRANCH}`), { headers: ghH(), cache: 'no-store' }); if (r.ok) return;
+  const m = await fetch(ghApi('git/ref/heads/main'), { headers: ghH(), cache: 'no-store' });
+  if (!m.ok) throw new Error(m.status === 401 ? 'GitHub afviste tokenen' : `GitHub-fejl (${m.status})`);
+  const c = await fetch(ghApi('git/refs'), { method: 'POST', headers: ghH(), body: JSON.stringify({ ref: `refs/heads/${SYNC_BRANCH}`, sha: (await m.json()).object.sha }) });
+  if (!c.ok && c.status !== 422) throw new Error(`Kunne ikke oprette grenen "${SYNC_BRANCH}" (${c.status})`);
+}
+/* Henter den gemte version: { sha, env } eller null, hvis der ikke er gemt noget endnu */
+async function syncGet() {
+  const r = await fetch(ghApi(`contents/${SYNC_PATH}?ref=${SYNC_BRANCH}&t=${Date.now()}`), { headers: ghH(), cache: 'no-store' });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(r.status === 401 ? 'GitHub afviste tokenen' : `GitHub-fejl (${r.status})`);
+  const j = await r.json();
+  let text = j.content ? atob(j.content.replace(/\s/g, '')) : '';
+  if (!text) { // filer over 1 MB kommer uden indhold: hent den rå fil
+    const raw = await fetch(ghApi(`contents/${SYNC_PATH}?ref=${SYNC_BRANCH}&t=${Date.now()}`), { headers: { ...ghH(), Accept: 'application/vnd.github.raw+json' }, cache: 'no-store' });
+    text = await raw.text();
+  }
+  return { sha: j.sha, env: JSON.parse(text) };
+}
+async function syncPut(payload, sha) {
+  const body = { message: `Synk fra ${SYNC.dev}`, content: btoa(JSON.stringify(await gmEncrypt(payload, GM.pass))), branch: SYNC_BRANCH, ...(sha ? { sha } : {}) };
+  let r = await fetch(ghApi(`contents/${SYNC_PATH}`), { method: 'PUT', headers: ghH(), body: JSON.stringify(body) });
+  if (r.status === 404 || r.status === 422) { await ghBranch(); r = await fetch(ghApi(`contents/${SYNC_PATH}`), { method: 'PUT', headers: ghH(), body: JSON.stringify(body) }); }
+  if (r.status === 409) return null; // en anden enhed nåede først: hent og flet igen
+  if (!r.ok) throw new Error(r.status === 401 ? 'GitHub afviste tokenen' : r.status === 403 ? 'Tokenen må ikke skrive til repoet' : `GitHub-fejl (${r.status})`);
+  return (await r.json()).content.sha;
+}
+const syncPayload = () => ({ v: 1, mod: SYNC.mod || Date.now(), dev: SYNC.dev, st: ST,
+  gm: { repo: GM.repo, sent: GM.sent, auto: GM.auto, sumSeen: GM.sumSeen, club: GM.club, autoDay: GM.autoDay }, wx: { home: WX.home } });
+/* Fletter to versioner. B vinder enkeltindstillinger, lister lægges sammen. */
+function syncMerge(A, B) {
+  const out = JSON.parse(JSON.stringify(B)), by = (a, b, k) => { const m = new Map(); [...(a || []), ...(b || [])].forEach(x => m.set(k(x), { ...(m.get(k(x)) || {}), ...x })); return [...m.values()]; };
+  const set = (a, b) => [...new Set([...(a || []), ...(b || [])])];
+  out.logs = by(A.logs, B.logs, l => l.g || l.id).sort((x, y) => x.date.localeCompare(y.date) || x.id - y.id); // sæt fra uret har samme g på alle enheder
+  out.matches = by(A.matches, B.matches, m => m.id).sort((x, y) => x.date.localeCompare(y.date));
+  out.loads = by(A.loads, B.loads, l => l.gid ? 'g' + l.gid : l.id);
+  (A.loads || []).forEach(l => { if (l.gid && l.x) { const o = out.loads.find(x => x.gid === l.gid); if (o) o.x = 1; } }); // slettet på én enhed = slettet
+  out.checkins = by(A.checkins, B.checkins, c => c.date).sort((x, y) => x.date.localeCompare(y.date));
+  out.homeLog = set(A.homeLog, B.homeLog).sort(); out.weeksDone = set(A.weeksDone, B.weeksDone).sort((x, y) => x - y); out.favs = set(A.favs, B.favs);
+  out.done = { ...(A.done || {}), ...(B.done || {}) }; out.swaps = { ...(A.swaps || {}), ...(B.swaps || {}) }; out.tests = { ...(A.tests || {}), ...(B.tests || {}) };
+  out.custom = by(A.custom, B.custom, c => c.id);
+  if (A.fri && B.fri && A.fri.wk === B.fri.wk) out.fri.done = { ...A.fri.done, ...B.fri.done };
+  if (A.home && B.home && A.home.date === B.home.date) out.home.done = { ...A.home.done, ...B.home.done };
+  const a = A.coach || {}, c = out.coach = out.coach || {};
+  c.weights = by(a.weights, c.weights, w => w.date).sort((x, y) => x.date.localeCompare(y.date));
+  c.tests = by(a.tests, c.tests, t => t.date).sort((x, y) => x.date.localeCompare(y.date));
+  c.pain = by(a.pain, c.pain, p => p.id); c.dossier = by(a.dossier, c.dossier, d => d.id).sort((x, y) => x.date.localeCompare(y.date));
+  c.statusLog = by(a.statusLog, c.statusLog, s => s.wk).sort((x, y) => x.date.localeCompare(y.date));
+  return out;
+}
+/* Tager en version i brug uden at markere den som en ny ændring */
+function syncApply(p) {
+  SYNC.mute = true;
+  try {
+    ST = mergeState(p.st); localStorage.setItem(KEY, JSON.stringify(ST));
+    if (p.gm) { const g = p.gm; GM = { ...GM, ...(g.repo ? { repo: g.repo } : {}), sent: g.sent || GM.sent, auto: g.auto, sumSeen: g.sumSeen || GM.sumSeen, club: g.club || GM.club, autoDay: g.autoDay || GM.autoDay }; gmSave(); }
+    if (p.wx && p.wx.home && !WX.home) { WX.home = p.wx.home; wxSave(); }
+    renderAll(); loadPreset(TM.preset || 'p1'); if (curPage) renderView(curPage);
+  } finally { SYNC.mute = false; }
+}
+/* Henter, fletter og sender. Returnerer en kort status til panelet. */
+function syncNow(quiet) {
+  if (!syncReady()) return Promise.resolve(false);
+  return syncQueue(async () => {
+    try {
+      for (let tries = 0; tries < 3; tries++) {
+        const got = await syncGet();
+        let remote = null;
+        if (got) { try { remote = await gmDecrypt(got.env, GM.pass); } catch (e) { throw new Error('Kunne ikke låse de gemte data op. Er adgangskoden den samme som på din anden enhed?'); } }
+        const changedThere = remote && remote.mod !== SYNC.base, changedHere = SYNC.dirty || (SYNC.base == null && syncHasData()); // en enhed med data, der aldrig har synkroniseret, flettes altid
+        if (changedThere && !changedHere) { syncApply(remote); SYNC = { ...SYNC, base: remote.mod, mod: remote.mod, sha: got.sha, at: Date.now() }; syncSaveMeta(); if (!quiet) toast('Dine data er hentet fra dine andre enheder'); break; }
+        if (!changedThere && !changedHere && (got || !syncHasData())) { SYNC = { ...SYNC, sha: got ? got.sha : null, at: Date.now() }; syncSaveMeta(); break; }
+        if (changedThere && changedHere) { // begge har ændret noget: flet, og send resultatet
+          const neverSynced = SYNC.base == null, mine = { st: ST }; // første synk: indstillingerne fra den version med flest data, ellers den nyeste
+          const newest = neverSynced ? syncScore(ST) > syncScore(remote.st) : (SYNC.mod || 0) > (remote.mod || 0);
+          const merged = newest ? syncMerge(remote.st, mine.st) : syncMerge(mine.st, remote.st);
+          syncApply({ ...remote, st: merged });
+          SYNC.dirty = true;
+        }
+        SYNC.mod = Date.now();
+        const sha = await syncPut(syncPayload(), got ? got.sha : null);
+        if (sha == null) continue; // en anden enhed gemte imens: prøv igen
+        SYNC = { ...SYNC, base: SYNC.mod, sha, dirty: false, at: Date.now() }; syncSaveMeta();
+        if (!quiet && changedThere) toast('Dine data er flettet med dine andre enheder');
+        break;
+      }
+      syncErr = '';
+    } catch (e) { syncErr = e.message || 'Synkronisering fejlede'; if (!quiet) toast(syncErr); }
+    renderSyncPanel();
+    return !syncErr;
+  });
+}
+const syncScore = st => { const s = mergeState(st); return s.logs.length + s.matches.length + s.loads.length + s.checkins.length + s.weeksDone.length + Object.keys(s.done).length
+  + s.coach.tests.length + s.coach.weights.length + s.custom.length + s.homeLog.length + (s.prog.id ? 5 : 0) + (s.coach.goal ? 5 : 0) + (s.start ? 3 : 0); };
+const syncHasData = () => !!(ST.logs.length || ST.matches.length || ST.loads.length || ST.checkins.length || ST.weeksDone.length || Object.keys(ST.done).length
+  || ST.coach.tests.length || ST.coach.weights.length || ST.custom.length || ST.prog.id || ST.coach.goal || ST.homeLog.length);
+/* Kaldes fra save(): markerer en ændring og sender den lidt senere */
+function syncDirty() {
+  if (SYNC.mute) return;
+  SYNC.dirty = true; SYNC.mod = Date.now(); syncSaveMeta();
+  if (!syncReady()) return;
+  clearTimeout(syncTimer); syncTimer = setTimeout(() => syncNow(true), 10000);
+}
+function renderSyncPanel() {
+  const el = $('syncPanel'); if (!el) return;
+  const at = SYNC.at ? new Date(SYNC.at).toLocaleString('da-DK', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  el.innerHTML = !GM.pass || !GM.tok
+    ? `<h3>Synkronisering mellem enheder</h3><p class="muted">Gem dine data krypteret i dit GitHub-repo, så de følger med på din telefon, din computer og appen på hjemmeskærmen. Det kræver forbindelsen under <b>Garmin-ur</b> ovenfor: adgangskoden til dataene og GitHub-tokenen.</p>`
+    : `<h3>Synkronisering mellem enheder</h3>
+      <label class="gm-auto"><input type="checkbox" data-syncon${SYNC.on === false ? '' : ' checked'}><span>Synkronisér mine data via GitHub</span></label>
+      <p class="muted">${SYNC.on === false ? 'Slået fra. Dine data gemmes kun på denne enhed.' : syncErr ? `<span class="gm-err">${esc(syncErr)}</span>` : at ? `Synkroniseret ${esc(at)}${SYNC.dirty ? ' · ændringer venter' : ''}.` : 'Ikke synkroniseret endnu.'}</p>
+      ${SYNC.on === false ? '' : '<button class="btn btn-sm" type="button" data-sync="now">Synkronisér nu</button>'}
+      <p class="muted">På en ny enhed: åbn appen, gå til Mere › Garmin-ur, skriv adgangskoden og repoet, og gem tokenen. Så hentes alle dine data.</p>`;
+}
+document.addEventListener('change', e => { if (e.target.matches('[data-syncon]')) { SYNC.on = e.target.checked; syncSaveMeta(); renderSyncPanel(); if (SYNC.on) syncNow(); } });
+
 /* ===== Start ===== */
 function renderAll() {
   applyTheme();
@@ -6096,7 +6237,7 @@ function renderAll() {
   $('tgSound').setAttribute('aria-pressed', ST.settings.sound); $('tgVib').setAttribute('aria-pressed', ST.settings.vib);
   initVibrationToggle(); buildSteppers(); renderCurrent(); updateBackupNote();
   updateTrainButton();
-  renderPlanBanner(); renderCoach(); renderCoachCard(); renderWeekSummary(); renderGarminPanel();
+  renderPlanBanner(); renderCoach(); renderCoachCard(); renderWeekSummary(); renderGarminPanel(); renderSyncPanel();
 }
 gmLoad();
 fillIcons();
@@ -6104,6 +6245,7 @@ renderAll();
 loadPreset('p1');
 go(hashName());
 gmFetch();
+syncNow(true);
 
 /* PWA: cacher appen, så den virker offline. Kræver hosting over HTTPS —
    registreres ikke, hvis filen åbnes direkte fra disk (file://) eller

@@ -1549,3 +1549,6 @@ em.up { color: var(--lime); } em.down { color: var(--danger); }
 .s-alt.orig svg { width: 20px; height: 20px; color: var(--lime); }
 .s-alt .thumb { width: 56px; height: 56px; }
 .s-sec3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+
+.sync-panel { display: grid; gap: 8px; margin-bottom: 12px; }
+.sync-panel .btn { justify-self: start; }

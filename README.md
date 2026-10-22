@@ -27,6 +27,16 @@ Når du ændrer `app.js`, `app.css` eller andre filer, så hæv `CACHE`-versione
 
 Åbn appen fra en lokal webserver, fx `npx serve .` eller `python -m http.server`. Service workeren virker kun over `http://localhost` eller HTTPS.
 
+## Synkronisering mellem enheder
+
+Appen gemmer alt lokalt. På iPhone har appen på hjemmeskærmen sin egen lagerplads, adskilt fra Safari, så uden synkronisering ser den tom ud. Med synkronisering ligger dine data krypteret i dit GitHub-repo og følger med på alle dine enheder.
+
+- **Hvad synkroniseres:** pas, sæt, kampe, dagligt tjek, belastning, tests, vejninger, egne programmer, indstillinger, sendte pas og hjemmebane. Urdataene hentes på hver enhed fra `garmin/data.json`.
+- **Hvor:** `sync/state.json` på grenen `data`, krypteret med samme adgangskode som urdataene. Grenen `data` bruges, så siden ikke udgives igen, hver gang du gemmer.
+- **Hvornår:** når appen åbnes, når den kommer frem igen, 10 sekunder efter en ændring og når den lukkes. Du kan også trykke **Synkronisér nu** under Mere › Data og backup.
+- **Ændringer på to enheder samtidig** flettes: sæt, kampe, registreringer, vejninger, tests og afkrydsninger lægges sammen. Enkeltindstillinger tages fra den nyeste.
+- **Ny enhed:** åbn appen, gå til Mere › Garmin-ur, skriv adgangskoden og repoet, tryk Forbind, og gem tokenen. Så hentes alle dine data. Adgangskode og token synkroniseres ikke og skal skrives ind én gang pr. enhed.
+
 ## Garmin-ur
 
 Appen kan hente søvn, Body Battery, hvilepuls, HRV, Training Readiness, stress, skridt, aktiviteter, VO2max og vægt fra dit Garmin-ur, og den kan sende dine pas til uret. En GitHub Action (`.github/workflows/garmin.yml`) logger ind på Garmin Connect tre gange i døgnet, henter de sidste 14 dage med `scripts/garmin_sync.py` og gemmer dem **krypteret** i `garmin/data.json`. Appen henter filen og låser den op med din egen adgangskode.
