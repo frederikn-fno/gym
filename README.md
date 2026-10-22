@@ -46,6 +46,8 @@ Garmin har ingen officiel adgang for privatpersoner. Løsningen bruger det uoffi
 
 Derefter henter GitHub data automatisk kl. 08, 12 og 21 dansk tid, og appen henter dem, når du åbner den.
 
+**Hent nu:** Uden GitHub-token henter knappen det, GitHub sidst har hentet fra Garmin. Har du lagt en token ind (se "Send pas til uret"), hedder knappen **Hent nye data fra uret**: så henter GitHub helt nye data fra Garmin med det samme (1–3 minutter), og appen venter på dem. Husk at synkronisere uret med Garmin Connect-appen først.
+
 ### Hvad det bruges til
 
 - **Dagligt tjek:** Søvn og Energi bliver foreslået ud fra søvnscoren og Body Battery om morgenen.

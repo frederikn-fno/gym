@@ -5182,6 +5182,13 @@ function gmRepo() {
   return h ? `${h[1]}/${seg && !/\.html?$/.test(seg) ? seg : h[1] + '.github.io'}` : '';
 }
 const gmURL = (f = 'data.json') => `https://raw.githubusercontent.com/${gmRepo()}/main/garmin/${f}`;
+/* Henter en fil fra repoet. GitHub's API giver altid den nyeste version. raw.githubusercontent.com bruges kun som reserve
+   (fx hvis API'ets grænse på 60 kald i timen uden token er nået), for den gemmer filerne i op til 5 minutter. */
+async function gmGet(f) {
+  const h = { Accept: 'application/vnd.github.raw+json', ...(GM.tok ? { Authorization: `Bearer ${GM.tok}` } : {}) };
+  try { const r = await fetch(`https://api.github.com/repos/${gmRepo()}/contents/garmin/${f}?ref=main`, { headers: h, cache: 'no-store' }); if (r.ok || r.status === 404) return r; } catch (e) { }
+  return fetch(`${gmURL(f)}?t=${Date.now()}`, { cache: 'no-store' });
+}
 const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 const b64 = u => { let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
 async function gmKey(pass, salt, iter, use) {
@@ -5202,11 +5209,11 @@ async function gmFetch(force) {
   if (!GM.pass || !gmRepo() || !window.crypto || !crypto.subtle) return false;
   if (!force && Date.now() - GM.fetched < 30 * 60e3) return false; // højst hver halve time
   try {
-    const r = await fetch(`${gmURL()}?t=${Date.now()}`, { cache: 'no-store' });
+    const r = await gmGet('data.json');
     if (!r.ok) throw new Error(r.status === 404 ? 'Ingen Garmin-data endnu. Er GitHub Action\'en "Garmin" kørt?' : `Kunne ikke hente data (${r.status})`);
     const env = await r.json();
     let data; try { data = await gmDecrypt(env, GM.pass); } catch (e) { throw new Error('Forkert adgangskode til Garmin-data'); }
-    if (GM.sent) { try { const s = await fetch(`${gmURL('sent.json')}?t=${Date.now()}`, { cache: 'no-store' }); if (s.ok) GM.sentStat = await s.json(); } catch (e) { } } // svar på sidste afsendelse
+    if (GM.sent) { try { const s = await gmGet('sent.json'); if (s.ok) GM.sentStat = await s.json(); } catch (e) { } } // svar på sidste afsendelse
     GM = { ...GM, data, fetched: Date.now(), err: '' }; gmSave(); gmApply();
     return true;
   } catch (e) {
@@ -5433,6 +5440,21 @@ async function ghPut(path, text, msg) {
   const r = await fetch(url, { method: 'PUT', headers: h, body: JSON.stringify({ message: msg, content: btoa(text), branch: 'main', ...(sha ? { sha } : {}) }) });
   if (!r.ok) throw new Error(r.status === 401 ? 'GitHub afviste tokenen. Er den udløbet?' : r.status === 403 || r.status === 404 ? 'Tokenen må ikke skrive til repoet. Giv den "Contents: Read and write" på dette repo.' : r.status === 409 ? 'Filen blev ændret samtidig. Prøv igen.' : `GitHub-fejl (${r.status})`);
 }
+/* "Hent nye data fra uret": gemmer garmin/refresh.json, som starter workflowet (hent-data). Appen spørger så hvert 20. sekund
+   i op til 5 minutter, indtil der ligger nye data. Uden token henter "Hent nu" kun det, GitHub sidst har hentet. */
+let gmWaiting = 0;
+async function gmRefresh() {
+  if (gmWaiting) return;
+  const before = GM.data && GM.data.updated;
+  try { await ghPut('garmin/refresh.json', JSON.stringify({ at: new Date().toISOString() }), 'Hent data fra uret'); }
+  catch (e) { toast(e.message || 'Kunne ikke starte hentningen'); return; }
+  gmWaiting = Date.now(); renderGarminPanel(); toast('GitHub henter nye data fra Garmin. Det tager 1–3 minutter.');
+  while (Date.now() - gmWaiting < 5 * 60e3) {
+    await new Promise(r => setTimeout(r, 20e3));
+    if (await gmFetch(true) && GM.data.updated !== before) { gmWaiting = 0; renderGarminPanel(); renderGarminCard(); toast('Nye data fra uret'); return; }
+  }
+  gmWaiting = 0; renderGarminPanel(); toast('Ingen nye data endnu. Se Actions › Garmin på GitHub.');
+}
 async function gmSend() {
   const ws = gmPlanWorkouts(); if (!ws.length) { toast('Ingen kommende pas at sende'); return; }
   if (!confirm(`Send ${ws.length} pas til Garmin-kalenderen? Pas, der er sendt før, bliver erstattet.`)) return;
@@ -5465,7 +5487,8 @@ function renderGarminPanel() {
   el.innerHTML = GM.pass ? `<p><b>Forbundet</b> · ${esc(gmRepo())}</p>
       <p class="muted">${upd ? `Data fra uret: ${upd.toLocaleString('da-DK', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · ${gmDays().length} dage · ${imp} ${imp === 1 ? 'aktivitet' : 'aktiviteter'} i belastningen${sets ? ` · ${sets} sæt logget fra uret` : ''}.` : 'Ingen data hentet endnu.'}</p>
       ${GM.err ? `<p class="gm-err">${esc(GM.err)}</p>` : ''}
-      <div class="foot-actions"><button class="btn btn-sm" type="button" data-gm="fetch">Hent nu</button><button class="btn btn-ghost btn-sm" type="button" data-gm="forget">Glem forbindelsen</button></div>
+      ${GM.tok ? '' : '<p class="muted">"Hent nu" henter det, GitHub sidst har hentet fra Garmin (kl. 08, 12 og 21). Med en GitHub-token (se nedenfor) henter knappen helt nye data fra uret.</p>'}
+      <div class="foot-actions"><button class="btn btn-sm" type="button" data-gm="${GM.tok ? 'refresh' : 'fetch'}"${gmWaiting ? ' disabled' : ''}>${gmWaiting ? 'Henter fra Garmin …' : GM.tok ? 'Hent nye data fra uret' : 'Hent nu'}</button><button class="btn btn-ghost btn-sm" type="button" data-gm="forget">Glem forbindelsen</button></div>
       ${gmSendHTML()}`
     : `<p class="muted">Henter søvn, Body Battery, hvilepuls, HRV, skridt og aktiviteter fra dit Garmin-ur via GitHub, og kan sende dine pas til uret. Opsætningen står i README.md under "Garmin-ur".</p>
       <label class="field">Adgangskode til Garmin-data<input id="gmPass" type="password" autocomplete="off" placeholder="Samme som GARMIN_PASSPHRASE"></label>
@@ -5479,7 +5502,8 @@ async function gmAction(a) {
     GM = { ...GM, pass, repo, err: '' }; gmSave(); renderGarminPanel();
     const ok = await gmFetch(true);
     if (ok) toast('Garmin forbundet'); else { const e = GM.err; GM = { ...GM, pass: '' }; gmSave(); renderGarminPanel(); toast(e); }
-  } else if (a === 'fetch') { toast('Henter …'); if (await gmFetch(true)) toast('Garmin-data opdateret'); else toast(GM.err); }
+  } else if (a === 'refresh') gmRefresh();
+  else if (a === 'fetch') { toast('Henter …'); if (await gmFetch(true)) toast('Garmin-data opdateret'); else toast(GM.err); }
   else if (a === 'tok') { const t = $('gmTok').value.trim(); if (!/^(github_pat_|ghp_)\w+$/.test(t)) { toast('Det ligner ikke en GitHub-token'); return; } GM.tok = t; gmSave(); renderGarminPanel(); toast('Token gemt på telefonen'); }
   else if (a === 'tokforget') { GM.tok = ''; gmSave(); renderGarminPanel(); toast('Token glemt'); }
   else if (a === 'send') gmSend();
