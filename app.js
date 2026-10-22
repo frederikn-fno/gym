@@ -1813,9 +1813,9 @@ const TESTS = [
 const STD = {
   squat: [0.7, 0.95, 1.2, 1.5, 1.85], rdl: [0.8, 1.05, 1.35, 1.7, 2.1], bench: [0.45, 0.65, 0.9, 1.15, 1.45],
   pullup: [1, 4, 8, 12, 18], cmj: [25, 33, 41, 50, 60], broad: [180, 210, 235, 260, 285], plank: [30, 60, 100, 150, 210],
-  run: [1700, 2000, 2400, 2700, 3000], bike: [1.5, 2.0, 2.5, 3.0, 3.8]
+  run: [1700, 2000, 2400, 2700, 3000], bike: [1.5, 2.0, 2.5, 3.0, 3.8], vo2: [35, 42, 48, 54, 60] // vo2 = VO2max fra Garmin-uret (ml/kg/min)
 };
-const STD_F = { squat: .65, rdl: .65, bench: .55, pullup: .5, cmj: .8, broad: .85, plank: 1, run: .85, bike: .8 };
+const STD_F = { squat: .65, rdl: .65, bench: .55, pullup: .5, cmj: .8, broad: .85, plank: 1, run: .85, bike: .8, vo2: .85 };
 const LEVEL_COL = ['#FF6B5B', '#FF9A3D', '#FFD84A', '#C8F03C', '#7EE8A2'];
 
 const DEF_COACH = () => ({ sex: 'm', birth: '', height: '', bf: '', goal: '', targetKg: '', targetBf: '', active: false, weights: [], tests: [], days: [], homeDays: [], season: '', status: null, statusLog: [], dossier: [], pain: [], prefs: {} });
@@ -1838,6 +1838,8 @@ const DEF = () => ({
   home: { date: '', done: {} }, homeLog: [], lastExport: '',
   settings: { sound: true, vib: true, custom: { work: 30, rest: 60, rounds: 10 }, metric: 'avg', lib: 'Alle', libEquip: 'Alle', libCat: 'Alle', libSeason: 'Alle', libBody: 'Alle', homeLevel: null, theme: 'dark', calTime: '17:00', calMatchTime: '13:00', calAlarm: 60 }
 });
+/* Hvor meget historik der gemmes. Ca. 5 års sæt og 3 års belastning, så en telefon kan bære det (localStorage har plads til ca. 5 MB). */
+const LIM = { logs: 5000, loads: 1000, checkins: 400 };
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const clampNum = (v, lo, hi, d) => { v = +v; return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
 const isISO = s => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
@@ -1878,9 +1880,9 @@ function mergeState(d) {
   out.tests = {};
   if (isObj(d.tests)) for (let w = 1; w <= 8; w++) { const t = cleanTest(d.tests[w]); if (t) out.tests[w] = t; }
   if (isObj(d.test) && !out.tests[8]) out.tests[8] = cleanTest(d.test); // ældre version: ét testfelt = uge 8
-  out.logs = (Array.isArray(d.logs) ? d.logs : []).filter(l => isObj(l) && isISO(l.date) && EX[l.ex]).slice(-1500).map((l, i) => ({
+  out.logs = (Array.isArray(d.logs) ? d.logs : []).filter(l => isObj(l) && isISO(l.date) && EX[l.ex]).slice(-LIM.logs).map((l, i) => ({
     id: Math.round(clampNum(l.id, 0, 9e15, Date.now() + i)), date: l.date, week: Math.round(clampNum(l.week, 1, 8, 1)), ex: l.ex,
-    kg: clampNum(l.kg, 0, 1000, 0), reps: clampNum(l.reps, 0, 1000, 0), rpe: Math.round(clampNum(l.rpe, 0, 10, 0)), ...(l.pr ? { pr: 1 } : {})
+    kg: clampNum(l.kg, 0, 1000, 0), reps: clampNum(l.reps, 0, 1000, 0), rpe: Math.round(clampNum(l.rpe, 0, 10, 0)), ...(l.pr ? { pr: 1 } : {}), ...(l.g ? { g: String(l.g).slice(0, 40) } : {}) // g = sæt talt af Garmin-uret
   }));
   out.coach = cleanCoach(d.coach);
   out.custom = cleanCustom(d.custom);
@@ -1889,8 +1891,8 @@ function mergeState(d) {
   const known = id => (PROG_BY_ID[id] && !PROG_BY_ID[id].base) || out.custom.some(c => c.id === id);
   out.prog = { id: known(pg.id) ? pg.id : '', match: Math.round(clampNum(pg.match, -1, 6, 5)), days: dayList(pg.days) || [], ball: dayList(pg.ball) || [0, 1, 3], doneSeen: str(pg.doneSeen, 12), seasonSeen: str(pg.seasonSeen, 12) };
   const lvl = v => Math.round(clampNum(v, 1, 5, 3));
-  out.checkins = (Array.isArray(d.checkins) ? d.checkins : []).filter(c => isObj(c) && isISO(c.date)).slice(-120).map(c => ({ date: c.date, sleep: lvl(c.sleep), sore: lvl(c.sore), energy: lvl(c.energy) }));
-  out.loads = (Array.isArray(d.loads) ? d.loads : []).filter(l => isObj(l) && isISO(l.date)).slice(-400).map((l, i) => ({ id: Math.round(clampNum(l.id, 0, 9e15, Date.now() + i)), date: l.date, min: Math.round(clampNum(l.min, 1, 300, 60)), rpe: Math.round(clampNum(l.rpe, 1, 10, 6)), src: ['pas', 'fod', 'andet'].includes(l.src) ? l.src : 'pas', ...(l.gid ? { gid: String(l.gid).slice(0, 24) } : {}) })); // gid = aktivitet fra Garmin-uret
+  out.checkins = (Array.isArray(d.checkins) ? d.checkins : []).filter(c => isObj(c) && isISO(c.date)).slice(-LIM.checkins).map(c => ({ date: c.date, sleep: lvl(c.sleep), sore: lvl(c.sore), energy: lvl(c.energy) }));
+  out.loads = (Array.isArray(d.loads) ? d.loads : []).filter(l => isObj(l) && isISO(l.date)).slice(-LIM.loads).map((l, i) => ({ id: Math.round(clampNum(l.id, 0, 9e15, Date.now() + i)), date: l.date, min: Math.round(clampNum(l.min, 1, 300, 60)), rpe: Math.round(clampNum(l.rpe, 1, 10, 6)), src: ['pas', 'fod', 'andet'].includes(l.src) ? l.src : 'pas', ...(l.gid ? { gid: String(l.gid).slice(0, 24) } : {}), ...(l.gid && l.x ? { x: 1 } : {}) })); // gid = aktivitet fra Garmin-uret, x = slettet (hentes ikke igen)
   if (out.prog.id) out.coach.active = false; // kun ét aktivt program ad gangen
   out.run = {}; if (isObj(d.run)) Object.keys(d.run).slice(0, 200).forEach(k => { if (/^(week|home|fri)\|[\w|-]+$/.test(k)) out.run[k] = Math.round(clampNum(d.run[k], 0, 20, 0)); });
   out.runDate = isISO(d.runDate) ? d.runDate : '';
@@ -2997,6 +2999,7 @@ function renderView(p) {
   else if (p === 'coach') renderCoach();
   else if (p === 'rutiner') renderRutView();
   else if (p === 'byg') renderBuilder();
+  else if (p === 'mere') renderGarminPanel(); // listen over kommende pas til uret
 }
 function setTabs(sel, attr, val) { document.querySelectorAll(`${sel} [${attr}]`).forEach(b => b.setAttribute('aria-selected', b.getAttribute(attr) === val)); }
 function renderProgView() {
@@ -3107,6 +3110,7 @@ function formOf(rec, bwOverride) {
     const m = measureOf(t, rec.r[t.id], bw);
     if (m != null) sc[t.id] = scoreFor(stdKey(t, rec.r[t.id]), m, ST.coach.sex, ageNow());
   });
+  if (rec && rec === lastTest() && sc.cond == null && gmVo2()) sc.cond = scoreFor('vo2', gmVo2(), ST.coach.sex, ageNow()); // uden konditionstest: VO2max fra uret
   COACH_CATS.forEach(c => {
     const v = TESTS.filter(t => t.cat === c && sc[t.id] != null).map(t => sc[t.id]);
     if (v.length) cats[c] = Math.round(v.reduce((a, b) => a + b, 0) / v.length);
@@ -3126,7 +3130,13 @@ const COACH_W = { // hvor meget hver del tæller i den samlede form, afhængigt 
 };
 /* ---------- Estimeret maks: robust, forsigtigt og uden tastefejl ---------- */
 const epley = (kg, reps, rir = 0) => kg * (1 + Math.min(reps + rir, 15) / 30);
-const daysSince = d => (new Date(todayISO() + 'T12:00:00') - new Date(d + 'T12:00:00')) / 864e5;
+/* Dage siden en dato. Gemmes pr. dato, fordi status og fremgang slår op for hvert logget sæt. */
+const DS = new Map();
+const daysSince = d => {
+  const t = todayISO(); if (DS.t !== t) { DS.clear(); DS.t = t; }
+  let v = DS.get(d); if (v === undefined) { v = (new Date(t + 'T12:00:00') - new Date(d + 'T12:00:00')) / 864e5; DS.set(d, v); }
+  return v;
+};
 function e1Points(exId) {
   const pts = [], tid = E1_TEST[exId];
   if (tid) { // kun den seneste test tæller. Ældre tests er forældede.
@@ -3153,7 +3163,17 @@ const E1_REL = {
   deadlift: [['trapbar', .95], ['rdl', 1.3]],
   cablerow: [['dbrow', 1.6]], dbrow: [['cablerow', .6]], stepup: [['bulgarian', 1]], bulgarian: [['stepup', 1]]
 };
-function e1RM(exId) {
+/* Mellemlager: programmet bygges om ved næsten hver handling, og hvert løft slår op i alle loggede sæt.
+   Nulstilles, når loggen, testene eller datoen ændrer sig. */
+const MEMO = { k: '', ls: new Map(), e1: new Map() };
+function memo(map, id, fn) {
+  const l = ST.logs[ST.logs.length - 1], t = lastTest(), k = `${ST.logs.length}|${l ? l.id + ':' + l.kg + ':' + l.reps + ':' + l.rpe : 0}|${ST.coach.tests.length}|${t ? t.date + JSON.stringify(t.r) : ''}|${todayISO()}`;
+  if (MEMO.k !== k) { MEMO.k = k; MEMO.ls.clear(); MEMO.e1.clear(); }
+  if (!MEMO[map].has(id)) MEMO[map].set(id, fn());
+  return MEMO[map].get(id);
+}
+const e1RM = exId => memo('e1', exId, () => e1RMRaw(exId));
+function e1RMRaw(exId) {
   const own = e1Direct(exId); if (own) return own;
   for (const [rel, f] of E1_REL[exId] || []) { const v = e1Direct(rel); if (v) return v * f * .95; }
   return null;
@@ -3174,7 +3194,8 @@ function kgStep(exId) {
 }
 function roundKg(exId, kg) { const s = kgStep(exId); return Math.max(s, Math.round(kg / s) * s); }
 /* Seneste træningsdag for en øvelse: topsættet (tungeste vægt, flest gentagelser) */
-function lastSession(exId) {
+const lastSession = exId => memo('ls', exId, () => lastSessionRaw(exId));
+function lastSessionRaw(exId) {
   const ls = ST.logs.filter(l => l.ex === exId); if (!ls.length) return null;
   const d = ls[ls.length - 1].date, day = ls.filter(l => l.date === d);
   const top = day.reduce((a, b) => (b.kg > a.kg || (b.kg === a.kg && b.reps > a.reps)) ? b : a);
@@ -3226,7 +3247,7 @@ let logSeq = 0;
 function logSet(exId, kg, reps, rpe, week) {
   const pr = prCheck(exId, kg, reps);
   ST.logs.push({ id: Date.now() * 1000 + (logSeq++ % 1000), date: todayISO(), week, ex: exId, kg: Math.min(kg, 1000), reps: Math.min(reps, 1000), rpe: rpe || 0, ...(pr ? { pr: 1 } : {}) });
-  ST.logs = ST.logs.slice(-1500); save();
+  ST.logs = ST.logs.slice(-LIM.logs); save();
   return pr;
 }
 
@@ -3923,9 +3944,13 @@ let chkDraft = null, chkEdit = false;
 const todayCheck = () => ST.checkins.find(c => c.date === todayISO()) || null;
 const readiness = c => c ? (c.sleep + c.energy + (6 - c.sore)) / 3 : null;
 const readyLevel = r => r == null ? null : r <= 2.3 ? 'low' : r >= 4.3 ? 'high' : 'ok';
-/* Justering af dagens pas ud fra tjekket (bruges af programmerne) */
+/* Justering af dagens pas ud fra tjekket (bruges af programmerne). Uden dagens tjek bruges urets restitution:
+   lav Training Readiness, lav HRV, høj hvilepuls eller meget lavt Body Battery. Dit eget tjek går altid forud. */
 function todayAdapt() {
-  return readyLevel(readiness(todayCheck())) === 'low' ? { load: .9, sets: -1, rounds: -1, msg: 'Dagens tjek: lav parathed, så passet er lettere i dag.' } : null;
+  const c = todayCheck();
+  if (c) return readyLevel(readiness(c)) === 'low' ? { load: .9, sets: -1, rounds: -1, msg: 'Dagens tjek: lav parathed, så passet er lettere i dag.' } : null;
+  const w = gmLowToday();
+  return w.length ? { load: .9, sets: -1, rounds: -1, msg: `Uret: ${w.join(', ')}, så passet er lettere i dag.` } : null;
 }
 function renderCheckCard() {
   const el = $('checkCard'); if (!el) return;
@@ -3956,7 +3981,7 @@ function checkAction(ds) {
     const d = chkDraft || {};
     if (!CHK_Q.every(q => d[q.k] >= 1)) { toast('Svar på alle tre'); return; }
     const t = todayISO();
-    ST.checkins = [...ST.checkins.filter(c => c.date !== t), { date: t, sleep: d.sleep, sore: d.sore, energy: d.energy }].slice(-120);
+    ST.checkins = [...ST.checkins.filter(c => c.date !== t), { date: t, sleep: d.sleep, sore: d.sore, energy: d.energy }].slice(-LIM.checkins);
     chkDraft = null; chkEdit = false; save(); refreshPlan(); renderCheckCard();
     toast(readyLevel(readiness(todayCheck())) === 'low' ? 'Gemt. Dagens pas er gjort lettere.' : 'Gemt. God træning.');
   }
@@ -4160,7 +4185,7 @@ function testCompareHTML() {
   const ts = ST.coach.tests; if (ts.length < 2) return '<p class="empty">Tag testen mindst to gange for at se din fremgang.</p>';
   const a = ts[0], b = ts[ts.length - 1], fa = formOf(a), fb = formOf(b);
   const raw = (t, r) => !r ? '–' : t.kind === 'lift' ? `${fmtNum(r.kg)} kg × ${fmtNum(r.reps)}` : t.kind === 'reps' ? `${fmtNum(r.reps)} gent.` : t.kind === 'cond' ? `${fmtNum(r.v)} ${r.kind === 'bike' ? 'watt' : 'm'}` : `${fmtNum(r.v)} ${t.unit}`;
-  const rows = TESTS.filter(t => fa.sc[t.id] != null && fb.sc[t.id] != null).map(t => { const d = fb.sc[t.id] - fa.sc[t.id]; return `<li><b>${t.name}</b><span>${raw(t, a.r[t.id])} → ${raw(t, b.r[t.id])}</span><em class="${d >= 0 ? 'up' : 'down'}">${d > 0 ? '▲ +' : d < 0 ? '▼ −' : '= '}${Math.abs(d)}</em></li>`; }).join('');
+  const rows = TESTS.filter(t => fa.sc[t.id] != null && fb.sc[t.id] != null && a.r[t.id] && b.r[t.id]).map(t => { const d = fb.sc[t.id] - fa.sc[t.id]; return `<li><b>${t.name}</b><span>${raw(t, a.r[t.id])} → ${raw(t, b.r[t.id])}</span><em class="${d >= 0 ? 'up' : 'down'}">${d > 0 ? '▲ +' : d < 0 ? '▼ −' : '= '}${Math.abs(d)}</em></li>`; }).join('');
   const od = fa.overall != null && fb.overall != null ? fb.overall - fa.overall : null;
   return `<p class="muted">${esc(daDate(a.date))} → ${esc(daDate(b.date))}${od != null ? ` · samlet form ${od >= 0 ? '+' : '−'}${Math.abs(od)}` : ''}</p>${rows ? `<ul class="cmp">${rows}</ul>` : '<p class="empty">Ingen fælles tests at sammenligne endnu.</p>'}`;
 }
@@ -4566,11 +4591,14 @@ function statusMetrics() {
   const m = { c1: n > 1 ? ratio(n - 1) : null, c2: n > 2 ? ratio(n - 2) : null, lifts: [], rpe: null, rpeN: 0, wr: weightRate() };
   const recent = dayRange(ST.logs, 0, 15).filter(l => l.rpe > 0);
   m.rpeN = recent.length; if (recent.length) m.rpe = recent.reduce((a, l) => a + l.rpe, 0) / recent.length;
-  [...new Set(ST.logs.map(l => l.ex))].filter(ex => EX[ex]).forEach(ex => {
-    const best = (a, b) => { const ls = dayRange(ST.logs.filter(l => l.ex === ex && l.kg > 0), a, b); return ls.length ? Math.max(...ls.map(l => epley(l.kg, l.reps, l.rpe > 0 ? Math.max(0, Math.min(4, 10 - l.rpe)) : 0))) : null; };
-    const now = best(0, 15), before = best(15, 43);
-    if (now && before) m.lifts.push({ ex, now, before, pct: (now / before - 1) * 100 });
+  const by = {}; // bedste estimerede maks pr. løft: seneste 2 uger (now) og ugerne før (before). Én gennemgang af loggen.
+  ST.logs.forEach(l => {
+    if (!(l.kg > 0) || !EX[l.ex]) return;
+    const d = daysSince(l.date); if (d < 0 || d >= 43) return;
+    const k = d < 15 ? 'now' : 'before', e = epley(l.kg, l.reps, l.rpe > 0 ? Math.max(0, Math.min(4, 10 - l.rpe)) : 0), o = by[l.ex] = by[l.ex] || {};
+    if (!(o[k] >= e)) o[k] = e;
   });
+  Object.entries(by).forEach(([ex, o]) => { if (o.now && o.before) m.lifts.push({ ex, now: o.now, before: o.before, pct: (o.now / o.before - 1) * 100 }); });
   const ts = ST.coach.tests; m.formDelta = ts.length > 1 ? (formOf(ts[ts.length - 1]).overall ?? null) - (formOf(ts[ts.length - 2]).overall ?? 0) : null;
   return m;
 }
@@ -4584,6 +4612,7 @@ function computeStatus() {
   painEntries(10).forEach(p => { if (p.sev >= 2 && !flags.some(f => f.t.startsWith('Smerte i ' + AREA_NAME[p.area].toLowerCase()))) bad(`Smerte i ${AREA_NAME[p.area].toLowerCase()} (${p.sev === 3 ? 'slem' : 'middel'})`); });
   const rc = ST.checkins.filter(x => daysSince(x.date) <= 3).slice(-3);
   if (rc.length >= 3 && rc.every(x => readyLevel(readiness(x)) === 'low')) bad('Lav parathed tre dage i træk (søvn, ømhed eller energi)');
+  gmStatusFlags().forEach(f => flags.push(f));
   const ls = loadStats();
   if (ls && ls.zone === 'risk') bad(`Belastningen de sidste 7 dage er ${Math.round((ls.ratio - 1) * 100)} % over dit gennemsnit`);
   else if (ls && ls.zone === 'high') flags.push({ k: 'info', t: `Høj belastning: ${Math.round((ls.ratio - 1) * 100)} % over dit gennemsnit` });
@@ -4595,7 +4624,7 @@ function computeStatus() {
   if (m.rpeN >= 4 && m.rpe <= 7.5 && m.c1 != null && m.c1 >= .85) good(`Sættene føles lette: gns. RPE ${fmtNum(m.rpe)}`);
   if (m.formDelta != null && m.formDelta >= 5) good(`Din form er steget ${m.formDelta} point siden forrige test`);
   const hasBad = flags.some(f => f.k === 'bad'), goods = flags.filter(f => f.k === 'good').length;
-  const hasData = m.c1 != null || m.rpeN > 0 || m.lifts.length > 0 || painEntries(10).length > 0 || pctw != null || rc.length > 0 || !!(ls && ls.ratio != null);
+  const hasData = m.c1 != null || m.rpeN > 0 || m.lifts.length > 0 || painEntries(10).length > 0 || pctw != null || rc.length > 0 || !!(ls && ls.ratio != null) || gmRecent(3).length > 0;
   if (!hasData) flags.push({ k: 'info', t: 'For lidt data til en vurdering endnu. Afkryds øvelser og log dine sæt.' });
   const level = hasBad ? 'bad' : goods >= 2 ? 'great' : 'normal';
   const reaction = level === 'bad' ? (planOn() ? 'Programmet er lidt lettere (−5 % og −1 sæt på hovedløft) denne og næste uge.' : 'Overvej en lettere uge. Lav det tilpassede program, så justerer appen det automatisk.')
@@ -4680,6 +4709,7 @@ function buildStatusDoc() {
     plan: { active: planOn(), week: curWeek(), sessions: W && W.plan ? [...new Set(W.blocks.filter(b => b.session).map(b => b.session.id))].map(id => ({ id, title: sessionTitle(curWeek(), id), exercises: W.blocks.filter(b => b.session && b.session.id === id).flatMap(b => b.items.filter(i => i.ex).map(i => `${EX[i.ex].name}: ${i.dose}`)) })) : [] },
     pain_last_30d: c.pain.filter(p => daysSince(p.date) <= 30).map(p => ({ date: p.date, area: p.area, severity: p.sev })),
     training_load: (() => { const s = loadStats(); return s ? { last_7_days: Math.round(s.acute), weekly_avg_28_days: Math.round(s.chronic), ratio: s.ratio != null ? Math.round(s.ratio * 100) / 100 : null } : null; })(),
+    watch: gmWatchDoc(),
     readiness_last_7d: ST.checkins.filter(x => daysSince(x.date) <= 7).map(x => ({ date: x.date, sleep: x.sleep, soreness: x.sore, energy: x.energy, readiness: Math.round(readiness(x) * 10) / 10 })),
     weekly_history: c.statusLog.slice(-8),
     coach_log: c.dossier.slice(-10).map(d => ({ date: d.date, type: d.type, text: d.text, outcome: d.outcome || null }))
@@ -4866,11 +4896,21 @@ const ZONE = {
 };
 let loadDraft = { src: 'fod', min: 90, rpe: 6 };
 function addLoad(l) {
-  ST.loads = [...ST.loads, { id: Date.now() * 1000 + (logSeq++ % 1000), date: l.date || todayISO(), min: l.min, rpe: l.rpe, src: l.src }].slice(-400);
+  ST.loads = [...ST.loads, { id: Date.now() * 1000 + (logSeq++ % 1000), date: l.date || todayISO(), min: l.min, rpe: l.rpe, src: l.src }].slice(-LIM.loads);
   save(); updateStatus(); if (planOn()) rebuildWeeks();
 }
+/* En aktivitet fra uret tæller ikke, hvis du selv har registreret det samme: en kamp samme dag (fodbold), et pas samme dag (styrke)
+   eller en registrering af samme type med omtrent samme varighed. Det gælder uanset rækkefølgen, så kampen, du registrerer dagen
+   efter, erstatter urets fodbold. Slettede aktiviteter (x) tæller heller ikke. Returnerer årsagen, eller '' hvis den tæller. */
+function gmCover(l) {
+  if (!l.gid) return '';
+  if (l.x) return 'slettet';
+  if (l.src === 'fod' && ST.matches.some(m => m.date === l.date && m.min > 0)) return 'kamp';
+  const own = ST.loads.find(o => !o.gid && o.date === l.date && (o.src === l.src || (o.src === 'pas' && l.src === 'andet')) && (l.src === 'pas' || Math.abs(o.min - l.min) <= 30));
+  return own ? LOAD_SRC[own.src].toLowerCase() : '';
+}
 function loadEntries() {
-  return [...ST.loads.map(l => ({ date: l.date, load: l.min * l.rpe, src: l.src })), ...ST.matches.filter(m => m.min > 0).map(m => ({ date: m.date, load: m.min * (m.rpe || 7), src: 'kamp' }))];
+  return [...ST.loads.filter(l => !gmCover(l)).map(l => ({ date: l.date, load: l.min * l.rpe, src: l.src })), ...ST.matches.filter(m => m.min > 0).map(m => ({ date: m.date, load: m.min * (m.rpe || 7), src: 'kamp' }))];
 }
 function loadStats() {
   const E = loadEntries(); if (!E.length) return null;
@@ -4900,9 +4940,30 @@ function loadPanelHTML() {
     <details class="sub-fold"><summary>Registrér fodbold eller anden træning</summary>
       <div class="chips" role="group" aria-label="Type">${['fod', 'andet'].map(k => `<button class="chip" type="button" data-load="src" data-v="${k}" aria-pressed="${d.src === k}">${LOAD_SRC[k]}</button>`).join('')}</div>
       <div class="form-row form-row-even"><label class="field">Minutter<input id="ldMin" inputmode="numeric" value="${d.min}"></label><label class="field">Hvor hårdt (RPE)<select id="ldRpe">${Array.from({ length: 10 }, (_, i) => `<option value="${i + 1}"${i + 1 === d.rpe ? ' selected' : ''}>${i + 1}</option>`).join('')}</select></label></div>
-      <button class="btn btn-block" type="button" data-load="save">Gem for i dag</button></details></div>`;
+      <button class="btn btn-block" type="button" data-load="save">Gem for i dag</button></details>
+    <details class="sub-fold" data-fold="loadlist"${openFolds.has('loadlist') ? ' open' : ''}><summary>Seneste registreringer</summary>${loadListHTML()}</details></div>`;
+}
+/* De sidste 3 ugers registreringer: pas, fodbold, andet, kampe og aktiviteter fra uret. Urets aktiviteter kan slettes og gendannes. */
+function loadListHTML() {
+  const rows = [...ST.loads.map(l => ({ l, date: l.date, src: l.src })), ...ST.matches.filter(m => m.min > 0).map(m => ({ m, date: m.date, src: 'kamp' }))]
+    .filter(r => daysSince(r.date) <= 21).sort((a, b) => b.date.localeCompare(a.date) || (b.l ? b.l.id : b.m.id) - (a.l ? a.l.id : a.m.id)).slice(0, 40);
+  if (!rows.length) return '<p class="muted">Ingen registreringer de sidste 3 uger.</p>';
+  return `<ul class="history load-list">${rows.map(r => {
+    const x = r.l || r.m, rpe = r.l ? x.rpe : (x.rpe || 7), cov = r.l ? gmCover(x) : '';
+    const btn = !r.l ? '' : x.x ? `<button class="link-btn" type="button" data-load="undel" data-id="${x.id}">Gendan</button>`
+      : `<button class="icon-btn" type="button" data-load="del" data-id="${x.id}" aria-label="Slet registreringen ${esc(daDate(r.date))}">${ICON.trash}</button>`;
+    return `<li class="hist${cov ? ' is-off' : ''}"><div class="hist-top"><div><b>${esc(daDate(r.date))}</b> <span class="tag">${LOAD_SRC[r.src]}</span>${r.l && x.gid ? ' <span class="tag">Ur</span>' : ''}</div>${btn}</div>
+      <p>${x.min} min × RPE ${rpe} = <b>${x.min * rpe}</b>${cov === 'slettet' ? ' · slettet, tæller ikke' : cov ? ` · tæller ikke, du har registreret ${cov}` : ''}${r.m ? ' · rettes under Kampe' : ''}</p></li>`;
+  }).join('')}</ul>`;
 }
 function loadAction(ds) {
+  if (ds.load === 'del' || ds.load === 'undel') {
+    const l = ST.loads.find(x => String(x.id) === ds.id); if (!l) return;
+    if (ds.load === 'undel') delete l.x;
+    else if (l.gid) l.x = 1; // urets aktiviteter markeres som slettet, ellers hentes de igen
+    else { if (!confirm('Slet registreringen?')) return; ST.loads = ST.loads.filter(x => x !== l); }
+    save(); updateStatus(); if (planOn()) rebuildWeeks(); renderCoach(); return;
+  }
   if (ds.load === 'src') { loadDraft.src = ds.v; document.querySelectorAll('[data-load=src]').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === ds.v)); return; }
   if (ds.load === 'save') {
     const min = Math.round(clampNum(parseNum($('ldMin').value), 1, 300, 0)), rpe = +$('ldRpe').value || 6;
@@ -5105,12 +5166,13 @@ document.addEventListener('input', e => {
 });
 
 /* ===== Garmin-ur =====
-   GitHub Action'en .github/workflows/garmin.yml henter søvn, Body Battery, hvilepuls, stress, skridt og aktiviteter
-   fra Garmin Connect to gange i døgnet og gemmer dem krypteret i garmin/data.json i repoet (scripts/garmin_sync.py).
+   GitHub Action'en .github/workflows/garmin.yml henter søvn, Body Battery, hvilepuls, HRV, Training Readiness, stress, skridt,
+   aktiviteter, VO2max og vægt fra Garmin Connect tre gange i døgnet og gemmer dem krypteret i garmin/data.json (scripts/garmin_sync.py).
    Appen henter filen direkte fra GitHub og låser den op med din adgangskode (PBKDF2 + AES-GCM).
-   Adgangskode og data gemmes kun på denne enhed under sin egen nøgle og kommer ikke med i backup-filen. */
+   Den anden vej: "Send pas til uret" gemmer de næste pas krypteret i garmin/plan.json, og Action'en lægger dem i Garmin-kalenderen.
+   Adgangskode, token og data gemmes kun på denne enhed under sin egen nøgle og kommer ikke med i backup-filen. */
 const GKEY = 'gk8-garmin-v1';
-let GM = { pass: '', repo: '', data: null, fetched: 0, err: '' };
+let GM = { pass: '', repo: '', data: null, fetched: 0, err: '', tok: '', sent: null, sentStat: null };
 function gmLoad() { try { const v = JSON.parse(localStorage.getItem(GKEY) || 'null'); if (isObj(v)) GM = { ...GM, ...v }; } catch (e) { } }
 function gmSave() { try { localStorage.setItem(GKEY, JSON.stringify(GM)); } catch (e) { } }
 /* Repoet udledes af adressen (bruger.github.io/repo), men kan rettes i Mere › Garmin-ur */
@@ -5119,12 +5181,22 @@ function gmRepo() {
   const h = location.hostname.match(/^([\w-]+)\.github\.io$/i), seg = location.pathname.split('/').filter(Boolean)[0];
   return h ? `${h[1]}/${seg && !/\.html?$/.test(seg) ? seg : h[1] + '.github.io'}` : '';
 }
-const gmURL = () => `https://raw.githubusercontent.com/${gmRepo()}/main/garmin/data.json`;
+const gmURL = (f = 'data.json') => `https://raw.githubusercontent.com/${gmRepo()}/main/garmin/${f}`;
 const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
-async function gmDecrypt(env, pass) {
+const b64 = u => { let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
+async function gmKey(pass, salt, iter, use) {
   const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
-  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: unb64(env.salt), iterations: env.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, [use]);
+}
+async function gmDecrypt(env, pass) {
+  const key = await gmKey(pass, unb64(env.salt), env.iter, 'decrypt');
   return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(env.iv) }, key, unb64(env.ct))));
+}
+async function gmEncrypt(obj, pass) {
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), iter = 250000;
+  const key = await gmKey(pass, salt, iter, 'encrypt');
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(obj))));
+  return { v: 1, iter, salt: b64(salt), iv: b64(iv), ct: b64(ct) };
 }
 async function gmFetch(force) {
   if (!GM.pass || !gmRepo() || !window.crypto || !crypto.subtle) return false;
@@ -5134,6 +5206,7 @@ async function gmFetch(force) {
     if (!r.ok) throw new Error(r.status === 404 ? 'Ingen Garmin-data endnu. Er GitHub Action\'en "Garmin" kørt?' : `Kunne ikke hente data (${r.status})`);
     const env = await r.json();
     let data; try { data = await gmDecrypt(env, GM.pass); } catch (e) { throw new Error('Forkert adgangskode til Garmin-data'); }
+    if (GM.sent) { try { const s = await fetch(`${gmURL('sent.json')}?t=${Date.now()}`, { cache: 'no-store' }); if (s.ok) GM.sentStat = await s.json(); } catch (e) { } } // svar på sidste afsendelse
     GM = { ...GM, data, fetched: Date.now(), err: '' }; gmSave(); gmApply();
     return true;
   } catch (e) {
@@ -5144,13 +5217,43 @@ async function gmFetch(force) {
 const gmDays = () => (GM.data && Array.isArray(GM.data.days) ? GM.data.days : []).filter(d => isObj(d) && isISO(d.date));
 const gmDay = iso => gmDays().find(d => d.date === iso) || null;
 const gmNum = v => typeof v === 'number' && v > 0 ? v : null; // Garmin bruger -1/0 for "ingen måling"
+const gmRecent = n => gmDays().filter(d => daysSince(d.date) < n); // de sidste n dage, så gamle data ikke tæller, hvis hentningen er gået i stå
+const gmVo2 = () => (GM.pass && GM.data && gmNum(GM.data.vo2)) || null;
 /* Hvilepuls: gennemsnit af de sidste 3 dage mod medianen af dagene før. +5 slag eller mere er et tegn på træthed eller sygdom. */
 function gmRhr() {
   const v = gmDays().map(d => ({ date: d.date, r: gmNum(d.rhr) })).filter(d => d.r);
-  if (v.length < 6) return null;
+  if (v.length < 6 || daysSince(v[v.length - 1].date) > 2) return null;
   const recent = v.slice(-3), base = v.slice(0, -3).map(d => d.r).sort((a, b) => a - b);
   const med = base[Math.floor(base.length / 2)], now = recent.reduce((s, d) => s + d.r, 0) / recent.length;
   return { now: Math.round(now), base: med, diff: Math.round(now - med), high: now - med >= 5 };
+}
+const gmHrvLow = d => d && ['low', 'poor'].includes(d.hrvStatus);
+/* Urets vurdering af restitutionen i dag. Returnerer årsagerne, eller [] hvis alt ser normalt ud. */
+function gmLowToday() {
+  if (!GM.pass) return [];
+  const d = gmDay(todayISO()), rh = gmRhr(), why = [];
+  if (rh && rh.high) why.push(`hvilepuls +${rh.diff}`);
+  if (!d) return why;
+  if (gmNum(d.ready) && d.ready < 25) why.push(`Training Readiness ${d.ready}`);
+  if (gmHrvLow(d)) why.push('lav HRV');
+  if (gmNum(d.bbWake) && d.bbWake < 20) why.push(`Body Battery ${d.bbWake}`);
+  return why;
+}
+/* Markeringer i statussen: hvilepuls og HRV kan gøre statussen dårlig. Kort søvn og højt stress er kun til orientering. */
+function gmStatusFlags() {
+  if (!GM.pass) return [];
+  const out = [], rh = gmRhr(), r3 = gmRecent(3);
+  if (rh && rh.high) out.push({ k: 'bad', t: `Hvilepulsen er ${rh.diff} slag over dit normale (uret)` });
+  if (r3.filter(gmHrvLow).length >= 2) out.push({ k: 'bad', t: 'HRV under dit normale flere dage i træk (uret)' });
+  const sl = r3.map(d => gmNum(d.sleepMin)).filter(Boolean), st = r3.map(d => gmNum(d.stress)).filter(Boolean);
+  if (sl.length >= 2 && sl.reduce((a, b) => a + b, 0) / sl.length < 360) out.push({ k: 'info', t: `Kort søvn: gns. ${fmtHM(Math.round(sl.reduce((a, b) => a + b, 0) / sl.length))} de sidste nætter (uret)` });
+  if (st.length >= 2 && st.reduce((a, b) => a + b, 0) / st.length >= 50) out.push({ k: 'info', t: 'Højt stressniveau de sidste dage (uret)' });
+  return out;
+}
+/* Urets tal i dokumentet til AI */
+function gmWatchDoc() {
+  if (!GM.pass || !gmDays().length) return null;
+  return { updated: GM.data.updated || null, vo2max: gmVo2(), last_7_days: gmDays().slice(-7).map(d => ({ date: d.date, sleep_score: gmNum(d.sleepScore), sleep_h: gmNum(d.sleepMin) ? Math.round(d.sleepMin / 6) / 10 : null, resting_hr: gmNum(d.rhr), hrv_ms: gmNum(d.hrv), hrv_status: d.hrvStatus || null, training_readiness: gmNum(d.ready), body_battery_wake: gmNum(d.bbWake), stress: gmNum(d.stress), steps: gmNum(d.steps) })) };
 }
 /* Forslag til dagens tjek: søvn ud fra søvnscoren, energi ud fra Body Battery om morgenen */
 const scoreTo5 = (v, cuts) => v == null ? null : 1 + cuts.filter(c => v >= c).length;
@@ -5161,61 +5264,210 @@ function gmCheckSuggest() {
   if (!Object.keys(vals).length) return null;
   return { vals, txt: [ss && `søvnscore ${ss}`, bb && `Body Battery ${bb}`].filter(Boolean).join(' · ') };
 }
-/* Aktiviteter fra uret bliver til belastning (min × RPE). RPE skønnes ud fra gennemsnitspulsen i % af maks. */
+/* Aktiviteter fra uret bliver til belastning (min × RPE). RPE skønnes helst ud fra Garmins Training Effect (0–5), ellers ud fra pulsen.
+   Styrketræning har lav puls, så uden Training Effect får den RPE 6 i stedet for et alt for lavt skøn. */
 function gmHrMax() {
   const age = typeof ageNow === 'function' ? ageNow() : null, est = age ? Math.round(208 - .7 * age) : 195;
   const seen = Math.max(0, ...((GM.data && GM.data.acts) || []).map(a => gmNum(a.maxHr) || 0));
   return Math.max(est, seen);
 }
-const gmRpe = (avg, max) => avg ? Math.max(1, Math.min(10, Math.round((avg / max - .5) * 20))) : 5;
+function gmRpe(a, max) {
+  const te = Math.max(gmNum(a.te) || 0, gmNum(a.ate) || 0);
+  if (te) return Math.max(1, Math.min(10, Math.round(2 + te * 1.5))); // TE 1 → 4, 2 → 5, 3 → 7, 4 → 8, 5 → 10
+  if (/strength/.test(a.type || '')) return 6;
+  const avg = gmNum(a.avgHr); return avg ? Math.max(1, Math.min(10, Math.round((avg / max - .5) * 20))) : 5;
+}
 const GM_SKIP = /walk|sleep|breath|meditation|yoga/;
+const gmSrc = a => /strength/.test(a.type || '') ? 'pas' : /soccer|football/.test(a.type || '') || /fodbold|soccer|football|kamp/i.test(a.name || '') ? 'fod' : 'andet';
+const gmActs = () => (GM.data && Array.isArray(GM.data.acts) ? GM.data.acts : []).filter(a => isObj(a) && isISO(a.date) && a.id);
 function gmApply() {
-  const acts = (GM.data && Array.isArray(GM.data.acts) ? GM.data.acts : []).filter(a => isObj(a) && isISO(a.date) && a.id);
-  const max = gmHrMax(), have = new Set(ST.loads.filter(l => l.gid).map(l => l.gid));
-  let added = 0;
+  const acts = gmActs(), max = gmHrMax(), byId = new Map(ST.loads.filter(l => l.gid).map(l => [l.gid, l]));
+  let added = 0, changed = false;
   acts.forEach(a => {
-    const gid = String(a.id), min = Math.round(a.min || 0), type = String(a.type || '');
-    if (have.has(gid) || min < 10 || GM_SKIP.test(type)) return;
-    const src = /soccer|football/.test(type) || /fodbold|soccer|football|kamp/i.test(a.name || '') ? 'fod' : 'andet';
-    if (src === 'fod' && ST.matches.some(m => m.date === a.date)) return; // kampen er allerede registreret
-    if (ST.loads.some(l => !l.gid && l.date === a.date && (l.src === src || l.src === 'pas') && Math.abs(l.min - min) <= 20)) return; // allerede tastet ind
-    ST.loads.push({ id: Date.now() * 1000 + (logSeq++ % 1000), date: a.date, min: Math.min(300, min), rpe: gmRpe(gmNum(a.avgHr), max), src, gid });
+    const gid = String(a.id), min = Math.round(a.min || 0);
+    if (min < 10 || GM_SKIP.test(String(a.type || ''))) return;
+    const rpe = gmRpe(a, max), src = gmSrc(a), old = byId.get(gid);
+    if (old) { if (old.rpe !== rpe || old.src !== src) { old.rpe = rpe; old.src = src; changed = true; } return; } // retter tidligere skøn ud fra pulsen
+    ST.loads.push({ id: Date.now() * 1000 + (logSeq++ % 1000), date: a.date, min: Math.min(300, min), rpe, src, gid });
     added++;
   });
-  if (added) { ST.loads = ST.loads.slice(-400); save(); updateStatus(); if (planOn()) rebuildWeeks(); }
+  const sets = gmImportSets(acts), kg = gmImportWeights();
+  if (added || changed || sets || kg) { ST.loads = ST.loads.slice(-LIM.loads); save(); }
+  updateStatus(); // hvilepuls og HRV indgår i statussen
+  if (planOn()) rebuildWeeks(); // urets restitution kan gøre dagens pas lettere
   if (!todayCheck() && (!chkDraft || chkDraft.fromG || !Object.keys(chkDraft).length)) chkDraft = null; // nyt forslag, hvis du ikke selv har trykket
-  renderToday(); renderGarminPanel(); if (curPage === 'coach') renderCoach();
+  renderToday(); renderGarminPanel(); renderWeek(); if (curPage === 'coach') renderCoach();
+  if (sets) toast(`${sets} sæt fra uret er logget`);
   return added;
+}
+/* Vægt fra en Garmin Index-vægt: dage, hvor du ikke selv har skrevet vægten, udfyldes */
+function gmImportWeights() {
+  const ws = (GM.data && Array.isArray(GM.data.weights) ? GM.data.weights : []).filter(w => isObj(w) && isISO(w.date) && w.kg >= 30 && w.kg <= 250);
+  const c = ST.coach; let n = 0;
+  ws.forEach(w => { if (c.weights.some(x => x.date === w.date)) return; c.weights.push({ date: w.date, kg: Math.round(w.kg * 10) / 10, bf: w.bf >= 3 && w.bf <= 60 ? Math.round(w.bf * 10) / 10 : '' }); n++; });
+  if (n) { c.weights.sort((a, b) => a.date.localeCompare(b.date)); c.weights = c.weights.slice(-400); }
+  return n;
+}
+/* Sæt, som uret har talt under et pas, der er sendt fra appen, logges automatisk. Sættene kobles til øvelserne i det sendte pas
+   samme dag: først på Garmins øvelse (fx BARBELL_FRONT_SQUAT), ellers på kategorien (fx SQUAT), i rækkefølge.
+   Øvelser, du selv har logget den dag, springes over. */
+function gmImportSets(acts) {
+  const sent = GM.sent && Array.isArray(GM.sent.list) ? GM.sent.list : [], have = new Set(ST.logs.filter(l => l.g).map(l => l.g));
+  let n = 0;
+  acts.filter(a => Array.isArray(a.sets) && a.sets.length).forEach(a => {
+    const fit = s => a.sets.filter(x => s.items.some(it => it.cat === x[0])).length; // flere pas samme dag: det, der passer bedst
+    const w = sent.filter(s => s.date === a.date && Array.isArray(s.items)).sort((x, y) => fit(y) - fit(x))[0]; if (!w) return;
+    const own = new Set(ST.logs.filter(l => l.date === a.date && !l.g).map(l => l.ex)), used = w.items.map(() => 0);
+    a.sets.forEach(([cat, exn, reps, kg], k) => {
+      const free = (it, j) => used[j] < it.sets;
+      let i = w.items.findIndex((it, j) => it.cat === cat && exn && it.exn === exn && free(it, j));
+      if (i < 0) i = w.items.findIndex((it, j) => it.cat === cat && free(it, j));
+      if (i < 0) i = w.items.map(it => it.cat).lastIndexOf(cat);
+      if (i < 0) return;
+      used[i]++;
+      const ex = w.items[i].ex, g = `${a.id}-${k}`;
+      if (!EX[ex] || own.has(ex) || have.has(g) || !(reps > 0)) return;
+      const pr = prCheck(ex, kg || 0, reps);
+      ST.logs.push({ id: Date.now() * 1000 + (logSeq++ % 1000), date: a.date, week: w.n || curWeek(), ex, kg: Math.min(kg || 0, 1000), reps: Math.min(reps, 1000), rpe: 0, ...(pr ? { pr: 1 } : {}), g });
+      n++;
+    });
+  });
+  if (n) { ST.logs.sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id); ST.logs = ST.logs.slice(-LIM.logs); }
+  return n;
 }
 const fmtHM = m => m ? `${Math.floor(m / 60)} t ${String(m % 60).padStart(2, '0')}` : '–';
 function renderGarminCard() {
   const el = $('garminCard'); if (!el) return;
   if (!GM.pass) { el.innerHTML = ''; return; }
-  const d = gmDay(todayISO()), y = gmDay(localISO(new Date(Date.now() - 864e5))), rh = gmRhr();
+  const d = gmDay(todayISO()), y = gmDay(localISO(new Date(Date.now() - 864e5))), rh = gmRhr(), low = gmLowToday();
   if (!d && !GM.err) { el.innerHTML = ''; return; }
   const cell = (k, v, sub) => `<div><small>${k}</small><b>${v}</b>${sub ? `<em>${sub}</em>` : ''}</div>`;
-  const upd = GM.data && GM.data.updated ? new Date(GM.data.updated) : null;
+  const upd = GM.data && GM.data.updated ? new Date(GM.data.updated) : null, more = d && (gmNum(d.hrv) || gmNum(d.ready));
+  const hrvTxt = { balanced: 'balanceret', unbalanced: 'ubalanceret', low: 'lav', poor: 'meget lav' };
+  const ses = planOn() ? todaySession() : null, own = !!todayCheck();
   el.innerHTML = `<div class="panel gm-card"><div class="gm-head"><h3>${ICON.watch || ICON.pulse}Fra dit ur</h3><small>${upd ? 'Opdateret ' + upd.toLocaleString('da-DK', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</small></div>
-    ${d ? `<div class="gm-stats">${cell('Søvn', gmNum(d.sleepScore) || '–', fmtHM(gmNum(d.sleepMin)))}${cell('Body Battery', gmNum(d.bbWake) || gmNum(d.bbHigh) || '–', gmNum(d.bbWake) ? 'ved opvågning' : 'dagens højeste')}${cell('Hvilepuls', gmNum(d.rhr) || '–', rh ? `${rh.diff > 0 ? '+' : ''}${rh.diff} mod normalt` : '')}${cell('Skridt', gmNum(d.steps) ? d.steps.toLocaleString('da-DK') : '–', y && gmNum(y.steps) ? `i går ${y.steps.toLocaleString('da-DK')}` : '')}</div>` : ''}
-    ${rh && rh.high ? `<p class="notice warn">Hvilepulsen er ${rh.diff} slag over dit normale de sidste dage. Det kan være træthed eller begyndende sygdom: tag dagens pas let, eller hold fri.</p>` : ''}
+    ${d ? `<div class="gm-stats${more ? ' six' : ''}">${cell('Søvn', gmNum(d.sleepScore) || '–', fmtHM(gmNum(d.sleepMin)))}${cell('Body Battery', gmNum(d.bbWake) || gmNum(d.bbHigh) || '–', gmNum(d.bbWake) ? 'ved opvågning' : 'dagens højeste')}${cell('Hvilepuls', gmNum(d.rhr) || '–', rh ? `${rh.diff > 0 ? '+' : ''}${rh.diff} mod normalt` : '')}${more ? cell('HRV', gmNum(d.hrv) || '–', hrvTxt[d.hrvStatus] || (gmNum(d.hrvWeek) ? `uge ${d.hrvWeek}` : '')) + cell('Readiness', gmNum(d.ready) || '–', 'Training Readiness') : ''}${cell('Skridt', gmNum(d.steps) ? d.steps.toLocaleString('da-DK') : '–', y && gmNum(y.steps) ? `i går ${y.steps.toLocaleString('da-DK')}` : '')}</div>` : ''}
+    ${low.length ? `<p class="notice warn">Uret viser lav restitution: ${esc(low.join(', '))}. ${own ? 'Dit eget tjek bestemmer, hvor hårdt dagens pas er.' : ses ? 'Dagens pas er gjort lettere (1 sæt færre og 10 % mindre vægt). Udfyld dagens tjek, hvis du har det bedre.' : 'Tag den med ro i dag, og prioritér søvn og mad.'}</p>` : ''}
     ${GM.err ? `<p class="gm-err">${esc(GM.err)} <button class="link-btn" type="button" data-go="mere">Garmin-indstillinger</button></p>` : ''}</div>`;
 }
 /* Min form: de sidste 7 dage som små søjler */
 function gmTrendHTML() {
   const ds = gmDays().slice(-7); if (!GM.pass || ds.length < 2) return '';
-  const row = (t, key, max, fmt) => { const vals = ds.map(d => gmNum(d[key])); const top = Math.max(max, ...vals.map(v => v || 0));
+  const row = (t, key, max, fmt) => { const vals = ds.map(d => gmNum(d[key])); if (!vals.some(Boolean)) return ''; const top = Math.max(max, ...vals.map(v => v || 0));
     return `<div class="gm-row"><span class="gm-lbl">${t}</span><div class="gm-bars">${ds.map((d, i) => `<span title="${esc(daDate(d.date))}: ${vals[i] == null ? '–' : fmt(vals[i])}"><i style="height:${vals[i] ? Math.max(8, Math.round(vals[i] / top * 100)) : 0}%"></i><small>${DAY_SHORT[(new Date(d.date + 'T12:00').getDay() + 6) % 7].slice(0, 2)}</small></span>`).join('')}</div><b>${vals[vals.length - 1] == null ? '–' : fmt(vals[vals.length - 1])}</b></div>`; };
-  return `<div class="panel gm-trend"><h3>Søvn, hvilepuls og skridt</h3><p class="muted">De sidste 7 dage fra dit Garmin-ur.</p>
-    ${row('Søvnscore', 'sleepScore', 100, v => v)}${row('Hvilepuls', 'rhr', 40, v => v)}${row('Skridt', 'steps', 8000, v => fmtNum(Math.round(v / 100) / 10) + 'k')}${row('Body Battery', 'bbHigh', 100, v => v)}</div>`;
+  const vo2 = gmVo2();
+  return `<div class="panel gm-trend"><h3>Søvn, restitution og skridt</h3><p class="muted">De sidste 7 dage fra dit Garmin-ur.${vo2 ? ` VO2max: <b>${fmtNum(vo2)}</b>${lastTest() && !(lastTest().r.cond) ? ' (bruges som din kondition, indtil du tager konditionstesten)' : ''}.` : ''}</p>
+    ${row('Søvnscore', 'sleepScore', 100, v => v)}${row('Hvilepuls', 'rhr', 40, v => v)}${row('HRV', 'hrv', 40, v => v)}${row('Readiness', 'ready', 100, v => v)}${row('Skridt', 'steps', 8000, v => fmtNum(Math.round(v / 100) / 10) + 'k')}${row('Body Battery', 'bbHigh', 100, v => v)}</div>`;
+}
+
+/* ---------- Send pas til uret ----------
+   De næste pas (resten af denne uge og næste uge) laves om til trin: styrke som sæt med gentagelser, vægt og pause,
+   kondition og circuits som tid og gentagelser. De krypteres og gemmes som garmin/plan.json i repoet via GitHub's API.
+   Det starter Action'en, der lægger passene i Garmin-kalenderen. Uret kender ikke appens øvelser, så hvert trin får
+   Garmins kategori (fx SQUAT) og appens navn og dosis som beskrivelse. */
+/* Hver øvelse i appen er koblet til en øvelse i Garmins katalog (kategori/øvelse, tom øvelse = kun kategorien).
+   Navnene er tjekket mod garminconnect.exercises. Så viser uret fx "Barbell Front Squat", og talte sæt kan kobles tilbage. */
+const GC = Object.fromEntries([
+  'bike:INDOOR_BIKE/STATIONARY_BIKE assault:INDOOR_BIKE/ASSAULT_BIKE rower:ROW/INDOOR_ROW run:RUN/RUN skierg:CARDIO/CARDIO jumprope:CARDIO/JUMP_ROPE stairs:STAIR_STEPPER/STAIR_STEPPER tempo:RUN/RUN rsa:RUN/SPRINT',
+  'shuffle:PLYO/LATERAL_SLIDE fastfeet:CARDIO/CARDIO getup:TOTAL_BODY/TOTAL_BODY carioca:CARDIO/CARDIO ladder:LADDER/AGILITY tdrill:RUN/SPRINT sprint5:RUN/SPRINT latbandwalk:BANDED_EXERCISES/LATERAL_BAND_WALKS wallaccel:RUN/SPRINT askip:WARM_UP/WALKING_HIGH_KNEES flysprint:RUN/SPRINT decel:RUN/SPRINT cod505:RUN/SPRINT mirror:PLYO/LATERAL_SLIDE fifa11:WARM_UP/WARM_UP gkcollapse:TOTAL_BODY/TOTAL_BODY gkshuffledive:TOTAL_BODY/TOTAL_BODY gkset:TOTAL_BODY/TOTAL_BODY gkdropstep:PLYO/LATERAL_SLIDE gkbarrier:TOTAL_BODY/TOTAL_BODY diveget:TOTAL_BODY/TOTAL_BODY',
+  'squat:SQUAT/AIR_SQUAT bulgarian:LUNGE/DUMBBELL_BULGARIAN_SPLIT_SQUAT reverselunge:LUNGE/LUNGE goblet:SQUAT/GOBLET_SQUAT splitsquat:LUNGE/LUNGE walkinglunge:LUNGE/WALKING_LUNGE stepup:SQUAT/DUMBBELL_STEP_UP sumosquat:SQUAT/SUMO_SQUAT wallsit:SQUAT/BODY_WEIGHT_WALL_SQUAT frontsquat:SQUAT/BARBELL_FRONT_SQUAT legpress:SQUAT/LEG_PRESS singlesquat:SQUAT/PISTOL_SQUAT backsquat:SQUAT/BARBELL_BACK_SQUAT spanish:SQUAT/ isosplit:LUNGE/LUNGE legext:SQUAT/',
+  'latlunge:LUNGE/SIDE_LUNGE cossack:LUNGE/LOW_SIDE_TO_SIDE_LUNGE hips9090:WARM_UP/STRETCH_90_90 wgs:WARM_UP/WARM_UP catcow:WARM_UP/STRETCH_CAT_COW openbook:WARM_UP/THORACIC_ROTATION hipflexor:WARM_UP/STRETCH_LUNGING_HIP_FLEXOR anklemob:WARM_UP/WARM_UP deepsquat:WARM_UP/WARM_UP shoulderband:WARM_UP/WARM_UP hipairplane:HIP_STABILITY/ foamroll:WARM_UP/WARM_UP',
+  'calf:CALF_RAISE/CALF_RAISE slcalf:CALF_RAISE/SINGLE_LEG_STANDING_CALF_RAISE tibraise:CALF_RAISE/ stepcalf:CALF_RAISE/CALF_RAISE soleus:CALF_RAISE/SEATED_CALF_RAISE',
+  'pallof:CORE/CABLE_CORE_PRESS deadbug:HIP_STABILITY/DEAD_BUG sideplank:PLANK/SIDE_PLANK plank:PLANK/PLANK birddog:HYPEREXTENSION/BACK_EXTENSION_WITH_OPPOSITE_ARM_AND_LEG_REACH hollow:CORE/CORE mtnclimber:PLANK/MOUNTAIN_CLIMBER russiantwist:CORE/RUSSIAN_TWIST legraise:LEG_RAISE/LYING_STRAIGHT_LEG_RAISE bicycle:CRUNCH/BICYCLE_CRUNCH abwheel:CORE/KNEELING_AB_WHEEL copenhagen:HIP_STABILITY/ bandpallof:CORE/CABLE_CORE_PRESS woodchop:CHOP/CABLE_WOODCHOP plankreach:PLANK/PLANK adductsqueeze:HIP_STABILITY/',
+  'bounds:PLYO/LATERAL_LEAP_AND_HOP squatjump:PLYO/JUMP_SQUAT skater:PLYO/LATERAL_LEAP_AND_HOP boxjump:PLYO/BOX_JUMP broadjump:PLYO/PLYO tuckjump:PLYO/PLYO pogo:PLYO/PLYO medslam:PLYO/MEDICINE_BALL_SLAM medthrow:PLYO/MEDICINE_BALL_OVERHEAD_THROWS burpee:TOTAL_BODY/BURPEE slhop:PLYO/PLYO gkhighcatch:PLYO/PLYO gkthrow:PLYO/MEDICINE_BALL_OVERHEAD_THROWS gkstar:PLYO/STAR_JUMP_SQUATS trapjump:PLYO/PLYO depthjump:PLYO/DEPTH_JUMP lateralstick:PLYO/LATERAL_LEAP_AND_HOP medrot:PLYO/MEDICINE_BALL_SIDE_THROW',
+  'rdl:DEADLIFT/ROMANIAN_DEADLIFT glutebridge:HIP_RAISE/HIP_RAISE hipthrust:HIP_RAISE/BARBELL_HIP_THRUST_WITH_BENCH slrdl:DEADLIFT/SINGLE_LEG_ROMANIAN_DEADLIFT_WITH_DUMBBELL kbswing:HIP_RAISE/KETTLEBELL_SWING slbridge:HIP_RAISE/SINGLE_LEG_HIP_RAISE nordic:LEG_CURL/ hamwalk:LEG_CURL/ dbrdl:DEADLIFT/DUMBBELL_STRAIGHT_LEG_DEADLIFT trapbar:DEADLIFT/TRAP_BAR_DEADLIFT hambridgeiso:HIP_RAISE/HIP_RAISE deadlift:DEADLIFT/BARBELL_DEADLIFT backext:HYPEREXTENSION/HYPEREXTENSION legcurl:LEG_CURL/LEG_CURL',
+  'latpull:PULL_UP/LAT_PULLDOWN dbrow:ROW/DUMBBELL_ROW invrow:ROW/INVERTED_ROW pullup:PULL_UP/PULL_UP bandpull:BANDED_EXERCISES/PULL_APART cablerow:ROW/SEATED_CABLE_ROW facepull:ROW/FACE_PULL superman:HYPEREXTENSION/SUPERMAN_FROM_FLOOR dbcurl:CURL/DUMBBELL_BICEPS_CURL hammercurl:CURL/DUMBBELL_HAMMER_CURL ytw:SHOULDER_STABILITY/FLOOR_Y_RAISE extrot:BANDED_EXERCISES/EXTERNAL_ROTATION bbrow:ROW/BARBELL_ROW tbarrow:ROW/T_BAR_ROW machinerow:ROW/ROW straightarm:PULL_UP/STRAIGHT_ARM_PULLDOWN chinup:PULL_UP/CHIN_UP pullover:PULL_UP/ shrug:SHRUG/DUMBBELL_SHRUG reardelt:LATERAL_RAISE/BENT_OVER_LATERAL_RAISE bbcurl:CURL/BARBELL_BICEPS_CURL preachercurl:CURL/EZ_BAR_PREACHER_CURL cablecurl:CURL/CABLE_BICEPS_CURL',
+  'farmer:CARRY/FARMERS_WALK suitcase:CARRY/CARRY ohcarry:CARRY/OVERHEAD_CARRY bearcrawl:PLANK/BEAR_CRAWL',
+  'pushup:PUSH_UP/PUSH_UP kneepushup:PUSH_UP/KNEELING_PUSH_UP diamondpush:PUSH_UP/DIAMOND_PUSH_UP dbpress:SHOULDER_PRESS/DUMBBELL_SHOULDER_PRESS dbbench:BENCH_PRESS/DUMBBELL_BENCH_PRESS pikepush:PUSH_UP/PIKE_PUSH_UP clappush:PUSH_UP/CLAPPING_PUSH_UP pushdown:TRICEPS_EXTENSION/TRICEPS_PRESSDOWN benchdip:TRICEPS_EXTENSION/BENCH_DIP landminepress:SHOULDER_PRESS/SHOULDER_PRESS bbbench:BENCH_PRESS/BARBELL_BENCH_PRESS closebench:BENCH_PRESS/CLOSE_GRIP_BARBELL_BENCH_PRESS inclinedb:BENCH_PRESS/INCLINE_DUMBBELL_BENCH_PRESS machinechest:BENCH_PRESS/ cablefly:FLYE/CABLE_CROSSOVER dbfly:FLYE/DUMBBELL_FLYE dips:TRICEPS_EXTENSION/BODY_WEIGHT_DIP declinepush:PUSH_UP/DECLINE_PUSH_UP bbohp:SHOULDER_PRESS/OVERHEAD_BARBELL_PRESS machinepress:SHOULDER_PRESS/SHOULDER_PRESS arnold:SHOULDER_PRESS/ARNOLD_PRESS latraise:LATERAL_RAISE/DUMBBELL_LATERAL_RAISE frontraise:LATERAL_RAISE/FRONT_RAISE skullcrusher:TRICEPS_EXTENSION/DUMBBELL_LYING_TRICEPS_EXTENSION ohtricep:TRICEPS_EXTENSION/SEATED_DUMBBELL_OVERHEAD_TRICEPS_EXTENSION',
+  'reaction:WARM_UP/WARM_UP breath:WARM_UP/WARM_UP wallball:SQUAT/WALL_BALL dropcatch:TOTAL_BODY/TOTAL_BODY visual:WARM_UP/WARM_UP'
+].join(' ').split(' ').map(t => { const [id, v] = t.split(':'); return [id, v.split('/')]; }));
+const gcOf = id => GC[id] || ['TOTAL_BODY', ''];
+/* Timer-segmenter → trin. Runder (round/rounds fra rounds()) bliver til en gentagelse, så passet holder sig under urets grænse for antal trin. */
+function gmSegSteps(segs, b, base) {
+  const warm = b.icon === 'flame';
+  const ex = s => { if (s.type === 'rest' || s.it == null || !b.items[s.it] || !b.items[s.it].ex) return {}; const [cat, exn] = gcOf(resolveItem(b.items[s.it], `${base}|${s.it}`).ex); return { cat, exn }; };
+  const one = s => s.type === 'reps' ? { t: 'reps', note: s.label, ...ex(s) } : { t: s.type === 'rest' ? 'rest' : warm ? 'warm' : 'work', secs: Math.round(s.secs), note: s.label, ...ex(s) };
+  const out = [];
+  for (let i = 0; i < segs.length;) {
+    const s = segs[i];
+    if ((s.rounds || 1) > 1 && s.round === 1) {
+      let j = i + 1; while (j < segs.length && segs[j].rounds === s.rounds && segs[j].round >= segs[j - 1].round) j++;
+      out.push({ t: 'repeat', n: s.rounds, steps: segs.slice(i, j).filter(x => x.round === 1).map(one) }); i = j;
+    } else { out.push(one(s)); i++; }
+  }
+  return out;
+}
+function gmBlockSteps(b, base) {
+  if (b.restTimer) return b.items.flatMap((it0, i) => {
+    if (!it0.ex) return [];
+    const it = resolveItem(it0, `${base}|${i}`), e = EX[it.ex], nm = it.name || e.name;
+    const sets = it.rx ? it.rx.sets : (parseInt((String(it.dose).match(/^(\d+)\s*×/) || [])[1], 10) || 1);
+    const nl = it.rx && it.rx.pct ? nextLoad(it.ex, it.rx) : null, secs = !it.rx && it.secs ? it.secs * (it.perSide ? 2 : 1) : 0;
+    const [cat, exn] = gcOf(it.ex);
+    return [{ t: 'set', ex: it.ex, cat, exn, sets, reps: secs ? 0 : (it.rx ? it.rx.reps : +repsFromDose(it.dose) || 0), secs, kg: nl && nl.kg ? nl.kg : 0, rest: b.restTimer, note: `${nm} ${String(it.dose).replace(/^× /, '')}` }];
+  });
+  if (b.timer) return gmSegSteps(swappedSegs(b, base), b, base);
+  return b.items.map((it0, i) => it0.ex ? resolveItem(it0, `${base}|${i}`) : null).filter(Boolean).map(it => { const [cat, exn] = gcOf(it.ex); return { t: 'reps', note: `${it.name || EX[it.ex].name} ${it.dose}`, cat, exn }; });
+}
+function gmPlanWorkouts() {
+  const out = [], today = todayISO(), mon = mondayISO(), cw = curWeek();
+  for (let k = 0; k < 2 && cw + k <= 8; k++) {
+    const n = cw + k, W = WEEKS[n - 1]; if (!W) continue;
+    const ses = planOn() ? gymSessions().map(L => ({ L, day: sessionDay(L) })).filter(s => s.day != null) : [{ L: '', day: DAYS.findIndex(d => d.kind === 'fit') }];
+    ses.forEach(({ L, day }) => {
+      const date = addDays(mon, 7 * k + day); if (date < today) return;
+      const steps = W.blocks.filter(b => !b.link && (!L || (b.session && b.session.id === L))).flatMap(b => gmBlockSteps(b, `week|${n}|${b.id}`));
+      if (!steps.length) return;
+      const title = L ? sessionTitle(n, L).replace(/^Pas /, '') : `Fitness uge ${n}`;
+      out.push({ key: `${date}-${L || 'fit'}`, date, n, name: `M8 · ${title}`.slice(0, 60), steps });
+    });
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date));
+}
+/* Gemmer en fil i repoet via GitHub's API. Tokenen skal have "Contents: Read and write" på netop dette repo. */
+async function ghPut(path, text, msg) {
+  const url = `https://api.github.com/repos/${gmRepo()}/contents/${path}`, h = { Authorization: `Bearer ${GM.tok}`, Accept: 'application/vnd.github+json' };
+  const cur = await fetch(`${url}?ref=main&t=${Date.now()}`, { headers: h, cache: 'no-store' });
+  if (cur.status === 401) throw new Error('GitHub afviste tokenen. Er den udløbet?');
+  const sha = cur.ok ? (await cur.json()).sha : undefined;
+  const r = await fetch(url, { method: 'PUT', headers: h, body: JSON.stringify({ message: msg, content: btoa(text), branch: 'main', ...(sha ? { sha } : {}) }) });
+  if (!r.ok) throw new Error(r.status === 401 ? 'GitHub afviste tokenen. Er den udløbet?' : r.status === 403 || r.status === 404 ? 'Tokenen må ikke skrive til repoet. Giv den "Contents: Read and write" på dette repo.' : r.status === 409 ? 'Filen blev ændret samtidig. Prøv igen.' : `GitHub-fejl (${r.status})`);
+}
+async function gmSend() {
+  const ws = gmPlanWorkouts(); if (!ws.length) { toast('Ingen kommende pas at sende'); return; }
+  if (!confirm(`Send ${ws.length} pas til Garmin-kalenderen? Pas, der er sendt før, bliver erstattet.`)) return;
+  toast('Sender …');
+  try {
+    const env = await gmEncrypt({ v: 1, created: new Date().toISOString(), workouts: ws }, GM.pass);
+    await ghPut('garmin/plan.json', JSON.stringify(env), `Pas til uret (${ws.length})`);
+    GM.sent = { at: Date.now(), list: ws.map(w => ({ date: w.date, key: w.key, name: w.name, n: w.n, items: w.steps.filter(s => s.t === 'set').map(s => ({ ex: s.ex, cat: s.cat, exn: s.exn, sets: s.sets })) })) };
+    GM.sentStat = null; GM.fetched = 0; gmSave(); renderGarminPanel();
+    toast(`${ws.length} pas sendt. De ligger i Garmin-kalenderen om et par minutter.`);
+  } catch (e) { toast(e.message || 'Kunne ikke sende'); }
+}
+function gmSendHTML() {
+  if (!GM.tok) return `<div class="gm-send"><h3>Send pas til uret</h3><p class="muted">Læg dine næste pas i Garmin-kalenderen med sæt, gentagelser og vægt. Kræver en GitHub-token, der må skrive til repoet. Se README.md under "Send pas til uret".</p>
+    <label class="field">GitHub-token<input id="gmTok" type="password" autocomplete="off" autocapitalize="none" placeholder="github_pat_…"></label>
+    <button class="btn btn-block" type="button" data-gm="tok">Gem token</button></div>`;
+  const ws = gmPlanWorkouts(), s = GM.sent, st = GM.sentStat;
+  const stTxt = !s ? '' : st && st.updated && new Date(st.updated).getTime() >= s.at - 6e4
+    ? `Garmin: ${st.ok} pas lagt i kalenderen${st.failed ? `, ${st.failed} fejlede (se loggen under Actions › Garmin)` : ''}.` : 'Venter på GitHub Action\'en … Tryk "Hent nu" om lidt for at se svaret.';
+  return `<div class="gm-send"><h3>Send pas til uret</h3>
+    ${ws.length ? `<ul class="plain">${ws.map(w => `<li>${esc(daDate(w.date))} · ${esc(w.name.replace(/^M8 · /, ''))}</li>`).join('')}</ul>` : '<p class="muted">Ingen kommende pas i denne og næste uge.</p>'}
+    ${s ? `<p class="muted">Sidst sendt ${esc(new Date(s.at).toLocaleString('da-DK', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))}. ${esc(stTxt)}</p>` : ''}
+    <button class="btn btn-lime btn-block" type="button" data-gm="send"${ws.length ? '' : ' disabled'}>Send ${ws.length || ''} pas til uret</button>
+    <p class="muted">Laver du passet på uret, logges sættene automatisk i appen ved næste hentning.</p>
+    <button class="link-btn" type="button" data-gm="tokforget">Glem token</button></div>`;
 }
 function renderGarminPanel() {
   const el = $('garminPanel'); if (!el) return;
-  const imp = ST.loads.filter(l => l.gid).length, upd = GM.data && GM.data.updated ? new Date(GM.data.updated) : null;
+  const imp = ST.loads.filter(l => l.gid && !l.x).length, sets = ST.logs.filter(l => l.g).length, upd = GM.data && GM.data.updated ? new Date(GM.data.updated) : null;
   el.innerHTML = GM.pass ? `<p><b>Forbundet</b> · ${esc(gmRepo())}</p>
-      <p class="muted">${upd ? `Data fra uret: ${upd.toLocaleString('da-DK', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · ${gmDays().length} dage · ${imp} ${imp === 1 ? 'aktivitet' : 'aktiviteter'} lagt i belastningen.` : 'Ingen data hentet endnu.'}</p>
+      <p class="muted">${upd ? `Data fra uret: ${upd.toLocaleString('da-DK', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · ${gmDays().length} dage · ${imp} ${imp === 1 ? 'aktivitet' : 'aktiviteter'} i belastningen${sets ? ` · ${sets} sæt logget fra uret` : ''}.` : 'Ingen data hentet endnu.'}</p>
       ${GM.err ? `<p class="gm-err">${esc(GM.err)}</p>` : ''}
-      <div class="foot-actions"><button class="btn btn-sm" type="button" data-gm="fetch">Hent nu</button><button class="btn btn-ghost btn-sm" type="button" data-gm="forget">Glem forbindelsen</button></div>`
-    : `<p class="muted">Henter søvn, Body Battery, hvilepuls, skridt og aktiviteter fra dit Garmin-ur via GitHub. Opsætningen står i README.md under "Garmin-ur".</p>
+      <div class="foot-actions"><button class="btn btn-sm" type="button" data-gm="fetch">Hent nu</button><button class="btn btn-ghost btn-sm" type="button" data-gm="forget">Glem forbindelsen</button></div>
+      ${gmSendHTML()}`
+    : `<p class="muted">Henter søvn, Body Battery, hvilepuls, HRV, skridt og aktiviteter fra dit Garmin-ur via GitHub, og kan sende dine pas til uret. Opsætningen står i README.md under "Garmin-ur".</p>
       <label class="field">Adgangskode til Garmin-data<input id="gmPass" type="password" autocomplete="off" placeholder="Samme som GARMIN_PASSPHRASE"></label>
       <label class="field">GitHub-repo<input id="gmRepo" autocomplete="off" autocapitalize="none" placeholder="bruger/repo" value="${esc(gmRepo())}"></label>
       <button class="btn btn-lime btn-block" type="button" data-gm="connect">Forbind</button>`;
@@ -5228,9 +5480,12 @@ async function gmAction(a) {
     const ok = await gmFetch(true);
     if (ok) toast('Garmin forbundet'); else { const e = GM.err; GM = { ...GM, pass: '' }; gmSave(); renderGarminPanel(); toast(e); }
   } else if (a === 'fetch') { toast('Henter …'); if (await gmFetch(true)) toast('Garmin-data opdateret'); else toast(GM.err); }
+  else if (a === 'tok') { const t = $('gmTok').value.trim(); if (!/^(github_pat_|ghp_)\w+$/.test(t)) { toast('Det ligner ikke en GitHub-token'); return; } GM.tok = t; gmSave(); renderGarminPanel(); toast('Token gemt på telefonen'); }
+  else if (a === 'tokforget') { GM.tok = ''; gmSave(); renderGarminPanel(); toast('Token glemt'); }
+  else if (a === 'send') gmSend();
   else if (a === 'forget') {
-    if (!confirm('Glem forbindelsen til Garmin? Belastning, der allerede er hentet, bliver liggende.')) return;
-    GM = { pass: '', repo: '', data: null, fetched: 0, err: '' }; gmSave(); renderGarminPanel(); renderToday();
+    if (!confirm('Glem forbindelsen til Garmin? Belastning og sæt, der allerede er hentet, bliver liggende.')) return;
+    GM = { pass: '', repo: '', data: null, fetched: 0, err: '', tok: '', sent: null, sentStat: null }; gmSave(); renderGarminPanel(); renderToday();
   }
 }
 

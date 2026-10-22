@@ -12,31 +12,24 @@ Fodboldstyrke og kondition med fokus på målmænd. En PWA uden server: alt kør
 | `programs.js` | De færdige programmer |
 | `app.css` | Design. Faste mål for knapper og kort ligger i sektionen "ENSRETNING" |
 | `sw.js` | Service worker, så appen virker offline |
-| `tests/suite.js` | Testsuite, der kører i browseren oven på appen |
-| `tests/run.mjs` | Kører suiten i Chrome i mobil- og desktopbredde |
-| `scripts/build.mjs` | Minificerer til `dist/` og sætter cache-versionen |
+| `.github/workflows/garmin.yml` | Henter data fra Garmin-uret og sender pas til uret |
+| `scripts/garmin_sync.py` | Scriptet, som workflowet kører |
 
 Nye øvelser tilføjes i `exercises.js` (og en linje i `SEASON`-tabellen). Nye programmer tilføjes i `programs.js`.
 
 ## Udgivelse
 
-Ved hvert push til `main` bygger og tester GitHub appen. Udgivelsen sker kun, hvis alle tests består.
+Siden udgives med GitHub Pages direkte fra `main` (Settings › Pages › Deploy from a branch). Der er intet build-trin: filerne bruges, som de ligger.
 
-Første gang: Settings › Pages › Build and deployment › Source: **GitHub Actions**.
+Når du ændrer `app.js`, `app.css` eller andre filer, så hæv `CACHE`-versionen øverst i `sw.js` (fx `gk8-v28` → `gk8-v29`). Så henter installerede apps de nye filer.
 
-## Lokalt (kræver Node.js 20)
+## Lokalt
 
-```
-npm install
-npx playwright install chromium
-npm test          # byg til dist/ og kør alle tests
-```
-
-Uden Node kan appen åbnes direkte fra en lokal webserver. Testsuiten kan også køres ved at indsætte `tests/suite.js` i browserens konsol på en åben app. Den nulstiller alle data, så brug den ikke på din egen telefon.
+Åbn appen fra en lokal webserver, fx `npx serve .` eller `python -m http.server`. Service workeren virker kun over `http://localhost` eller HTTPS.
 
 ## Garmin-ur
 
-Appen kan hente søvn, Body Battery, hvilepuls, stress, skridt og aktiviteter fra dit Garmin-ur. En GitHub Action (`.github/workflows/garmin.yml`) logger ind på Garmin Connect to gange i døgnet, henter de sidste 14 dage med `scripts/garmin_sync.py` og gemmer dem **krypteret** i `garmin/data.json`. Appen henter filen og låser den op med din egen adgangskode.
+Appen kan hente søvn, Body Battery, hvilepuls, HRV, Training Readiness, stress, skridt, aktiviteter, VO2max og vægt fra dit Garmin-ur, og den kan sende dine pas til uret. En GitHub Action (`.github/workflows/garmin.yml`) logger ind på Garmin Connect tre gange i døgnet, henter de sidste 14 dage med `scripts/garmin_sync.py` og gemmer dem **krypteret** i `garmin/data.json`. Appen henter filen og låser den op med din egen adgangskode.
 
 Garmin har ingen officiel adgang for privatpersoner. Løsningen bruger det uofficielle bibliotek [python-garminconnect](https://github.com/cyberjunky/python-garminconnect), som kan holde op med at virke, hvis Garmin ændrer deres login.
 
@@ -51,22 +44,41 @@ Garmin har ingen officiel adgang for privatpersoner. Løsningen bruger det uoffi
 4. Gå til **Actions › Garmin › Run workflow**, og kør med `hent-data`. Efter et minut skal der ligge en fil i `garmin/data.json`.
 5. Åbn appen, gå til **Mere › Garmin-ur**, skriv din `GARMIN_PASSPHRASE` og repoet (`bruger/repo`), og tryk **Forbind**.
 
-Derefter henter GitHub data automatisk ca. kl. 06.30 og 21.30, og appen henter dem, når du åbner den.
+Derefter henter GitHub data automatisk kl. 08, 12 og 21 dansk tid, og appen henter dem, når du åbner den.
 
 ### Hvad det bruges til
 
 - **Dagligt tjek:** Søvn og Energi bliver foreslået ud fra søvnscoren og Body Battery om morgenen.
-- **Belastning:** Løb og anden træning fra uret bliver lagt i belastningen (minutter × RPE ud fra pulsen). Kampe, gåture og pas, du allerede har registreret, springes over.
-- **Hvilepuls:** Ligger den 5 slag eller mere over dit normale de sidste tre dage, foreslår appen en let dag.
-- **Min form:** 7 dages søjler for søvnscore, hvilepuls, skridt og Body Battery.
+- **Dagens pas:** Har du ikke udfyldt dagens tjek, og viser uret lav restitution (Training Readiness under 25, lav HRV, hvilepuls 5 slag over normalt eller Body Battery under 20), bliver dagens pas lettere: 1 sæt færre og 10 % mindre vægt. Dit eget tjek går altid forud.
+- **Status:** Høj hvilepuls og lav HRV flere dage i træk giver en markering i statussen, og programmet bliver lidt lettere. Kort søvn og højt stress vises som information.
+- **Belastning:** Træning fra uret bliver lagt i belastningen som minutter × RPE. RPE skønnes ud fra Garmins Training Effect (ellers pulsen, og RPE 6 for styrketræning). Har du selv registreret det samme (en kamp, et pas eller fodbold med omtrent samme varighed), tæller urets version ikke, uanset hvilken der kom først. Under Min form › Belastning › Seneste registreringer kan du se alt og slette det, der er forkert.
+- **Kondition:** Har du ikke taget konditionstesten, bruges urets VO2max til din konditionsscore.
+- **Vægt:** Bruger du en Garmin-vægt, bliver vægten udfyldt på de dage, hvor du ikke selv har skrevet den.
+- **Min form:** 7 dages søjler for søvnscore, hvilepuls, HRV, Training Readiness, skridt og Body Battery.
 
-### Prøve-træning til uret
+HRV og Training Readiness kræver et nyere ur (fx Forerunner 255/265/955/965, Fenix 7, Venu 3). Har dit ur dem ikke, bliver de bare ikke vist.
 
-Kør **Actions › Garmin › Run workflow** med `test-workout`. Så lægges tre prøve-træninger (`M8 test cardio`, `M8 test hiit` og `M8 test running`) i Garmin-kalenderen i dag. Synkronisér uret, og se under **Træning › Træninger** og i kalenderen, hvilke der vises, og om teksten for hvert trin (fx "Frontsquat 4x8 60 kg") står på skærmen. Slet dem bagefter i Garmin Connect-appen.
+### Send pas til uret
+
+Under **Mere › Garmin-ur › Send pas til uret** kan appen lægge dine næste pas (resten af denne uge og næste uge) i Garmin-kalenderen. Styrkeøvelser bliver til sæt med gentagelser, foreslået vægt og pause. Kondition, intervaller og circuits bliver til trin med tid. Uret kender ikke appens øvelser, så hvert trin får Garmins nærmeste kategori (fx *Squat*), og appens navn og dosis står i trinnets beskrivelse.
+
+Opsætning, kun første gang:
+
+1. Gå til GitHub › dit profilbillede › **Settings › Developer settings › Personal access tokens › Fine-grained tokens › Generate new token**.
+2. Giv den et navn (fx "Målmand 8"), vælg en udløbsdato, og vælg **Only select repositories** med kun dette repo.
+3. Under **Repository permissions**: sæt **Contents** til **Read and write**. Intet andet.
+4. Kopiér tokenen (starter med `github_pat_`), og indsæt den i appen under **Mere › Garmin-ur › GitHub-token**.
+
+Når du trykker **Send pas til uret**, gemmer appen passene krypteret i `garmin/plan.json`. Det starter workflowet (`send-plan`), som sletter de pas, der blev sendt sidst, og lægger de nye i kalenderen. Efter et par minutter kan du trykke **Hent nu** og se svaret. Synkronisér uret, så ligger passene under **Træning › Træninger** og i kalenderen.
+
+**Sæt fra uret:** Laver du et sendt pas på uret, tæller uret dine sæt. Ved næste hentning logger appen dem på de rigtige øvelser i rækkefølge (gentagelser og vægt), så du ikke skal taste dem. Øvelser, du selv har logget den dag, bliver ikke rørt.
+
+Send igen, hvis du har ændret programmet, eller når en ny uge starter, så vægtene følger dine seneste sæt.
 
 ### Sikkerhed
 
 - Repoet og Action-loggen er offentlige. Data er krypteret med AES-GCM, og scriptet skriver aldrig helbredstal i loggen.
 - Garmin-login ligger kun som hemmeligheder i GitHub og kan ikke læses af andre.
-- Adgangskoden til dataene gemmes kun på din telefon og kommer ikke med i backup-filen.
+- Adgangskoden til dataene og GitHub-tokenen gemmes kun på din telefon og kommer ikke med i backup-filen. Tokenen kan kun skrive til dette ene repo. Slet den på GitHub, hvis du mister telefonen.
+- Passene i `garmin/plan.json` er krypteret med samme adgangskode som dataene. `garmin/sent.json` indeholder kun Garmins id'er og antal sendte pas.
 - GitHub slår planlagte workflows fra efter 60 dage uden aktivitet i repoet. Sker det, så tryk **Enable workflow** under Actions › Garmin.

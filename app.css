@@ -1456,3 +1456,9 @@ details.wp[open] > summary { margin-bottom: 4px; }
 .gm-bars small { font-size: 13px; letter-spacing: 0; color: var(--muted); text-transform: uppercase; }
 .gm-panel { display: grid; gap: 10px; }
 @media (max-width: 560px) { .gm-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.load-list { margin-top: 6px; }
+.hist.is-off { opacity: .55; }
+.gm-stats.six { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.gm-send { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; }
+.gm-send h3 { font-size: 17px; }
+.gm-send ul { display: grid; gap: 4px; font-size: 14.5px; color: var(--soft); }
