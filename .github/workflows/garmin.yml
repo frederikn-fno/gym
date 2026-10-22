@@ -1,9 +1,19 @@
 name: Garmin
 
 on:
+  # Kl. 08, 12 og 21 dansk tid. GitHub regner i UTC, så hvert tidspunkt står der to gange:
+  # én til sommertid og én til vintertid. Trinnet "Dansk tid?" springer den forkerte over.
   schedule:
-    - cron: '30 4 * * *'   # ca. kl. 06.30 dansk sommertid
-    - cron: '30 19 * * *'  # ca. kl. 21.30 dansk sommertid
+    - cron: '0 6 * * *'    # 08 sommertid
+    - cron: '0 7 * * *'    # 08 vintertid
+    - cron: '0 10 * * *'   # 12 sommertid
+    - cron: '0 11 * * *'   # 12 vintertid
+    - cron: '0 19 * * *'   # 21 sommertid
+    - cron: '0 20 * * *'   # 21 vintertid
+  # Appen gemmer garmin/plan.json, når du trykker "Send pas til uret". Så lægges passene i Garmin-kalenderen.
+  push:
+    branches: [main]
+    paths: ['garmin/plan.json']
   workflow_dispatch:
     inputs:
       mode:
@@ -11,6 +21,7 @@ on:
         type: choice
         options:
           - hent-data
+          - send-plan
         default: hent-data
 
 permissions:
@@ -25,30 +36,51 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - name: Dansk tid?
+        id: tid
+        env:
+          SCHED: ${{ github.event.schedule }}
+        run: |
+          case "$SCHED" in
+            '0 6 * * *'|'0 10 * * *'|'0 19 * * *') want=+0200 ;;
+            '0 7 * * *'|'0 11 * * *'|'0 20 * * *') want=+0100 ;;
+            *) want=any ;;  # startet manuelt eller fra appen
+          esac
+          now=$(TZ=Europe/Copenhagen date +%z)
+          if [ "$want" = any ] || [ "$want" = "$now" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; else echo "Springer over: forkert sommer-/vintertid"; fi
 
-      - uses: actions/setup-python@v5
+      - if: steps.tid.outputs.run == 'true'
+        uses: actions/checkout@v4
+
+      - if: steps.tid.outputs.run == 'true'
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: Installer biblioteker
+        if: steps.tid.outputs.run == 'true'
         run: pip install --quiet garminconnect cryptography
 
-      - name: Hent data fra Garmin Connect
+      - name: Garmin Connect
+        if: steps.tid.outputs.run == 'true'
         env:
+          MODE: ${{ github.event_name == 'push' && 'send-plan' || inputs.mode || 'hent-data' }}
           GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}
           GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
           GARMIN_PASSPHRASE: ${{ secrets.GARMIN_PASSPHRASE }}
         run: python scripts/garmin_sync.py
 
-      - name: Gem garmin/data.json i repoet
+      # Kører også, hvis afsendelsen fejlede, så appen kan vise fejlen (garmin/sent.json)
+      - name: Gem i repoet
+        if: always() && steps.tid.outputs.run == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add garmin/data.json
+          for f in garmin/data.json garmin/sent.json; do if [ -f "$f" ]; then git add "$f"; fi; done
           if git diff --cached --quiet; then
             echo "Ingen ændringer"
           else
-            git commit -m "Garmin-data opdateret"
+            git commit -m "Garmin opdateret"
+            git pull --rebase --quiet  # appen kan have gemt plan.json imens
             git push
           fi
