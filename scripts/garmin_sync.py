@@ -17,7 +17,12 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from garminconnect import Garmin
 
-DAYS = 14
+FRESH = 7      # de sidste dage hentes altid igen (søvn og skridt ændrer sig, til dagen er slut)
+FILL = 14      # ældre dage, der mangler i historikken, hentes lidt ad gangen
+BACKFILL = 56  # historikken fyldes op til 8 uger bagud, så trendgraferne har noget at vise
+KEEP = 120     # dage, der gemmes i data.json
+ACT_DAYS = 14  # aktiviteter hentes for de sidste 14 dage (første gang 8 uger)
+ZONE_TYPES = ('soccer', 'football', 'running', 'cardio', 'hiit', 'indoor_cycling', 'cycling')
 ITER = 250_000
 ROOT = os.path.join(os.path.dirname(__file__), '..', 'garmin')
 OUT, PLAN, SENT = (os.path.join(ROOT, f) for f in ('data.json', 'plan.json', 'sent.json'))
@@ -89,13 +94,32 @@ def ex_sets(api, aid):
     return out
 
 
-def acts(api, start, end):
-    out = []
-    for a in call(api, 'get_activities_by_date', start, end) or []:
+def zones(api, a, typ):
+    """Sekunder i pulszone 1-5. Fra aktivitetens oversigt, ellers et ekstra kald (kun for løb, fodbold og kondition)."""
+    z = [num(a.get(f'hrTimeInZone_{i}')) or 0 for i in range(1, 6)]
+    if any(z):
+        return [round(x) for x in z]
+    if not any(t in typ for t in ZONE_TYPES):
+        return None
+    r = call(api, 'get_activity_hr_in_timezones', a['activityId'])
+    if not isinstance(r, list) or not r:
+        return None
+    by = {int(x.get('zoneNumber') or 0): num(x.get('secsInZone')) or 0 for x in r if isinstance(x, dict)}
+    return [round(by.get(i, 0)) for i in range(1, 6)]
+
+
+def acts(api, start, end, known=None):
+    """Aktiviteter. known = tidligere hentede (id -> aktivitet), så sæt og pulszoner ikke hentes igen."""
+    known, out, r = known or {}, [], call(api, 'get_activities_by_date', start, end)
+    if r is None:
+        return None  # kaldet fejlede: behold de aktiviteter, vi har
+    for a in r:
         t = str(a.get('startTimeLocal') or '')[:10]
         if not a.get('activityId') or len(t) != 10:
             continue
         typ = (a.get('activityType') or {}).get('typeKey', '')
+        old = known.get(str(a['activityId'])) or {}
+        rpe = num(a.get('directWorkoutRpe'))  # din egen vurdering på uret ("Hvordan føltes det?"), 10-100
         out.append({
             'id': str(a['activityId']),
             'date': t,
@@ -107,7 +131,9 @@ def acts(api, start, end):
             'te': num(a.get('aerobicTrainingEffect')),
             'ate': num(a.get('anaerobicTrainingEffect')),
             'load': num(a.get('activityTrainingLoad')),
-            **({'sets': ex_sets(api, a['activityId'])} if 'strength' in typ else {}),
+            'rpe': round(rpe / 10) if rpe else None,
+            'zones': old['zones'] if old.get('zones') else zones(api, a, typ),
+            **({'sets': old['sets'] if old.get('sets') else ex_sets(api, a['activityId'])} if 'strength' in typ else {}),
         })
     return out
 
@@ -147,18 +173,46 @@ def decrypt(env_, passphrase):
     return json.loads(AESGCM(key).decrypt(u(env_['iv']), u(env_['ct']), None))
 
 
+def previous(passphrase):
+    """Den forrige data.json, så historikken bevares og kun nye eller manglende dage hentes."""
+    try:
+        with open(OUT) as f:
+            return decrypt(json.load(f), passphrase)
+    except Exception:
+        return {}
+
+
 def fetch_data(api, passphrase):
     today = dt.date.today()
-    dates = [(today - dt.timedelta(days=i)).isoformat() for i in range(DAYS - 1, -1, -1)]
-    days = [day(api, d) for d in dates]
+    iso = lambda n: (today - dt.timedelta(days=n)).isoformat()
+    prev = previous(passphrase)
+    have = {d['date']: d for d in prev.get('days') or [] if isinstance(d, dict) and d.get('date')}
+    fresh = [iso(n) for n in range(FRESH - 1, -1, -1)]
+    missing = [iso(n) for n in range(FRESH, BACKFILL) if iso(n) not in have][:FILL]
+    for d in missing + fresh:
+        have[d] = day(api, d)
+    cut = iso(KEEP)
+    days = sorted((v for k, v in have.items() if k > cut), key=lambda d: d['date'])
+
+    known = {a['id']: a for a in prev.get('acts') or [] if isinstance(a, dict) and a.get('id') and a.get('date', '') > cut}
+    first_run = not prev.get('actsFrom') or prev['actsFrom'] > iso(BACKFILL - 1)
+    start = iso(BACKFILL - 1) if first_run else iso(ACT_DAYS - 1)
+    new = acts(api, start, iso(0), known)
+    if new is not None:  # aktiviteter, der er slettet på Garmin i perioden, forsvinder også her
+        ids = {a['id'] for a in new}
+        known = {k: a for k, a in known.items() if a['date'] < start or k in ids}
+        known.update({a['id']: a for a in new})
+    ws = {w['date']: w for w in prev.get('weights') or [] if isinstance(w, dict) and w.get('date', '') > cut}
+    ws.update({w['date']: w for w in weights(api, iso(ACT_DAYS - 1), iso(0))})
     data = {
         'updated': dt.datetime.now(dt.timezone.utc).isoformat(timespec='seconds'),
         'days': days,
-        'acts': acts(api, dates[0], dates[-1]),
-        'vo2': vo2(api, dates),
-        'weights': weights(api, dates[0], dates[-1]),
+        'acts': sorted(known.values(), key=lambda a: (a['date'], a['id'])),
+        'actsFrom': min(start, prev.get('actsFrom') or start),
+        'vo2': vo2(api, fresh) or prev.get('vo2'),
+        'weights': sorted(ws.values(), key=lambda w: w['date']),
     }
-    print(f'Hentet {len(days)} dage og {len(data["acts"])} aktiviteter')
+    print(f'Hentet {len(fresh) + len(missing)} dage ({len(days)} i historikken) og {len(new or [])} aktiviteter ({len(data["acts"])} i alt)')
     os.makedirs(ROOT, exist_ok=True)
     with open(OUT, 'w') as f:
         json.dump(encrypt(data, passphrase), f)
