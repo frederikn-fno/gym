@@ -68,7 +68,9 @@ try { var t = ((JSON.parse(localStorage.getItem('gk8-goalkeeper-v1')) || {}).set
       <div id="seasonCard"></div>
       <div id="checkCard"></div>
       <div id="garminCard"></div>
+      <div id="sumCard"></div>
       <div id="matchCard"></div>
+      <div id="reportCard"></div>
       <div id="weekSummary"></div>
       <div id="coachCard"></div>
       <nav class="tiles" id="tiles" aria-label="Genveje"></nav>
@@ -224,6 +226,7 @@ try { var t = ((JSON.parse(localStorage.getItem('gk8-goalkeeper-v1')) || {}).set
             <label class="field">Minutter spillet<input type="number" id="mMin" inputmode="numeric" min="0" max="150" value="90"></label>
             <label class="field">Hvor hårdt (RPE)<select id="mRpe"></select></label>
           </div>
+          <div id="mWatch"></div>
           <div id="rates"></div>
           <label class="field" style="margin-top:12px">Kommentar<textarea id="mNote" rows="2" enterkeyhint="done" autocapitalize="sentences" placeholder="Fx: Tunge ben efter 70 min. God på indlæg."></textarea></label>
           <div class="form-actions"><button class="btn btn-lime btn-block" type="submit" id="mSubmit">Gem kamp</button><button class="btn btn-ghost btn-block" type="button" id="mCancel" hidden style="margin-top:8px">Annullér redigering</button></div>
